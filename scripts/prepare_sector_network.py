@@ -140,6 +140,33 @@ def add_lifetime_wind_solar(n):
         n.generators.loc[[index for index in n.generators.index.to_list()
                         if carrier in index], 'lifetime']=costs.at[carrier_name,'lifetime']
 
+
+def create_network_topology(n, prefix):
+    """
+    create a network topology as the electric network,
+    returns a pandas dataframe with bus0, bus1 and length
+    """
+
+    topo = pd.DataFrame(columns=["bus0", "bus1", "length"])
+    connector = " -> "
+    attrs = ["bus0", "bus1", "length"]
+
+    candidates = pd.concat([n.lines[attrs],
+                            n.links.loc[n.links.carrier == "DC", attrs]])
+
+    positive_order = candidates.bus0 < candidates.bus1
+    candidates_p = candidates[positive_order]
+    candidates_n = (candidates[~ positive_order]
+                    .rename(columns={"bus0": "bus1", "bus1": "bus0"}))
+    candidates = pd.concat((candidates_p, candidates_n), sort=False)
+
+    topo = candidates.groupby(["bus0", "bus1"], as_index=False).mean()
+    topo.rename(index=lambda x: prefix + topo.at[x, "bus0"]
+                + connector + topo.at[x, "bus1"],
+                inplace=True)
+    return topo
+
+
 def update_wind_solar_costs(n,costs):
     """
     Update costs for wind and solar generators added with pypsa-eur to those
@@ -544,7 +571,7 @@ def prepare_data(network):
 
     ## Get overall demand curve for all vehicles
 
-    traffic = pd.read_csv(os.path.join(snakemake.input.traffic_data,"KFZ__count"),
+    traffic = pd.read_csv(snakemake.input.traffic_data + "KFZ__count",
                           skiprows=2)["count"]
 
     #Generate profiles
@@ -599,7 +626,8 @@ def prepare_data(network):
 
     ## derive plugged-in availability for PKW's (cars)
 
-    traffic = pd.read_csv(os.path.join(snakemake.input.traffic_data,"Pkw__count"),
+
+    traffic = pd.read_csv(snakemake.input.traffic_data + "Pkw__count",
                           skiprows=2)["count"]
 
     avail_max = 0.95
@@ -1497,6 +1525,16 @@ def add_biomass(network):
     biomass_potentials = pd.read_csv(snakemake.input.biomass_potentials,
                                      index_col=0)
 
+     # costs for biomass transport
+    transport_costs = pd.read_csv(snakemake.input.biomass_transport,
+                                  index_col=0)
+
+    # potential per node distributed within country by population
+    biomass_pot_node = (biomass_potentials.loc[pop_layout.ct]
+                        .set_index(pop_layout.index)
+                        .mul(pop_layout.fraction, axis="index"))
+
+
     network.add("Carrier","biogas")
     network.add("Carrier","solid biomass")
 
@@ -1506,8 +1544,7 @@ def add_biomass(network):
                  carrier="biogas")
 
     network.madd("Bus",
-                 ["EU solid biomass"],
-                 location="EU",
+                 biomass_pot_node.index + " solid biomass",
                  carrier="solid biomass")
 
     network.madd("Store",
@@ -1519,12 +1556,12 @@ def add_biomass(network):
                  e_initial=biomass_potentials.loc[cts,"biogas"].sum())
 
     network.madd("Store",
-                 ["EU solid biomass"],
-                 bus="EU solid biomass",
+                 biomass_pot_node.index + " solid biomass",
+                 bus=biomass_pot_node.index + " solid biomass",
                  carrier="solid biomass",
-                 e_nom=biomass_potentials.loc[cts,"solid biomass"].sum(),
-                 marginal_cost=costs.at['solid biomass','fuel'],
-                 e_initial=biomass_potentials.loc[cts,"solid biomass"].sum())
+                 e_nom=biomass_pot_node["solid biomass"].values,
+                 marginal_cost=costs.at['solid biomass', 'fuel'],
+                 e_initial=biomass_pot_node["solid biomass"].values)
 
     network.madd("Link",
                  ["biogas to gas"],
@@ -1532,8 +1569,37 @@ def add_biomass(network):
                  bus1="EU gas",
                  bus2="co2 atmosphere",
                  carrier="biogas to gas",
+                 capital_cost=costs.loc["biogas upgrading", "fixed"],
+                 marginal_cost=costs.loc["biogas upgrading", "VOM"],
                  efficiency2=-costs.at['gas','CO2 intensity'],
                  p_nom_extendable=True)
+
+    # add biomass transport
+    biomass_transport = create_network_topology(n, "Biomass transport ")
+
+    # make transport in both directions
+    df = biomass_transport.copy()
+    df["bus1"] = biomass_transport.bus0
+    df["bus0"] = biomass_transport.bus1
+    df.rename(index=lambda x: "Biomass transport " + df.at[x, "bus0"]
+                              + " -> " + df.at[x, "bus1"], inplace=True)
+    biomass_transport = pd.concat([biomass_transport, df])
+
+    # costs
+    bus0_costs = biomass_transport.bus0.apply(lambda x: transport_costs.loc[x[:2]])
+    bus1_costs = biomass_transport.bus1.apply(lambda x: transport_costs.loc[x[:2]])
+    biomass_transport["costs"] = pd.concat([bus0_costs, bus1_costs],
+                                           axis=1).mean(axis=1)
+
+    network.madd("Link",
+                 biomass_transport.index,
+                 bus0=biomass_transport.bus0 + " solid biomass",
+                 bus1=biomass_transport.bus1 + " solid biomass",
+                 p_nom_extendable=True,
+                 length=biomass_transport.length.values,
+                 marginal_cost=biomass_transport.costs * biomass_transport.length.values,
+                 capital_cost=1,
+                 carrier="solid biomass transport")
 
 
     #AC buses with district heating
@@ -1542,8 +1608,9 @@ def add_biomass(network):
         urban_central = urban_central.str[:-len(" urban central heat")]
 
         network.madd("Link",
-                     urban_central + " urban central solid biomass CHP",
-                     bus0="EU solid biomass",
+
+                     urban_central + " urban central solid biomass CHP electric",
+                     bus0=urban_central + " solid biomass",
                      bus1=urban_central,
                      bus2=urban_central + " urban central heat",
                      carrier="urban central solid biomass CHP",
@@ -1555,22 +1622,50 @@ def add_biomass(network):
                      lifetime=costs.at['central solid biomass CHP','lifetime'])
 
         network.madd("Link",
-                     urban_central + " urban central solid biomass CHP CC",
-                     bus0="EU solid biomass",
-                     bus1=urban_central,
-                     bus2=urban_central + " urban central heat",
-                     bus3="co2 atmosphere",
-                     bus4="co2 stored",
-                     carrier="urban central solid biomass CHP CC",
+                     urban_central + " urban central solid biomass CHP heat",
+                     bus0=urban_central + " solid biomass",
+                     bus1=urban_central + " urban central heat",
+                     carrier="urban central solid biomass CHP heat",
                      p_nom_extendable=True,
                      capital_cost=costs.at['central solid biomass CHP','fixed']*costs.at['central solid biomass CHP','efficiency'] + costs.at['biomass CHP capture','fixed']*costs.at['solid biomass','CO2 intensity'],
                      marginal_cost=costs.at['central solid biomass CHP','VOM'],
                      efficiency=costs.at['central solid biomass CHP','efficiency'] - costs.at['solid biomass','CO2 intensity']*(costs.at['biomass CHP capture','electricity-input'] + costs.at['biomass CHP capture','compression-electricity-input']),
-                     efficiency2=costs.at['central solid biomass CHP','efficiency-heat'] + costs.at['solid biomass','CO2 intensity']*(costs.at['biomass CHP capture','heat-output'] + costs.at['biomass CHP capture','compression-heat-output'] - costs.at['biomass CHP capture','heat-input']),
-                     efficiency3=-costs.at['solid biomass','CO2 intensity']*costs.at['biomass CHP capture','capture_rate'],
-                     efficiency4=costs.at['solid biomass','CO2 intensity']*costs.at['biomass CHP capture','capture_rate'],
+                     #efficiency2=costs.at['central solid biomass CHP','efficiency-heat'] + costs.at['solid biomass','CO2 intensity']*(costs.at['biomass CHP capture','heat-output'] + costs.at['biomass CHP capture','compression-heat-output'] - costs.at['biomass CHP capture','heat-input']),
+                     #efficiency3=-costs.at['solid biomass','CO2 intensity']*costs.at['biomass CHP capture','capture_rate'],
+                     #efficiency4=costs.at['solid biomass','CO2 intensity']*costs.at['biomass CHP capture','capture_rate'],
                      lifetime=costs.at['central solid biomass CHP','lifetime'])
 
+        network.madd("Link",
+                     urban_central + " urban central solid biomass CHP CCS electric",
+                     bus0=urban_central + " solid biomass",
+                     bus1=urban_central,
+                     bus2="co2 atmosphere",
+                     bus3="co2 stored",
+                     carrier="urban central solid biomass CHP CCS electric",
+                     p_nom_extendable=True,
+                     capital_cost=costs.at['central solid biomass CHP CCS','fixed']*costs.at['central solid biomass CHP CCS','efficiency'],
+                     marginal_cost=costs.at['central solid biomass CHP CCS','VOM'],
+                     efficiency=costs.at['central solid biomass CHP CCS','efficiency'],
+                     efficiency2=-costs.at['solid biomass','CO2 intensity']*options["ccs_fraction"],
+                     efficiency3=costs.at['solid biomass','CO2 intensity']*options["ccs_fraction"],
+                     c_b=costs.at['central solid biomass CHP','c_b'],
+                     c_v=costs.at['central solid biomass CHP','c_v'],
+                     p_nom_ratio=costs.at['central solid biomass CHP','p_nom_ratio'],
+                     lifetime=costs.at['central solid biomass CHP CCS','lifetime'])
+
+        network.madd("Link",
+                     urban_central + " urban central solid biomass CHP CCS heat",
+                     bus0=urban_central + " solid biomass",
+                     bus1=urban_central + " urban central heat",
+                     bus2="co2 atmosphere",
+                     bus3="co2 stored",
+                     carrier="urban central solid biomass CHP CCS heat",
+                     p_nom_extendable=True,
+                     marginal_cost=costs.at['central solid biomass CHP CCS','VOM'],
+                     efficiency=costs.at['central solid biomass CHP CCS','efficiency']/costs.at['central solid biomass CHP CCS','c_v'],
+                     efficiency2=-costs.at['solid biomass','CO2 intensity']*options["ccs_fraction"],
+                     efficiency3=costs.at['solid biomass','CO2 intensity']*options["ccs_fraction"],
+                     lifetime=costs.at['central solid biomass CHP CCS','lifetime'])
 
 
 def add_industry(network):
@@ -1583,32 +1678,32 @@ def add_industry(network):
     industrial_demand = 1e6*pd.read_csv(snakemake.input.industrial_demand,
                                         index_col=0)
 
-    solid_biomass_by_country = industrial_demand["solid biomass"].groupby(pop_layout.ct).sum()
-    countries = solid_biomass_by_country.index
+    solid_biomass_by_country = industrial_demand["solid biomass"]
 
     network.madd("Bus",
-                 ["solid biomass for industry"],
-                 location="EU",
+                 industrial_demand.index + " solid biomass for industry",
                  carrier="solid biomass for industry")
 
+
     network.madd("Load",
-                 ["solid biomass for industry"],
-                 bus="solid biomass for industry",
+                 industrial_demand.index + " solid biomass for industry",
+                 bus=industrial_demand.index + " solid biomass for industry",
                  carrier="solid biomass for industry",
-                 p_set=solid_biomass_by_country.sum()/8760.)
+                 p_set=(industrial_demand["solid biomass"]
+                        .rename(index=lambda x: x + " solid biomass for industry"))/8760.)
 
     network.madd("Link",
-                 ["solid biomass for industry"],
-                 bus0="EU solid biomass",
-                 bus1="solid biomass for industry",
+                 industrial_demand.index + " solid biomass for industry",
+                 bus0=industrial_demand.index + " solid biomass",
+                 bus1=industrial_demand.index + " solid biomass for industry",
                  carrier="solid biomass for industry",
                  p_nom_extendable=True,
                  efficiency=1.)
 
     network.madd("Link",
-                 ["solid biomass for industry CC"],
-                 bus0="EU solid biomass",
-                 bus1="solid biomass for industry",
+                 industrial_demand.index + " solid biomass for industry CCS",
+                 bus0=industrial_demand.index + " solid biomass",
+                 bus1=industrial_demand.index + " solid biomass for industry",
                  bus2="co2 atmosphere",
                  bus3="co2 stored",
                  carrier="solid biomass for industry CC",
@@ -1757,7 +1852,7 @@ def add_industry(network):
                  p_set=industrial_demand.loc[nodes,"low-temperature heat"]/8760.)
 
     #remove today's industrial electricity demand by scaling down total electricity demand
-    for ct in n.buses.country.unique():
+    for ct in n.buses.country.dropna().unique():
         loads = n.loads.index[(n.loads.index.str[:2] == ct) & (n.loads.carrier == "electricity")]
         factor = 1 - industrial_demand.loc[loads,"current electricity"].sum()/n.loads_t.p_set[loads].sum().sum()
         n.loads_t.p_set[loads] *= factor
@@ -1849,6 +1944,78 @@ def remove_h2_network(n):
            carrier="H2 Store",
            capital_cost=h2_capital_cost)
 
+def remove_biomass_transport(n):
+
+    print("no transport of solid biomass considered")
+
+    # remove country specific biomass buses
+    n.buses = n.buses[~n.buses.carrier.str.contains("biomass")]
+    # biomass potential
+    biomass_pot = n.stores[n.stores.carrier=="solid biomass"].e_nom.sum()
+    # remove biomass store per country
+    n.stores = n.stores[n.stores.carrier!="solid biomass"]
+    # remove biomass transport links
+    n.links = n.links[n.links.carrier!="solid biomass transport"]
+    # total industry demand for biomass
+    biomass_demand = n.loads[n.loads.carrier=="solid biomass for industry"].p_set.sum()
+    # remove industry demand
+    n.loads = n.loads[n.loads.carrier!="solid biomass for industry"]
+    # drop transport and industry links
+    n.links = n.links[~n.links.carrier.isin(['solid biomass transport',
+                                             'solid biomass for industry',
+                                             'solid biomass for industry CCS'])]
+
+    # add back EU bus + load + store + industry links
+    n.madd("Bus",
+           ["EU solid biomass"],
+            location="EU",
+            carrier="solid biomass")
+
+    n.madd("Bus",
+           ["solid biomass for industry"],
+           location="EU",
+           carrier="solid biomass for industry")
+
+    n.madd("Load",
+           ["solid biomass for industry"],
+           bus="solid biomass for industry",
+           carrier="solid biomass for industry",
+           p_set=biomass_demand)
+
+    n.madd("Store",
+           ["EU solid biomass"],
+           bus="EU solid biomass",
+           carrier="solid biomass",
+           e_nom=biomass_pot,
+           marginal_cost=costs.at['solid biomass','fuel'],
+           e_initial=biomass_pot)
+
+    n.madd("Link",
+           ["solid biomass for industry"],
+           bus0="EU solid biomass",
+           bus1="solid biomass for industry",
+           carrier="solid biomass for industry",
+           p_nom_extendable=True,
+           efficiency=1.)
+
+    n.madd("Link",
+            ["solid biomass for industry CCS"],
+            bus0="EU solid biomass",
+            bus1="solid biomass for industry",
+            bus2="co2 atmosphere",
+            bus3="co2 stored",
+            carrier="solid biomass for industry CCS",
+            p_nom_extendable=True,
+            capital_cost=costs.at["industry CCS","fixed"]*costs.at['solid biomass','CO2 intensity']*8760, #8760 converts EUR/(tCO2/a) to EUR/(tCO2/h)
+            efficiency=0.9,
+            efficiency2=-costs.at['solid biomass','CO2 intensity']*options["ccs_fraction"],
+            efficiency3=costs.at['solid biomass','CO2 intensity']*options["ccs_fraction"],
+            lifetime=costs.at['industry CCS','lifetime'])
+
+    # set CHP buses from country to single EU bus
+    n.links.loc[n.links.carrier.str.contains("biomass CHP"), "bus0"] = "EU solid biomass"
+
+
 def get_parameter(item):
     """Check whether it depends on investment year"""
     if type(item) is dict:
@@ -1857,7 +2024,7 @@ def get_parameter(item):
         return item
 
 
-
+#%%
 if __name__ == "__main__":
     # Detect running outside of snakemake and mock snakemake for testing
     if 'snakemake' not in globals():
@@ -1865,48 +2032,47 @@ if __name__ == "__main__":
         snakemake = MockSnakemake(
             wildcards=dict(network='elec', simpl='', clusters='37', lv='1.0',
                            opts='', planning_horizons='2020',
-                           sector_opts='120H-T-H-B-I-onwind+p3-dist1-cb48be3'),
-
-            input=dict( network='../pypsa-eur/networks/{network}_s{simpl}_{clusters}_ec_lv{lv}_{opts}.nc',
-                        energy_totals_name='resources/energy_totals.csv',
-                        co2_totals_name='resources/co2_totals.csv',
-                        transport_name='resources/transport_data.csv',
-                	    traffic_data = "data/emobility/",
-                        biomass_potentials='resources/biomass_potentials.csv',
-                        timezone_mappings='data/timezone_mappings.csv',
-                        heat_profile="data/heat_load_profile_BDEW.csv",
-                        costs="../technology-data/outputs/costs_{planning_horizons}.csv",
-                	    h2_cavern = "data/hydrogen_salt_cavern_potentials.csv",
-                        profile_offwind_ac="../pypsa-eur/resources/profile_offwind-ac.nc",
-                        profile_offwind_dc="../pypsa-eur/resources/profile_offwind-dc.nc",
-                        busmap_s="../pypsa-eur/resources/busmap_{network}_s{simpl}.csv",
-                        busmap="../pypsa-eur/resources/busmap_{network}_s{simpl}_{clusters}.csv",
-                        clustered_pop_layout="resources/pop_layout_{network}_s{simpl}_{clusters}.csv",
-                        simplified_pop_layout="resources/pop_layout_{network}_s{simpl}.csv",
-                        industrial_demand="resources/industrial_energy_demand_{network}_s{simpl}_{clusters}.csv",
-                        heat_demand_urban="resources/heat_demand_urban_{network}_s{simpl}_{clusters}.nc",
-                        heat_demand_rural="resources/heat_demand_rural_{network}_s{simpl}_{clusters}.nc",
-                        heat_demand_total="resources/heat_demand_total_{network}_s{simpl}_{clusters}.nc",
-                        temp_soil_total="resources/temp_soil_total_{network}_s{simpl}_{clusters}.nc",
-                        temp_soil_rural="resources/temp_soil_rural_{network}_s{simpl}_{clusters}.nc",
-                        temp_soil_urban="resources/temp_soil_urban_{network}_s{simpl}_{clusters}.nc",
-                        temp_air_total="resources/temp_air_total_{network}_s{simpl}_{clusters}.nc",
-                        temp_air_rural="resources/temp_air_rural_{network}_s{simpl}_{clusters}.nc",
-                        temp_air_urban="resources/temp_air_urban_{network}_s{simpl}_{clusters}.nc",
-                        cop_soil_total="resources/cop_soil_total_{network}_s{simpl}_{clusters}.nc",
-                        cop_soil_rural="resources/cop_soil_rural_{network}_s{simpl}_{clusters}.nc",
-                        cop_soil_urban="resources/cop_soil_urban_{network}_s{simpl}_{clusters}.nc",
-                        cop_air_total="resources/cop_air_total_{network}_s{simpl}_{clusters}.nc",
-                        cop_air_rural="resources/cop_air_rural_{network}_s{simpl}_{clusters}.nc",
-                        cop_air_urban="resources/cop_air_urban_{network}_s{simpl}_{clusters}.nc",
-                        solar_thermal_total="resources/solar_thermal_total_{network}_s{simpl}_{clusters}.nc",
-                        solar_thermal_urban="resources/solar_thermal_urban_{network}_s{simpl}_{clusters}.nc",
-                        solar_thermal_rural="resources/solar_thermal_rural_{network}_s{simpl}_{clusters}.nc",
-                	    retro_cost_energy = "resources/retro_cost_{network}_s{simpl}_{clusters}.csv",
-                        floor_area = "resources/floor_area_{network}_s{simpl}_{clusters}.csv"
+                           co2_budget_name='go',
+                           sector_opts='Co2L0-168H-T-H-B-I-solar3-dist1'),
+            input=dict(
+                network='../pypsa-eur/networks/{network}_s{simpl}_{clusters}_ec_lv{lv}_{opts}.nc',
+                energy_totals_name='resources/energy_totals.csv',
+                co2_totals_name='resources/co2_totals.csv',
+                transport_name='resources/transport_data.csv',
+                biomass_potentials='resources/biomass_potentials.csv',
+                biomass_transport='data/biomass/biomass_transport_costs.csv',
+                timezone_mappings='data/timezone_mappings.csv',
+                heat_profile="data/heat_load_profile_BDEW.csv",
+                costs="../technology-data/outputs/costs_{planning_horizons}.csv",
+                h2_cavern = "data/hydrogen_salt_cavern_potentials.csv",
+                co2_budget="data/co2_budget.csv",
+                profile_offwind_ac="../pypsa-eur/resources/profile_offwind-ac.nc",
+                profile_offwind_dc="../pypsa-eur/resources/profile_offwind-dc.nc",
+                clustermaps='../pypsa-eur/resources/clustermaps_{network}_s{simpl}_{clusters}.h5',
+                clustered_pop_layout="resources/pop_layout_{network}_s{simpl}_{clusters}.csv",
+                simplified_pop_layout="resources/pop_layout_{network}_s{simpl}.csv",
+                industrial_demand="resources/industrial_energy_demand_{network}_s{simpl}_{clusters}.csv",
+                heat_demand_urban="resources/heat_demand_urban_{network}_s{simpl}_{clusters}.nc",
+                heat_demand_rural="resources/heat_demand_rural_{network}_s{simpl}_{clusters}.nc",
+                heat_demand_total="resources/heat_demand_total_{network}_s{simpl}_{clusters}.nc",
+                temp_soil_total="resources/temp_soil_total_{network}_s{simpl}_{clusters}.nc",
+                temp_soil_rural="resources/temp_soil_rural_{network}_s{simpl}_{clusters}.nc",
+                temp_soil_urban="resources/temp_soil_urban_{network}_s{simpl}_{clusters}.nc",
+                temp_air_total="resources/temp_air_total_{network}_s{simpl}_{clusters}.nc",
+                temp_air_rural="resources/temp_air_rural_{network}_s{simpl}_{clusters}.nc",
+                temp_air_urban="resources/temp_air_urban_{network}_s{simpl}_{clusters}.nc",
+                cop_soil_total="resources/cop_soil_total_{network}_s{simpl}_{clusters}.nc",
+                cop_soil_rural="resources/cop_soil_rural_{network}_s{simpl}_{clusters}.nc",
+                cop_soil_urban="resources/cop_soil_urban_{network}_s{simpl}_{clusters}.nc",
+                cop_air_total="resources/cop_air_total_{network}_s{simpl}_{clusters}.nc",
+                cop_air_rural="resources/cop_air_rural_{network}_s{simpl}_{clusters}.nc",
+                cop_air_urban="resources/cop_air_urban_{network}_s{simpl}_{clusters}.nc",
+                solar_thermal_total="resources/solar_thermal_total_{network}_s{simpl}_{clusters}.nc",
+                solar_thermal_urban="resources/solar_thermal_urban_{network}_s{simpl}_{clusters}.nc",
+                traffic_data = "data/emobility/",
+                solar_thermal_rural="resources/solar_thermal_rural_{network}_s{simpl}_{clusters}.nc",
             ),
-            output=['results/version-cb48be3/prenetworks/{network}_s{simpl}_{clusters}_lv{lv}__{sector_opts}_{planning_horizons}.nc']
-    
+            output=['pypsa-eur-sec/results/test/prenetworks/{network}_s{simpl}_{clusters}_lv{lv}__{sector_opts}_{co2_budget_name}_{planning_horizons}.nc']
         )
         import yaml
         with open('config.yaml', encoding='utf8') as f:
@@ -1968,6 +2134,8 @@ if __name__ == "__main__":
         if o[:4] == "dist":
             snakemake.config["sector"]['electricity_distribution_grid'] = True
             snakemake.config["sector"]['electricity_distribution_grid_cost_factor'] = float(o[4:].replace("p",".").replace("m","-"))
+        if o == "biomasstransport":
+            options["biomass_transport"] = True
 
     nodal_energy_totals, heat_demand, ashp_cop, gshp_cop, solar_thermal, transport, avail_profile, dsm_profile, co2_totals, nodal_transport_data = prepare_data(n)
 
@@ -1997,6 +2165,9 @@ if __name__ == "__main__":
 
     if "noH2network" in opts:
         remove_h2_network(n)
+
+    if not options["biomass_transport"]:
+        remove_biomass_transport(n)
 
     for o in opts:
         m = re.match(r'^\d+h$', o, re.IGNORECASE)
