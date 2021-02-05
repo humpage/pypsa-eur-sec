@@ -1678,7 +1678,7 @@ def add_biomass(network):
                  marginal_cost=costs.at['solid biomass', 'fuel'],
                  e_initial=biomass_pot_node["solid biomass"].values)
 
-    # TODO: add cost for biogas production and investment. Add options of carbon capture
+    # TODO: add cost for biogas production and investment. Add carbon capture option from upgrading
     network.madd("Link",
                  ["biogas to gas"],
                  bus0="EU biogas",
@@ -1717,31 +1717,33 @@ def add_biomass(network):
                  capital_cost=1,
                  carrier="solid biomass transport")
 
-    # network.madd("Link",
-    #              ["solid biomass to gas"],
-    #              bus0="EU solid biomass",
-    #              bus1="EU gas",
-    #              bus2="co2 atmosphere",
-    #              carrier="BioSNG",
-    #              efficiency1=costs.at['BioSNG', 'efficiency'],
-    #              efficiency2=-costs.at['gas', 'CO2 intensity'],
-    #              p_nom_extendable=True,
-    #              capital_cost=costs.at['BioSNG', 'investment'],
-    #              marginal_cost=0.)
-    #
-    # network.madd("Link",
-    #              ["biomass to liquid"],
-    #              bus0="EU solid biomass",
-    #              bus1="Fischer-Tropsch",
-    #              # bus2="Naphtha",
-    #              bus3="co2 atmosphere",
-    #              carrier="Fischer-Tropsch",
-    #              efficiency1=0.4,  # costs.at['BtL', 'efficiency'],
-    #              # efficiency2=costs.at['BtL', 'efficiency-naphtha'],
-    #              efficiency3=-costs.at['oil', 'CO2 intensity'],
-    #              p_nom_extendable=True,
-    #              capital_cost=costs.at['BtL', 'investment'],
-    #              marginal_cost=0.)
+    network.madd("Link",
+                 biomass_pot_node.index + " solid biomass to gas",
+                 bus0=biomass_pot_node.index + " solid biomass",
+                 bus1="EU gas",
+                 bus2="co2 atmosphere",
+                 carrier="BioSNG",
+                 efficiency1=costs.at['BioSNG', 'efficiency'],
+                 efficiency2=-costs.at['gas', 'CO2 intensity'],
+                 p_nom_extendable=True,
+                 capital_cost=costs.at['BioSNG', 'investment'],
+                 marginal_cost=0.,  # Add marginal cost
+                 )
+
+    network.madd("Link",
+                 biomass_pot_node.index + " biomass to liquid",
+                 bus0=biomass_pot_node.index + " solid biomass",
+                 bus1="EU oil",
+                 # bus2="Naphtha",#need to add naphtha bus first
+                 bus3="co2 atmosphere",
+                 carrier="Fischer-Tropsch",
+                 efficiency1=0.4,  # costs.at['BtL', 'efficiency'],
+                 # efficiency2=costs.at['BtL', 'efficiency-naphtha'],
+                 efficiency3=-costs.at['oil', 'CO2 intensity'],
+                 p_nom_extendable=True,
+                 capital_cost=costs.at['BtL', 'investment'],
+                 marginal_cost=0.,  # Add marginal costs
+                 )
 
     #AC buses with district heating
     urban_central = network.buses.index[network.buses.carrier == "urban central heat"]
