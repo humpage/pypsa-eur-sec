@@ -217,7 +217,8 @@ def fix_branches(n, lines_s_nom=None, links_p_nom=None):
         n.lines.loc[lines_s_nom.index,"s_nom_extendable"] = False
     if links_p_nom is not None and len(links_p_nom) > 0:
         n.links.loc[links_p_nom.index,"p_nom"] = links_p_nom.values
-        n.links.loc[links_p_nom.index,"p_nom_extendable"] = False
+        n.links.loc[links_p_nom.index,"p_nom_extendable"] = True
+        # n.links.loc[links_p_nom.index,"p_nom_extendable"] = False
 
 def solve_network(n, config=None, solver_log=None, opts=None):
     if config is None:
