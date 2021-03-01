@@ -863,8 +863,8 @@ df.loc['heat', sector] += s_fec['Low enthalpy heat']
 df.loc['elec', sector] += s_fec[['Pulp: Wood preparation, grinding', 'Pulp: Cleaning', 'Pulp: Pulping electric']].sum()
 
 # Efficiency changes due to biomass
-eff_bio=s_ued['Biomass']/s_fec['Biomass']
-df.loc['biomass', sector] += s_ued['Pulp: Pulping thermal']/eff_bio
+eff_biomass = 1.#s_ued['Biomass']/s_fec['Biomass']
+df.loc['biomass', sector] += s_ued['Pulp: Pulping thermal']/eff_biomass
 
 s_out = excel_out.iloc[8:9,year]
 
@@ -917,8 +917,8 @@ s_ued = excel_ued.iloc[53:64,year]
 assert s_fec.index[0] == 'Paper: Paper machine - Steam use'
 
 # Efficiency changes due to biomass
-eff_bio=s_ued['Biomass']/s_fec['Biomass']
-df.loc['biomass', sector] += s_ued['Paper: Paper machine - Steam use']/eff_bio
+eff_biomass = 1.##s_ued['Biomass']/s_fec['Biomass']
+df.loc['biomass', sector] += s_ued['Paper: Paper machine - Steam use']/eff_biomass
 
 
 s_fec = excel_fec.iloc[66:77,year]
@@ -928,8 +928,8 @@ s_ued = excel_ued.iloc[66:77,year]
 assert s_fec.index[0] == 'Paper: Product finishing - Steam use'
 
 # Efficiency changes due to biomass
-eff_bio=s_ued['Biomass']/s_fec['Biomass']
-df.loc['biomass', sector] += s_ued['Paper: Product finishing - Steam use']/eff_bio
+eff_biomass = 1.##s_ued['Biomass']/s_fec['Biomass']
+df.loc['biomass', sector] += s_ued['Paper: Product finishing - Steam use']/eff_biomass
 
 
 # read the corresponding lines
@@ -1292,7 +1292,7 @@ df.loc['elec', sector] += s_fec['Trans. Eq.: General machinery']
 df.loc['elec', sector] += s_fec['Trans. Eq.: Product finishing']
 
 # Steam processing is supplied with biomass
-eff_biomass=s_ued['Biomass']/s_fec['Biomass']
+eff_biomass = 1.#s_ued['Biomass']/s_fec['Biomass']
 df.loc['biomass', sector] += s_ued['Trans. Eq.: Steam processing']/eff_biomass
 
 # read the corresponding lines
@@ -1350,7 +1350,7 @@ df.loc['elec', sector] += s_fec['Mach. Eq.: General machinery']
 df.loc['elec', sector] += s_fec['Mach. Eq.: Product finishing']
 
 # Steam processing is supplied with biomass
-eff_biomass=s_ued['Biomass']/s_fec['Biomass']
+eff_biomass = 1.#s_ued['Biomass']/s_fec['Biomass']
 df.loc['biomass', sector] += s_ued['Mach. Eq.: Steam processing']/eff_biomass
 
 # read the corresponding lines
@@ -1399,7 +1399,7 @@ df.loc['elec', sector] += s_fec['Textiles: Electric general machinery']
 df.loc['elec', sector] += s_fec['Textiles: Finishing Electric']
 
 # Steam processing is supplied with biomass
-eff_biomass=s_ued[15:26]['Biomass']/s_fec[15:26]['Biomass']
+eff_biomass = 1.#s_ued[15:26]['Biomass']/s_fec[15:26]['Biomass']
 df.loc['biomass', sector] += s_ued['Textiles: Pretreatment with steam']/eff_biomass
 df.loc['biomass', sector] += s_ued['Textiles: Wet processing with steam']/eff_biomass
 
@@ -1449,7 +1449,7 @@ df.loc['elec', sector] += s_fec['Wood: Electric mechanical processes']
 df.loc['elec', sector] += s_fec['Wood: Finishing Electric']
 
 # Steam processing is supplied with biomass
-eff_biomass=s_ued[15:25]['Biomass']/s_fec[15:25]['Biomass']
+eff_biomass = 1.#s_ued[15:25]['Biomass']/s_fec[15:25]['Biomass']
 df.loc['biomass', sector] += s_ued['Wood: Specific processes with steam']/eff_biomass
 
 # read the corresponding lines
@@ -1505,7 +1505,7 @@ df.loc['elec', sector] += s_fec['Other Industrial sectors: Diesel motors (incl. 
 df.loc['elec', sector] += s_fec['Other Industrial sectors: Electric machinery']
 
 # Steam processing is supplied with biomass
-eff_biomass=s_ued[15:25]['Biomass']/s_fec[15:25]['Biomass']
+eff_biomass = 1.##s_ued[15:25]['Biomass']/s_fec[15:25]['Biomass']
 df.loc['biomass', sector] += s_ued['Other Industrial sectors: Steam processing']/eff_biomass
 
 # read the corresponding lines
