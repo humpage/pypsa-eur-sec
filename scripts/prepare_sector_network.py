@@ -1795,30 +1795,6 @@ def add_industry(network):
                  capital_cost=costs.at['gas to steam','investment'])
 
 
-    #
-    # network.madd("Link",
-    #              nodes + " solid biomass for industry",
-    #              bus0=nodes + " solid biomass",
-    #              bus1=nodes + " solid biomass for industry",
-    #              carrier="solid biomass for industry",
-    #              p_nom_extendable=True,
-    #              efficiency=1.)
-    #
-    # network.madd("Link",
-    #              nodes + " solid biomass for industry CCS",
-    #              bus0=nodes + " solid biomass",
-    #              bus1=nodes + " solid biomass for industry",
-    #              bus2="co2 atmosphere",
-    #              bus3="co2 stored",
-    #              carrier="solid biomass for industry CC",
-    #              p_nom_extendable=True,
-    #              capital_cost=costs.at["cement capture","fixed"]*costs.at['solid biomass','CO2 intensity'],
-    #              efficiency=0.9,
-    #              efficiency2=-costs.at['solid biomass','CO2 intensity']*costs.at["cement capture","capture_rate"],
-    #              efficiency3=costs.at['solid biomass','CO2 intensity']*costs.at["cement capture","capture_rate"],
-    #              lifetime=costs.at['cement capture','lifetime'])
-
-
     network.madd("Bus",
                  ["gas for industry"],
                  location="EU",
@@ -1865,10 +1841,20 @@ def add_industry(network):
 
     network.madd("Load",
                  nodes,
+                 suffix=" oil for shipping",
+                 bus="EU oil",
+                 carrier="oil for shipping",
+                 p_set = (1-options['shipping_H2_share'])*nodal_energy_totals.loc[nodes,["total international navigation","total domestic navigation"]].sum(axis=1)*1e6/8760.)
+
+
+
+    network.madd("Load",
+                 nodes,
                  suffix=" H2 for shipping",
                  bus=nodes + " H2",
                  carrier="H2 for shipping",
-                 p_set = nodal_energy_totals.loc[nodes,["total international navigation","total domestic navigation"]].sum(axis=1)*1e6*options['shipping_average_efficiency']/costs.at["fuel cell","efficiency"]/8760.)
+                 p_set = options['shipping_H2_share']*nodal_energy_totals.loc[nodes,["total international navigation","total domestic navigation"]].sum(axis=1)*1e6*options['shipping_average_efficiency']/costs.at["fuel cell","efficiency"]/8760.)
+
 
     if "EU oil" not in network.buses.index:
         network.madd("Bus",
