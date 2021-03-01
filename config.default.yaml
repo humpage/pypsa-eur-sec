@@ -1,3 +1,4 @@
+
 version: 0.4.0
 
 logging_level: INFO
@@ -116,6 +117,7 @@ sector:
   'transport_fuel_cell_efficiency': 0.5
   'transport_internal_combustion_efficiency': 0.3
   'shipping_average_efficiency' : 0.4 #For conversion of fuel oil to propulsion in 2011
+  'shipping_H2_share' : 0.5
   'time_dep_hp_cop' : True #time dependent heat pump coefficient of performance
   'heat_pump_sink_T' : 55. # Celsius, based on DTU / large area radiators; used in build_cop_profiles.py
    # conservatively high to cover hot water and space heating in poorly-insulated buildings
@@ -380,7 +382,8 @@ plotting:
     "shipping" : "#6495ED"
     "electricity distribution grid" : "#333333"
     "solid biomass transport": "green"
-    "BioSNG": "#123456"
+    "BioSNG" : "#123456"
+    "oil for shipping" : "#257689"
   nice_names:
     # OCGT: "Gas"
     # OCGT marginal: "Gas (marginal)"
