@@ -1542,17 +1542,50 @@ def add_biomass(network):
                  carrier="digestable biomass")
 
     #TODO: add buses for individual biomass types, with links to either solid or fermentable biomass?
+    digestable_biomass_types = ["ManureSlurry", "Municipal biowaste",
+                                "Sewage sludge", "Food industry residues", "Landscape management", "Straw"]
+    for name in digestable_biomass_types:
+        network.add("Carrier", name + " digestable biomass")
+
+        network.madd("Bus",
+                 nodes + " " + name + " digestable biomass",
+                 location=nodes,
+                 carrier=name + " digestable biomass")
+
+        network.madd("Store",
+                     nodes + " " + name + " digestable biomass",
+                     bus=nodes + " " + name + " digestable biomass",
+                     carrier=name + " digestable biomass",
+                     e_nom=biomass_pot_node["biogas"].values/6, #Add individual values
+                     marginal_cost=costs.at['digestable biomass', 'fuel'],
+                     e_initial=biomass_pot_node["biogas"].values/6)
+
+
+        network.madd("Link",
+                     nodes + " " + name + " digestable biomass",
+                     bus0=nodes + " " + name + " digestable biomass",
+                     bus1="EU gas",
+                     bus2="co2 atmosphere",
+                     bus3="co2 stored",
+                     carrier="digestable biomass to gas",
+                     capital_cost=costs.loc["Anaerobic digestion + upgrading", "investment"], #Change to DEA values
+                     marginal_cost=costs.loc["biogas upgrading", "VOM"], #Add DEA values for biogas process
+                     efficiency2=-costs.at['gas', 'CO2 intensity'],
+                     efficiency3=costs.at['gas', 'CO2 intensity'],
+                     p_nom_extendable=True)
+
+
     network.madd("Bus",
                  nodes + " solid biomass",
                  carrier="solid biomass")
 
-    network.madd("Store",
-                 nodes + " digestable biomass",
-                 bus=nodes + " digestable biomass",
-                 carrier="digestable biomass",
-                 e_nom=biomass_pot_node["biogas"].values,
-                 marginal_cost=costs.at['digestable biomass','fuel'],
-                 e_initial=biomass_pot_node["biogas"].values)
+    # network.madd("Store",
+    #              nodes + " digestable biomass",
+    #              bus=nodes + " digestable biomass",
+    #              carrier="digestable biomass",
+    #              e_nom=biomass_pot_node["biogas"].values,
+    #              marginal_cost=costs.at['digestable biomass','fuel'],
+    #              e_initial=biomass_pot_node["biogas"].values)
 
     network.madd("Store",
                  nodes + " solid biomass",
@@ -1562,20 +1595,20 @@ def add_biomass(network):
                  marginal_cost=costs.at['solid biomass', 'fuel'],
                  e_initial=biomass_pot_node["solid biomass"].values)
 
-    #TODO: add cost for biogas production and investment to technology data. Add carbon capture option from upgrading. Separate biogas production and upgrading?
+    #TODO: Change costs to DEA values? Separate biogas production and upgrading?
     #Check if madd can handle multiple inputs with different efficiencies, costs etc!?
-    network.madd("Link",
-                 nodes + " digestable biomass to gas",
-                 bus0=nodes + " digestable biomass",
-                 bus1="EU gas",
-                 bus2="co2 atmosphere",
-                 bus3="co2 stored",
-                 carrier="digestable biomass to gas",
-                 capital_cost=costs.loc["Anaerobic digestion + upgrading", "investment"],
-                 marginal_cost=costs.loc["biogas upgrading", "VOM"],
-                 efficiency2=-costs.at['gas','CO2 intensity'],
-                 efficiency3=costs.at['gas','CO2 intensity'],
-                 p_nom_extendable=True)
+    # network.madd("Link",
+    #              nodes + " digestable biomass to gas",
+    #              bus0=nodes + " digestable biomass",
+    #              bus1="EU gas",
+    #              bus2="co2 atmosphere",
+    #              bus3="co2 stored",
+    #              carrier="digestable biomass to gas",
+    #              capital_cost=costs.loc["Anaerobic digestion + upgrading", "investment"],
+    #              marginal_cost=costs.loc["biogas upgrading", "VOM"],
+    #              efficiency2=-costs.at['gas','CO2 intensity'],
+    #              efficiency3=costs.at['gas','CO2 intensity'],
+    #              p_nom_extendable=True)
 
     # add biomass transport
     biomass_transport = create_network_topology(n, "Biomass transport ")
