@@ -1186,7 +1186,6 @@ def add_land_transport(network):
                      p_set=ice_share/options['transport_internal_combustion_efficiency']*transport[nodes])
 
 
-
 def add_heat(network):
 
     print("adding heat")
@@ -1492,7 +1491,6 @@ def add_heat(network):
                             capital_cost=capital_cost[strength] * options['retrofitting']['cost_factor'])
 
 
-
 def create_nodes_for_heat_sector():
     sectors = ["residential", "services"]
     # stores the different groups of nodes
@@ -1539,26 +1537,26 @@ def add_biomass(network):
     network.add("Carrier","solid biomass")
 
     network.madd("Bus",
-                 ["EU biogas"],
-                 location="EU",
+                 nodes + " biogas",
+                 # location=nodes,
                  carrier="biogas")
 
     #TODO: add buses for individual biomass types, with links to either solid or fermentable biomass?
     network.madd("Bus",
-                 biomass_pot_node.index + " solid biomass",
+                 nodes + " solid biomass",
                  carrier="solid biomass")
 
     network.madd("Store",
-                 ["EU biogas"],
-                 bus="EU biogas",
+                 nodes + " biogas",
+                 bus=nodes + " biogas",
                  carrier="biogas",
-                 e_nom=biomass_potentials.loc[cts,"biogas"].sum(),
+                 e_nom=biomass_pot_node["biogas"].values,
                  marginal_cost=costs.at['biogas','fuel'],
-                 e_initial=biomass_potentials.loc[cts,"biogas"].sum())
+                 e_initial=biomass_pot_node["biogas"].values)
 
     network.madd("Store",
-                 biomass_pot_node.index + " solid biomass",
-                 bus=biomass_pot_node.index + " solid biomass",
+                 nodes + " solid biomass",
+                 bus=nodes + " solid biomass",
                  carrier="solid biomass",
                  e_nom=biomass_pot_node["solid biomass"].values,
                  marginal_cost=costs.at['solid biomass', 'fuel'],
@@ -1566,8 +1564,8 @@ def add_biomass(network):
 
     #TODO: add cost for biogas production and investment to technology data. Add carbon capture option from upgrading. Separate biogas production and upgrading?
     network.madd("Link",
-                 ["biogas to gas"],
-                 bus0="EU biogas",
+                 nodes + " biogas to gas",
+                 bus0=nodes + " biogas",
                  bus1="EU gas",
                  bus2="co2 atmosphere",
                  carrier="biogas to gas",
@@ -1780,7 +1778,7 @@ def add_industry(network):
                  efficiency=0.9*costs.at['gas to steam','efficiency'],
                  capital_cost=costs.at['gas to steam','investment']+costs.at["cement capture","fixed"]*costs.at['gas','CO2 intensity'],
                  efficiency2=costs.at['gas','CO2 intensity']*(1-costs.at["cement capture","capture_rate"]),
-                 efficiency3=costs.at['gas','CO2 intensity']**costs.at["cement capture","capture_rate"],
+                 efficiency3=costs.at['gas','CO2 intensity']*costs.at["cement capture","capture_rate"],
                  lifetime=costs.at['cement capture','lifetime'])
 
     #TODO: adapt this to real values for H2 to steam
@@ -1827,7 +1825,7 @@ def add_industry(network):
                  capital_cost=costs.at["cement capture","fixed"]*costs.at['gas','CO2 intensity'],
                  efficiency=0.9,
                  efficiency2=costs.at['gas','CO2 intensity']*(1-costs.at["cement capture","capture_rate"]),
-                 efficiency3=costs.at['gas','CO2 intensity']**costs.at["cement capture","capture_rate"],
+                 efficiency3=costs.at['gas','CO2 intensity']*costs.at["cement capture","capture_rate"],
                  lifetime=costs.at['cement capture','lifetime'])
 
 
@@ -1845,7 +1843,6 @@ def add_industry(network):
                  bus="EU oil",
                  carrier="oil for shipping",
                  p_set = (1-options['shipping_H2_share'])*nodal_energy_totals.loc[nodes,["total international navigation","total domestic navigation"]].sum(axis=1)*1e6/8760.)
-
 
 
     network.madd("Load",
