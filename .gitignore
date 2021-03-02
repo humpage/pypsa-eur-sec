@@ -45,4 +45,10 @@ config.yaml
 
 doc/_build
 
-*.xls
+*.xls.idea
+.gitignore
+*.save
+.idea/
+data/myb1-2017-nitro.xls
+grid.png
+analysis_jupyterTest.ipynb
