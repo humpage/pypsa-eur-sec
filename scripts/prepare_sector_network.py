@@ -1533,13 +1533,13 @@ def add_biomass(network):
                         .mul(pop_layout.fraction, axis="index"))
 
     #TODO: add carriers for individual biomass types
-    network.add("Carrier","biogas")
+    network.add("Carrier","digestable biomass")
     network.add("Carrier","solid biomass")
 
     network.madd("Bus",
-                 nodes + " biogas",
+                 nodes + " digestable biomass",
                  # location=nodes,
-                 carrier="biogas")
+                 carrier="digestable biomass")
 
     #TODO: add buses for individual biomass types, with links to either solid or fermentable biomass?
     network.madd("Bus",
@@ -1547,11 +1547,11 @@ def add_biomass(network):
                  carrier="solid biomass")
 
     network.madd("Store",
-                 nodes + " biogas",
-                 bus=nodes + " biogas",
-                 carrier="biogas",
+                 nodes + " digestable biomass",
+                 bus=nodes + " digestable biomass",
+                 carrier="digestable biomass",
                  e_nom=biomass_pot_node["biogas"].values,
-                 marginal_cost=costs.at['biogas','fuel'],
+                 marginal_cost=costs.at['digestable biomass','fuel'],
                  e_initial=biomass_pot_node["biogas"].values)
 
     network.madd("Store",
@@ -1563,15 +1563,18 @@ def add_biomass(network):
                  e_initial=biomass_pot_node["solid biomass"].values)
 
     #TODO: add cost for biogas production and investment to technology data. Add carbon capture option from upgrading. Separate biogas production and upgrading?
+    #Check if madd can handle multiple inputs with different efficiencies, costs etc!?
     network.madd("Link",
-                 nodes + " biogas to gas",
-                 bus0=nodes + " biogas",
+                 nodes + " digestable biomass to gas",
+                 bus0=nodes + " digestable biomass",
                  bus1="EU gas",
                  bus2="co2 atmosphere",
-                 carrier="biogas to gas",
-                 capital_cost=costs.loc["biogas upgrading", "fixed"],
+                 bus3="co2 stored",
+                 carrier="digestable biomass to gas",
+                 capital_cost=costs.loc["Anaerobic digestion + upgrading", "investment"],
                  marginal_cost=costs.loc["biogas upgrading", "VOM"],
                  efficiency2=-costs.at['gas','CO2 intensity'],
+                 efficiency3=costs.at['gas','CO2 intensity'],
                  p_nom_extendable=True)
 
     # add biomass transport
