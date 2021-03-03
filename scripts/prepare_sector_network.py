@@ -1652,15 +1652,17 @@ def add_biomass(network):
 
     # TODO: Add carbon capture from FT.
     network.madd("Link",
-                 biomass_pot_node.index + " biomass to liquid",
-                 bus0=biomass_pot_node.index + " solid biomass",
+                 nodes + " biomass to liquid",
+                 bus0=nodes + " solid biomass",
                  bus1="EU oil",
                  # bus2="Naphtha",#need to add naphtha bus first
-                 bus3="co2 atmosphere",
+                 bus3="co2 stored",
+                 bus4="co2 atmosphere",
                  carrier="Fischer-Tropsch",
-                 efficiency1=0.4,  # costs.at['BtL', 'efficiency'],
+                 efficiency1=costs.at['BtL', 'efficiency-fuel'],
                  # efficiency2=costs.at['BtL', 'efficiency-naphtha'],
-                 efficiency3=-costs.at['oil', 'CO2 intensity'],
+                 efficiency3=costs.at['BtL','CO2 stored'],
+                 efficiency4=-costs.at['BtL', 'CO2 vented'],
                  p_nom_extendable=True,
                  capital_cost=costs.at['BtL', 'investment'],
                  marginal_cost=0.,  # Add marginal costs
