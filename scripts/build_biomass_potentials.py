@@ -65,8 +65,8 @@ if __name__ == "__main__":
 
     # This is a hack, to be replaced once snakemake is unicode-conform
 
-    if 'Secondary Forestry residues sawdust' in snakemake.config['biomass']['classes']['solid biomass']:
-        snakemake.config['biomass']['classes']['solid biomass'].remove('Secondary Forestry residues sawdust')
-        snakemake.config['biomass']['classes']['solid biomass'].append('Secondary Forestry residues – sawdust')
+    if 'Secondary Forestry residues sawdust' in snakemake.config['biomass']['classes']['industry wood residues']:
+        snakemake.config['biomass']['classes']['industry wood residues'].remove('Secondary Forestry residues sawdust')
+        snakemake.config['biomass']['classes']['industry wood residues'].append('Secondary Forestry residues – sawdust')
     
     build_biomass_potentials()

@@ -1532,6 +1532,7 @@ def add_biomass(network):
                         .set_index(pop_layout.index)
                         .mul(pop_layout.fraction, axis="index"))
 
+    print(biomass_pot_node)
     network.add("Carrier","digestable biomass")
 
     network.madd("Bus",
@@ -1556,9 +1557,9 @@ def add_biomass(network):
                  bus=nodes + " solid biomass",
                  carrier="solid biomass")
 
-    digestable_biomass_types = ["ManureSlurry", "Municipal biowaste",
-                                "Sewage sludge", "Food industry residues",
-                                "Landscape management", "Straw"]
+    digestable_biomass_types = ["manureslurry", "municipal biowaste",
+                                "sewage sludge", "straw"] #"Food industry residues",
+                                # "Landscape management", "Straw"]
 
     for name in digestable_biomass_types:
         network.add("Carrier", name + " digestable biomass")
@@ -1572,9 +1573,9 @@ def add_biomass(network):
                      nodes + " " + name + " digestable biomass",
                      bus=nodes + " " + name + " digestable biomass",
                      carrier=name + " digestable biomass",
-                     e_nom=biomass_pot_node["biogas"].values/6, #Add individual values
-                     marginal_cost=costs.at['digestable biomass', 'fuel'],
-                     e_initial=biomass_pot_node["biogas"].values/6)
+                     e_nom=biomass_pot_node[name].values,
+                     marginal_cost=costs.at['digestable biomass', 'fuel'], #Add individual costs
+                     e_initial=biomass_pot_node[name].values)
 
 
         network.madd("Link",
@@ -1601,7 +1602,10 @@ def add_biomass(network):
                  p_nom_extendable=True)
 
 
-    solid_biomass_types = ["Poplar", "Forest residues", "Industry wood residues", "Scrap wood"]#, "Import"]
+    solid_biomass_types = ["poplar", "forest residues", "industry wood residues", "import"] #"scrap wood"
+
+    biomass_potential = {}
+    biomass_cost = {}
 
     for name in solid_biomass_types:
         network.add("Carrier", name + " solid biomass")
@@ -1611,13 +1615,20 @@ def add_biomass(network):
                      location=nodes,
                      carrier=name + " solid biomass")
 
+        if name == "import":
+            biomass_potential[name] = 99e9
+            biomass_cost[name] = 15*3.6 #EUR/MWh
+        else:
+            biomass_potential[name] = biomass_pot_node[name].values
+            biomass_cost[name] = costs.at['solid biomass', 'fuel']
+
         network.madd("Store",
                     nodes + " " + name + " solid biomass",
                     bus=nodes + " " + name + " solid biomass",
                     carrier=name + " solid biomass",
-                    e_nom=biomass_pot_node["solid biomass"].values/4, #Adapt to incorporate also imports
-                    marginal_cost=costs.at['solid biomass', 'fuel'],
-                    e_initial=biomass_pot_node["solid biomass"].values / 4)
+                    e_nom=biomass_potential[name],
+                    marginal_cost=biomass_cost[name],
+                    e_initial=biomass_potential[name])
 
 
         network.madd("Link",
@@ -1646,7 +1657,7 @@ def add_biomass(network):
                                            axis=1).mean(axis=1)
 
     network.madd("Link",
-                 nodes,
+                 biomass_transport.index,
                  bus0=biomass_transport.bus0 + " solid biomass",
                  bus1=biomass_transport.bus1 + " solid biomass",
                  p_nom_extendable=True,
@@ -1675,7 +1686,7 @@ def add_biomass(network):
                  nodes + " biomass to liquid",
                  bus0=nodes + " solid biomass",
                  bus1="EU oil",
-                 # bus2="Naphtha",#need to add naphtha bus first
+                 # bus2="naphtha",
                  bus3="co2 stored",
                  bus4="co2 atmosphere",
                  carrier="Fischer-Tropsch",
@@ -1695,7 +1706,6 @@ def add_biomass(network):
         urban_central = urban_central.str[:-len(" urban central heat")]
 
         network.madd("Link",
-
                      urban_central + " urban central solid biomass CHP",
                      bus0=urban_central + " solid biomass",
                      bus1=urban_central,
@@ -1743,6 +1753,10 @@ def add_industry(network):
     industrial_demand = 1e6*pd.read_csv(snakemake.input.industrial_demand,
                                         index_col=0)
 
+    # network.madd("Bus",
+    #              ["naphtha"],
+    #              location="EU",
+    #              carrier="naphtha")
 
     network.madd("Bus",
                  nodes + " lowT process steam",
@@ -1928,23 +1942,28 @@ def add_industry(network):
                                                 'decentral oil boiler', 'fixed'],
                          lifetime=costs.at['decentral oil boiler','lifetime'])
 
+    #TODO: Add Naphtha bus and efficiency
     network.madd("Link",
                  nodes + " Fischer-Tropsch",
                  bus0=nodes + " H2",
                  bus1="EU oil",
-                 bus2="co2 stored",
+                 # bus2="naphtha",
+                 bus3="co2 stored",
                  carrier="Fischer-Tropsch",
                  efficiency=costs.at["Fischer-Tropsch",'efficiency'],
                  capital_cost=costs.at["Fischer-Tropsch",'fixed'],
-                 efficiency2=-costs.at["oil",'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency'],
+                 # efficiency2=costs.at['BtL','efficiency-naphtha'],
+                 efficiency3=-costs.at["oil",'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency'],
                  p_nom_extendable=True,
                  lifetime=costs.at['Fischer-Tropsch','lifetime'])
 
+    #TODO: separate out Naphtha from FT-process and add own bus
     network.madd("Load",
                  ["naphtha for industry"],
-                 bus="EU oil",
+                 bus="EU oil",#"naphtha",
                  carrier="naphtha for industry",
                  p_set = industrial_demand.loc[nodes,"naphtha"].sum()/8760.)
+
 
     network.madd("Load",
                  ["kerosene for aviation"],
