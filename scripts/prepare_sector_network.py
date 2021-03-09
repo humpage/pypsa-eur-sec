@@ -1637,46 +1637,51 @@ def add_biomass(network):
 
 
     # Add solid biomass import
-    network.add("Carrier","solid biomass import")
-    import_potential = {}
-    import_cost = {}
-    import_name = {}
-    # print(biomass_pot_node.values.sum())
-    tot_EU_biomass = biomass_pot_node.values.sum() - biomass_pot_node["not included"].values.sum()
-    # print(tot_EU_biomass)
-    # print((20e9 / 3.6 - tot_EU_biomass)/(1e9/3.6))
-    for num in range(1, 10):
-        import_name[num] = "import" + str(num)
-        if num == 1:
-            import_potential[num] = 20e9 / 3.6 - tot_EU_biomass
-            import_cost[num] = 15 * 3.6  # EUR/MWh
-        else:
-            import_potential[num] = 1e9 / 3.6  # EJ --> MWh
-            import_cost[num] = (15 + 0.25 * (num - 1)) * 3.6  # EUR/MWh
+    if options["biomass_import"]:
+        network.add("Carrier","solid biomass import")
+        import_potential = {}
+        import_cost = {}
+        import_name = {}
+        superfluous = {}
+        tot_EU_biomass = biomass_pot_node.values.sum() - biomass_pot_node["not included"].values.sum()
+        # print(tot_EU_biomass)
+        # print((20e9 / 3.6 - tot_EU_biomass)/(1e9/3.6))
+        for num in range(1, 10):
+            import_name[num] = "import" + str(num)
+            if num == 1:
+                import_potential[num] = max(20e9 / 3.6 - tot_EU_biomass,0) # substract EU biomass from 20 EJ. If EU biomass > 20, return 0
+                import_cost[num] = 15 * 3.6  # EUR/MWh
+                superfluous = min(20e9 / 3.6 - tot_EU_biomass, 0)
+            else:
+                import_potential[num] = max(1e9 / 3.6 + superfluous,0)  # EJ --> MWh
+                import_cost[num] = (15 + 0.25 * (num - 1)) * 3.6  # EUR/MWh
+                superfluous += min(-superfluous, 1e9 / 3.6)
 
-        network.madd("Bus",
-                     [import_name[num] + " solid biomass"],
-                     location="EU",
-                     carrier="solid biomass import")
-
-        network.madd("Store",
-                     [import_name[num] + " solid biomass"],
-                     bus=import_name[num] + " solid biomass",
-                     carrier="solid biomass import",
-                     e_nom=import_potential[num],
-                     marginal_cost=import_cost[num],
-                     e_initial=import_potential[num])
-
-        network.madd("Link",
-                     nodes + " " + import_name[num] + " solid biomass",
-                     bus0=import_name[num] + " solid biomass",
-                     bus1=nodes + " solid biomass",
-                     carrier="solid biomass",
-                     efficiency=1.,
-                     p_nom_extendable=True)
+            print(superfluous)
 
 
-    print(import_potential)
+            network.madd("Bus",
+                        [import_name[num] + " solid biomass"],
+                        location="EU",
+                        carrier="solid biomass import")
+
+            network.madd("Store",
+                        [import_name[num] + " solid biomass"],
+                        bus=import_name[num] + " solid biomass",
+                        carrier="solid biomass import",
+                        e_nom=import_potential[num],
+                        marginal_cost=import_cost[num],
+                        e_initial=import_potential[num])
+
+            network.madd("Link",
+                        nodes + " " + import_name[num] + " solid biomass",
+                        bus0=import_name[num] + " solid biomass",
+                        bus1=nodes + " solid biomass",
+                        carrier="solid biomass",
+                        efficiency=1.,
+                        p_nom_extendable=True)
+
+
     # add biomass transport
     biomass_transport = create_network_topology(n, "Biomass transport ")
 
