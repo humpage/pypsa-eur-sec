@@ -409,7 +409,7 @@ plotting:
     "BioSNG": "#123456"
     "oil for shipping" : "#968543"
     "biomass to liquid" : "brown"
-    # "land transport": "#234567"
+    "land transport oil emissions": "#234567"
     # "Naphtha" : "#345678"
 
   nice_names:
