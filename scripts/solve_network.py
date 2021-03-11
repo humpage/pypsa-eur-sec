@@ -107,6 +107,17 @@ def add_opts_constraints(n, opts=None):
         ext_gens_i = n.generators.index[n.generators.carrier.isin(conv_techs) & n.generators.p_nom_extendable]
         n.model.safe_peakdemand = pypsa.opt.Constraint(expr=sum(n.model.generator_p_nom[gen] for gen in ext_gens_i) >= peakdemand - exist_conv_caps)
 
+
+def add_biofuel_constraint(n):
+    liquid_biofuel_limit = snakemake.config['biomass']['liquid biofuel minimum']
+    print(liquid_biofuel_limit)
+    biofuel_i = n.links.query('carrier == "biomass to liquid"').index
+    print(n.components["Link"]["attrs"])
+    biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
+    # print(biofuel_vars)
+    lhs = linexpr((1, biofuel_vars)).sum().sum()
+    define_constraints(n, lhs, ">=", liquid_biofuel_limit, 'Link', 'liquid_biofuel_min')
+
 def add_eps_storage_constraint(n):
     if not hasattr(n, 'epsilon'):
         n.epsilon = 1e-5
@@ -209,6 +220,7 @@ def extra_functionality(n, snapshots):
     #add_eps_storage_constraint(n)
     add_chp_constraints(n)
     add_battery_constraints(n)
+    add_biofuel_constraint(n)
 
 
 def fix_branches(n, lines_s_nom=None, links_p_nom=None):

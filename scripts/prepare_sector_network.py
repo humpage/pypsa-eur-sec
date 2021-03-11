@@ -1657,8 +1657,7 @@ def add_biomass(network):
                 import_cost[num] = (15 + 0.25 * (num - 1)) * 3.6  # EUR/MWh
                 superfluous += min(-superfluous, 1e9 / 3.6)
 
-            print(superfluous)
-
+            # print(superfluous)
 
             network.madd("Bus",
                         [import_name[num] + " solid biomass"],
@@ -1732,16 +1731,24 @@ def add_biomass(network):
                  # bus2="naphtha",
                  bus3="co2 stored",
                  bus4="co2 atmosphere",
-                 carrier="Fischer-Tropsch",
+                 carrier="biomass to liquid",
                  lifetime=costs.at['BtL', 'lifetime'],
                  efficiency1=costs.at['BtL', 'efficiency-fuel'],
                  # efficiency2=costs.at['BtL', 'efficiency-naphtha'],
-                 efficiency3=costs.at['BtL','CO2 stored'],
+                 efficiency3=costs.at['BtL', 'CO2 stored'],
                  efficiency4=-costs.at['BtL', 'CO2 vented'],
                  p_nom_extendable=True,
                  capital_cost=costs.at['BtL', 'investment'],
-                 marginal_cost=0., #costs.loc["BtL", "VOM"]
+                 marginal_cost=0.,  # costs.loc["BtL", "VOM"]
                  )
+
+
+    # liquid_biofuel_limit = snakemake.config['biomass']['liquid biofuel minimum']
+    #
+    # n.add("GlobalConstraint", "liquidBiofuelLimit",
+    #       carrier_attribute="biomassToLiquid", sense=">=",
+    #       constant=liquid_biofuel_limit)
+
 
     #AC buses with district heating
     urban_central = network.buses.index[network.buses.carrier == "urban central heat"]
