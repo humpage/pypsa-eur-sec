@@ -1185,6 +1185,13 @@ def add_land_transport(network):
                      carrier="land transport oil",
                      p_set=ice_share/options['transport_internal_combustion_efficiency']*transport[nodes])
 
+        co2 = ice_share/options['transport_internal_combustion_efficiency']*transport[nodes].sum().sum()/8760.*costs.at["oil",'CO2 intensity']
+
+        network.madd("Load",
+                     ["land transport oil emissions"],
+                     bus="co2 atmosphere",
+                     carrier="land transport oil emissions",
+                     p_set=-co2)
 
 def add_heat(network):
 
