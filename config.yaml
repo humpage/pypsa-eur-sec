@@ -75,7 +75,7 @@ pypsa_eur:
 
 biomass:
   year: 2050
-  scenario: "Med"
+  scenario: "Low"
   classes:
 #    solid biomass: ['Primary agricultural residues', 'Forestry energy residue', 'Secondary forestry residues', 'Secondary Forestry residues sawdust', 'Forestry residues from landscape care biomass', 'Municipal waste']
     manureslurry: ['Manure biomass potential']
@@ -90,8 +90,7 @@ biomass:
 #    scrap wood: []
     not included: ['Bioethanol sugar beet biomass', 'Rapeseeds for biodiesel', 'sunflower and soya for Biodiesel', 'Starchy crops biomass', 'Grassy crops biomass', 'Roundwood fuelwood', 'Roundwood Chips & Pellets']
 #    biogas: ['Manure biomass potential', 'Sludge biomass']
-  liquid biofuel minimum: 12770000 #1 EJ -> MWh fuel
-
+  liquid biofuel minimum: 0.9 #12770000 #1 EJ -> MWh fuel
 # only relevant for foresight = myopic or perfect
 existing_capacities:
   grouping_years: [1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2019]
@@ -159,7 +158,7 @@ sector:
   'dac' : True
   'co2_vent' : True
   'SMR' : True
-  'co2_sequestration_potential' : 300  #MtCO2/a sequestration potential for Europe
+  'co2_sequestration_potential' : 900  #MtCO2/a sequestration potential for Europe
   'co2_sequestration_cost' : 20   #EUR/tCO2 for transport and sequestration of CO2
   'cc_fraction' : 0.9  # default fraction of CO2 captured with post-combustion capture
   'hydrogen_underground_storage' : True
@@ -377,9 +376,9 @@ plotting:
     "electricity" : "k"
     "gas for industry" : "#333333"
     "lowT process steam solid biomass" : "#555555"
-    "lowT process steam methane" : "#555555"
-    "lowT process steam H2" : "#555555"
-    "lowT process steam" : "#555555"
+    "lowT process steam methane" : "red"
+    "lowT process steam H2" : "yellow"
+    "lowT process steam" : "blue"
     "industry electricity" : "#222222"
     "industry new electricity" : "#222222"
     "process emissions to stored" : "#444444"
@@ -409,6 +408,7 @@ plotting:
     "BioSNG": "#123456"
     "oil for shipping" : "#968543"
     "biomass to liquid" : "brown"
+    "biomass to liquid4" : "brown"
     "land transport oil emissions": "#234567"
     # "Naphtha" : "#345678"
 
