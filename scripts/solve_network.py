@@ -110,24 +110,20 @@ def add_opts_constraints(n, opts=None):
 
 def add_biofuel_constraint(n):
     liquid_biofuel_limit = snakemake.config['biomass']['liquid biofuel minimum']
-    print(liquid_biofuel_limit)
+    print('Liquid biofuel minimum: ', liquid_biofuel_limit)
     biofuel_i = n.links.query('carrier == "biomass to liquid"').index
     biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
-    # print(n.loads_t.p_set.filter(regex='land transport oil|naphtha|kerosene|oil for shipping|oil boiler').sum())
-    napker = n.loads.p_set.filter(regex='naphtha|kerosene').sum() * len(n.snapshots)
-    # print('napker ', napker)
+
+    napker = n.loads.p_set.filter(regex='naphtha|kerosene|oil for shipping').sum() * len(n.snapshots)
+    print('Naphtha: ',napker)
     landtrans = n.loads_t.p_set.filter(regex='land transport oil$').sum().sum()
-    # print('landtrans ', landtrans)
-    ship_boiler = n.loads.p_set.filter(regex='oil for shipping|oil boiler').sum() * len(n.snapshots)
-    # print('ship_boiler ', ship_boiler)
-    liqfuelloadlimit = liquid_biofuel_limit * (napker+landtrans+ship_boiler)#n.loads_t.p_set.filter(regex='land transport oil$|naphtha|kerosene|oil for shipping|oil boiler').sum().sum()
-    # print(liqfuelloadlimit * 3.6 / 1e9)
-    # print(liqfuelloadlimit * 8760 / len(n.snapshots) * 3.6 / 1e9)
-    lhs = linexpr((1, biofuel_vars)).sum().sum()# / linexpr((1,liqfuelload_vars)).sum().sum()
-    # lhs2 = linexpr((1,n.loads_t.p.filter(regex='land transport oil|naphtha|kerosene|oil for shipping|oil boiler'))).sum().sum()#
-    # print(lhs2)# lhs2 = linexpr((1,liqfuelload_vars)).sum().sum()
-    # lhs3= lhs/lhs2
+    ship_boiler = n.loads.p_set.filter(regex='oil boiler').sum() * len(n.snapshots)
+    print(ship_boiler)
+    liqfuelloadlimit = liquid_biofuel_limit * (napker+landtrans+ship_boiler)
+
+    lhs = linexpr((1, biofuel_vars)).sum().sum()
     define_constraints(n, lhs, ">=", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
+
 
 def add_eps_storage_constraint(n):
     if not hasattr(n, 'epsilon'):

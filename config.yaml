@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: 'results/'
 summary_dir: results
 costs_dir: '../technology-data/outputs/'
-run: 'highBiomass0.5biofuel_2'  # use this to keep track of runs with different settings
+run: 'highBiomass0bio-lowS'  # use this to keep track of runs with different settings
 foresight: 'overnight' # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
@@ -90,7 +90,7 @@ biomass:
 #    scrap wood: []
     not included: ['Bioethanol sugar beet biomass', 'Rapeseeds for biodiesel', 'sunflower and soya for Biodiesel', 'Starchy crops biomass', 'Grassy crops biomass', 'Roundwood fuelwood', 'Roundwood Chips & Pellets']
 #    biogas: ['Manure biomass potential', 'Sludge biomass']
-  liquid biofuel minimum: 0.5 #share
+  liquid biofuel minimum: 0 #share
   
 # only relevant for foresight = myopic or perfect
 existing_capacities:
@@ -159,7 +159,7 @@ sector:
   'dac' : True
   'co2_vent' : True
   'SMR' : True
-  'co2_sequestration_potential' : 300 #2000  #MtCO2/a sequestration potential for Europe
+  'co2_sequestration_potential' : 300 #MtCO2/a sequestration potential for Europe
   'co2_sequestration_cost' : 20   #EUR/tCO2 for transport and sequestration of CO2
   'cc_fraction' : 0.9  # default fraction of CO2 captured with post-combustion capture
   'hydrogen_underground_storage' : True
@@ -251,7 +251,7 @@ plotting:
       bus_size_factor: 5.e+4
       linewidth_factor: 3.e+3 # 1.e+3  #3.e+3
 
-  costs_max: 1200
+  costs_max: 1800
   costs_threshold: 1
 
 

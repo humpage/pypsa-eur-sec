@@ -2028,12 +2028,10 @@ def add_industry(network):
                  bus0=nodes + " H2",
                  bus1="EU oil",
                  bus2="co2 stored",
-                 bus3="co2 stored",
                  carrier="electrofuel",
                  efficiency=costs.at["Fischer-Tropsch",'efficiency'],
                  capital_cost=costs.at["Fischer-Tropsch",'fixed'],
-                 efficiency2=-costs.at["oil",'CO2 intensity'],#*costs.at["Fischer-Tropsch",'efficiency'],
-                 efficiency3=costs.at["BtL",'CO2 stored'],
+                 efficiency2=-costs.at["oil",'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency']+costs.at["BtL",'CO2 stored'],#,
                  p_nom_extendable=True,
                  lifetime=costs.at['Fischer-Tropsch','lifetime'])
 

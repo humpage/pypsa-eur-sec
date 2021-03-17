@@ -41,8 +41,6 @@ gurobi.log
 
 *.xlsx
 
-config.yaml
-
 doc/_build
 
 *.xls.idea
@@ -52,3 +50,4 @@ doc/_build
 data/myb1-2017-nitro.xls
 grid.png
 analysis_jupyterTest.ipynb
+jupyterAnalysis.ipynb
