@@ -1784,12 +1784,14 @@ def add_biomass(network):
                      bus0=urban_central + " solid biomass",
                      bus1=urban_central,
                      bus2=urban_central + " urban central heat",
+                     bus3="co2 atmosphere",
                      carrier="urban central solid biomass CHP",
                      p_nom_extendable=True,
                      capital_cost=costs.at['central solid biomass CHP','fixed']*costs.at['central solid biomass CHP','efficiency'],
                      marginal_cost=costs.at['central solid biomass CHP','VOM'],
                      efficiency=costs.at['central solid biomass CHP','efficiency'],
                      efficiency2=costs.at['central solid biomass CHP','efficiency-heat'],
+                     efficiency3=costs.at['solid biomass', 'CO2 intensity'],
                      lifetime=costs.at['central solid biomass CHP','lifetime'])
 
 
@@ -1845,9 +1847,11 @@ def add_industry(network):
                  suffix=" solid biomass for lowT industry",
                  bus0=nodes + " solid biomass",
                  bus1=nodes + " lowT process steam",
+                 bus2="co2 atmosphere",
                  carrier="lowT process steam solid biomass",
                  p_nom_extendable=True,
                  efficiency=costs.at['solid biomass to steam','efficiency'],
+                 efficiency2=costs.at['solid biomass','CO2 intensity'],
                  capital_cost=costs.at['solid biomass to steam','investment'])
 
 
