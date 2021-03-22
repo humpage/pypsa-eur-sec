@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: 'results/'
 summary_dir: results
 costs_dir: '../technology-data/outputs/'
-run: 'highBiomass0bio-lowS'  # use this to keep track of runs with different settings
+run: 'hiB4' # use this to keep track of runs with different settings
 foresight: 'overnight' # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
@@ -15,7 +15,7 @@ scenario:
   lv: ["opt"]    # allowed transmission line volume expansion, can be any float >= 1.0 (today) or "opt"
   clusters: [37] # number of nodes in Europe, any integer between 37 (1 node per country-zone) and several hundred
   opts: ['']  # only relevant for PyPSA-Eur
-  sector_opts: [Co2L0p05-97H-T-H-B-I-bioT-hvdc,Co2Lm0p20-97H-T-H-B-I-bioT-hvdc]  # this is where the main scenario settings are
+  sector_opts: [Co2L0p05-97H-T-H-B0p0-I-S1000] #, Co2L0p05-97H-T-H-B0p0-I-S0, Co2L0p05-97H-T-H-B0p0-I-S300, Co2L0p05-97H-T-H-B0p5-I-S300, Co2L0p05-97H-T-H-B1p0-I-S300, Co2L0p05-97H-T-H-B0p0Im-I-S300, Co2L0p05-97H-T-H-B0p5Im-I-S300, Co2L0p05-97H-T-H-B1p0Im-I-S300]  # this is where the main scenario settings are
   # to really understand the options here, look in scripts/prepare_sector_network.py
   # Co2Lx specifies the CO2 target in x% of the 1990 values; default will give default (5%);
   # Co2L0p25 will give 25% CO2 emissions; Co2Lm0p05 will give 5% negative emissions
@@ -31,6 +31,7 @@ scenario:
   # cb40ex0 distributes a carbon budget of 40 GtCO2 following an exponential
   # decay with initial growth rate 0
   planning_horizons : [2050] # investment years for myopic and perfect; or costs year for overnight
+  # biofuel_
   # for example, set to [2020, 2030, 2040, 2050] for myopic foresight
 
 # CO2 budget as a fraction of 1990 emissions
@@ -90,7 +91,7 @@ biomass:
 #    scrap wood: []
     not included: ['Bioethanol sugar beet biomass', 'Rapeseeds for biodiesel', 'sunflower and soya for Biodiesel', 'Starchy crops biomass', 'Grassy crops biomass', 'Roundwood fuelwood', 'Roundwood Chips & Pellets']
 #    biogas: ['Manure biomass potential', 'Sludge biomass']
-  liquid biofuel minimum: 0 #share
+  liquid biofuel minimum: 0.5 #share
   
 # only relevant for foresight = myopic or perfect
 existing_capacities:
@@ -159,7 +160,7 @@ sector:
   'dac' : True
   'co2_vent' : True
   'SMR' : True
-  'co2_sequestration_potential' : 300 #MtCO2/a sequestration potential for Europe
+  'co2_sequestration_potential' : 0 #MtCO2/a sequestration potential for Europe
   'co2_sequestration_cost' : 20   #EUR/tCO2 for transport and sequestration of CO2
   'cc_fraction' : 0.9  # default fraction of CO2 captured with post-combustion capture
   'hydrogen_underground_storage' : True
@@ -171,8 +172,9 @@ sector:
   'gas_distribution_grid' : True
   'gas_distribution_grid_cost_factor' : 1.0  #multiplies cost in data/costs.csv
   'bioT': True  # biomass potential per country + transport between countries
-  'biomass_import' : True #biomass import toggle
-  'liquid_biofuel_limit_on' : True #Minimum limit of biomass to liquid fuels
+  #'biomass_import' : True #biomass import toggle
+  #'liquid_biofuel_limit_on' : True #Minimum limit of biomass to liquid fuels
+  'hvdc' : True #HVDC transport model
 
 costs:
   lifetime: 25 #default lifetime

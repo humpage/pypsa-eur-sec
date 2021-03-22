@@ -306,9 +306,16 @@ def add_co2_tracking(n):
            location="EU",
            carrier="co2 stored")
 
+    co2_sequestration_potential = 0
+    for o in opts:
+        if "S" in o:
+            co2_sequestration_potential = float(o[o.find("S") + 1:])
+
+    print('CO2 sequestration potential: ', co2_sequestration_potential)
+
     n.madd("Store",["co2 stored"],
            e_nom_extendable=True,
-           e_nom_max=options['co2_sequestration_potential']*1e6,
+           e_nom_max=co2_sequestration_potential*1e6, #options['co2_sequestration_potential']*1e6,
            capital_cost=options['co2_sequestration_cost'],
            carrier="co2 stored",
            bus="co2 stored")
@@ -1649,50 +1656,52 @@ def add_biomass(network):
 
 
     # Add solid biomass import
-    if options["biomass_import"]:
-        network.add("Carrier","solid biomass import")
-        import_potential = {}
-        import_cost = {}
-        import_name = {}
-        superfluous = {}
-        tot_EU_biomass = biomass_pot_node.values.sum() - biomass_pot_node["not included"].values.sum()
-        print(tot_EU_biomass*3.6/1e9)
+    # if options["biomass_import"]:
+    for o in opts:
+        if o[o.find("B") + 4:] == "Im":
+            print("Adding biomass import")
 
-        for num in range(1, 10):
-            import_name[num] = "import" + str(num)
-            if num == 1:
-                import_potential[num] = max(20e9 / 3.6 - tot_EU_biomass,0) # substract EU biomass from 20 EJ. If EU biomass > 20, return 0
-                import_cost[num] = 15 * 3.6  # EUR/MWh
-                superfluous = min(20e9 / 3.6 - tot_EU_biomass, 0)
-            else:
-                import_potential[num] = max(1e9 / 3.6 + superfluous,0)  # EJ --> MWh
-                import_cost[num] = (15 + 0.25 * (num - 1)) * 3.6  # EUR/MWh
-                superfluous += min(-superfluous, 1e9 / 3.6)
+            network.add("Carrier","solid biomass import")
+            import_potential = {}
+            import_cost = {}
+            import_name = {}
+            superfluous = {}
+            tot_EU_biomass = biomass_pot_node.values.sum() - biomass_pot_node["not included"].values.sum()
+            print(tot_EU_biomass*3.6/1e9)
 
-            # print(superfluous)
+            for num in range(1, 20):
+                import_name[num] = "import" + str(num)
+                if num == 1:
+                    import_potential[num] = max(20e9 / 3.6 - tot_EU_biomass,0) # substract EU biomass from 20 EJ. If EU biomass > 20, return 0
+                    import_cost[num] = 15 * 3.6  # EUR/MWh
+                    superfluous = min(20e9 / 3.6 - tot_EU_biomass, 0)
+                else:
+                    import_potential[num] = max(1e9 / 3.6 + superfluous,0)  # EJ --> MWh
+                    import_cost[num] = (15 + 0.25 * (num - 1)) * 3.6  # EUR/MWh
+                    superfluous += min(-superfluous, 1e9 / 3.6)
 
-            network.madd("Bus",
-                        [import_name[num] + " solid biomass"],
-                        location="EU",
-                        carrier="solid biomass import")
+                network.madd("Bus",
+                            [import_name[num] + " solid biomass"],
+                            location="EU",
+                            carrier="solid biomass import")
 
-            network.madd("Store",
-                        [import_name[num] + " solid biomass"],
-                        bus=import_name[num] + " solid biomass",
-                        carrier="solid biomass import",
-                        e_nom=import_potential[num],
-                        marginal_cost=import_cost[num],
-                        e_initial=import_potential[num])
+                network.madd("Store",
+                            [import_name[num] + " solid biomass"],
+                            bus=import_name[num] + " solid biomass",
+                            carrier="solid biomass import",
+                            e_nom=import_potential[num],
+                            marginal_cost=import_cost[num],
+                            e_initial=import_potential[num])
 
-            network.madd("Link",
-                        nodes + " " + import_name[num] + " solid biomass",
-                        bus0=import_name[num] + " solid biomass",
-                        bus1=nodes + " solid biomass",
-                        bus2="co2 atmosphere",
-                        carrier="solid biomass",
-                        efficiency=1.,
-                        efficiency2=-costs.at['solid biomass', 'CO2 intensity'], #Here, if the store at bus1 is cyclic
-                        p_nom_extendable=True)
+                network.madd("Link",
+                            nodes + " " + import_name[num] + " solid biomass",
+                            bus0=import_name[num] + " solid biomass",
+                            bus1=nodes + " solid biomass",
+                            bus2="co2 atmosphere",
+                            carrier="solid biomass",
+                            efficiency=1.,
+                            efficiency2=-costs.at['solid biomass', 'CO2 intensity'], #Here, if the store at bus1 is cyclic
+                            p_nom_extendable=True)
 
 
     # add biomass transport
@@ -1841,36 +1850,37 @@ def add_industry(network):
                  carrier="lowT process steam",
                  p_set=industrial_demand.loc[nodes,"solid biomass"]/8760.)
 
-
-    network.madd("Link",
-                 nodes,
-                 suffix=" solid biomass for lowT industry",
-                 bus0=nodes + " solid biomass",
-                 bus1=nodes + " lowT process steam",
-                 bus2="co2 atmosphere",
-                 carrier="lowT process steam solid biomass",
-                 p_nom_extendable=True,
-                 efficiency=costs.at['solid biomass to steam','efficiency'],
-                 efficiency2=costs.at['solid biomass','CO2 intensity'],
-                 capital_cost=costs.at['solid biomass to steam','investment'])
-
-
-
-    #TODO: cement capture rather low-cost compared to other processes (high conc. CO2) --> adapt!
-    network.madd("Link",
-                 nodes,
-                 suffix=" solid biomass for lowT industry CC",
-                 bus0=nodes + " solid biomass",
-                 bus1=nodes + " lowT process steam",
-                 bus2="co2 atmosphere",
-                 bus3="co2 stored",
-                 carrier="lowT process steam solid biomass CC",
-                 p_nom_extendable=True,
-                 efficiency=0.9*costs.at['solid biomass to steam','efficiency'],
-                 capital_cost=costs.at['solid biomass to steam','investment']+costs.at["cement capture","fixed"]*costs.at['solid biomass','CO2 intensity'],
-                 efficiency2=costs.at['solid biomass','CO2 intensity']*(1-costs.at["cement capture","capture_rate"]),
-                 efficiency3=costs.at['solid biomass','CO2 intensity']*costs.at["cement capture","capture_rate"],
-                 lifetime=costs.at['cement capture','lifetime'])
+    for o in opts:
+        if "B" in o:
+            network.madd("Link",
+                         nodes,
+                        suffix=" solid biomass for lowT industry",
+                        bus0=nodes + " solid biomass",
+                        bus1=nodes + " lowT process steam",
+                        bus2="co2 atmosphere",
+                        carrier="lowT process steam solid biomass",
+                        p_nom_extendable=True,
+                        efficiency=costs.at['solid biomass to steam','efficiency'],
+                        efficiency2=costs.at['solid biomass','CO2 intensity'],
+                        capital_cost=costs.at['solid biomass to steam','investment'])
+            # TODO: cement capture rather low-cost compared to other processes (high conc. CO2) --> adapt!
+            network.madd("Link",
+                         nodes,
+                         suffix=" solid biomass for lowT industry CC",
+                         bus0=nodes + " solid biomass",
+                         bus1=nodes + " lowT process steam",
+                         bus2="co2 atmosphere",
+                         bus3="co2 stored",
+                         carrier="lowT process steam solid biomass CC",
+                         p_nom_extendable=True,
+                         efficiency=0.9 * costs.at['solid biomass to steam', 'efficiency'],
+                         capital_cost=costs.at['solid biomass to steam', 'investment'] + costs.at[
+                             "cement capture", "fixed"] * costs.at['solid biomass', 'CO2 intensity'],
+                         efficiency2=costs.at['solid biomass', 'CO2 intensity'] * (
+                                     1 - costs.at["cement capture", "capture_rate"]),
+                         efficiency3=costs.at['solid biomass', 'CO2 intensity'] * costs.at[
+                             "cement capture", "capture_rate"],
+                         lifetime=costs.at['cement capture', 'lifetime'])
 
 
     network.madd("Link",
@@ -2015,18 +2025,6 @@ def add_industry(network):
                                                 'decentral oil boiler', 'fixed'],
                          lifetime=costs.at['decentral oil boiler','lifetime'])
 
-    # network.madd("Bus",
-    #              ["EU electrofuel"],
-    #              location="EU",
-    #              carrier="electrofuel")
-    #
-    # network.madd("Store",
-    #              ["EU electrofuel"],
-    #              bus="EU electrofuel",
-    #              e_nom_extendable=True,
-    #              e_cyclic=True,
-    #              carrier="electrofuel")
-
     network.madd("Link",
                  nodes + " Fischer-Tropsch",
                  bus0=nodes + " H2",
@@ -2039,12 +2037,6 @@ def add_industry(network):
                  p_nom_extendable=True,
                  lifetime=costs.at['Fischer-Tropsch','lifetime'])
 
-    # network.madd("Link",
-    #              ["EU electrofuel"],
-    #              bus0="EU electrofuel",
-    #              bus1="EU oil",
-    #              carrier="electrofuel",
-    #              )
 
     network.madd("Load",
                  ["naphtha for industry"],
@@ -2337,6 +2329,8 @@ if __name__ == "__main__":
 
     opts = snakemake.wildcards.sector_opts.split('-')
 
+    print('Options: ', opts)
+
     investment_year=int(snakemake.wildcards.planning_horizons[-4:])
 
     n = pypsa.Network(snakemake.input.network,
@@ -2384,8 +2378,8 @@ if __name__ == "__main__":
         if o[:4] == "dist":
             snakemake.config["sector"]['electricity_distribution_grid'] = True
             snakemake.config["sector"]['electricity_distribution_grid_cost_factor'] = float(o[4:].replace("p",".").replace("m","-"))
-        if o == "biomasstransport":
-            options["biomass_transport"] = True
+        # if o == "bioT":
+        #     options["biomass_transport"] = True
 
     nodal_energy_totals, heat_demand, ashp_cop, gshp_cop, solar_thermal, transport, avail_profile, dsm_profile, co2_totals, nodal_transport_data = prepare_data(n)
 
@@ -2398,8 +2392,9 @@ if __name__ == "__main__":
     if "I" in opts:
         add_industry(n)
 
-    if "B" in opts:
-        add_biomass(n)
+    for o in opts:
+        if "B" in o:
+            add_biomass(n)
 
     if "T" in opts:
         add_land_transport(n)
@@ -2416,7 +2411,7 @@ if __name__ == "__main__":
     if "noH2network" in opts:
         remove_h2_network(n)
 
-    if "hvdc" in opts:
+    if options["hvdc"]:
         hvdc_transport_model(n)
 
     if not options["bioT"]:
@@ -2449,12 +2444,12 @@ if __name__ == "__main__":
             limit=CO2_CAP.loc[investment_year]
             print("overriding CO2 limit with scenario limit",limit)
 
-
     for o in opts:
         if "Co2L" in o:
-            limit = o[o.find("Co2L")+4:]
-            limit = float(limit.replace("p",".").replace("m","-"))
-            print("overriding CO2 limit with scenario limit",limit)
+            limit = o[o.find("Co2L") + 4:]
+            limit = float(limit.replace("p", ".").replace("m", "-"))
+            print("overriding CO2 limit with scenario limit", limit)
+
 
     print("adding CO2 budget limit as per unit of 1990 levels of",limit)
     add_co2limit(n, Nyears, limit)

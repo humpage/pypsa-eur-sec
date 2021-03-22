@@ -109,16 +109,29 @@ def add_opts_constraints(n, opts=None):
 
 
 def add_biofuel_constraint(n):
-    liquid_biofuel_limit = snakemake.config['biomass']['liquid biofuel minimum']
-    print('Liquid biofuel minimum: ', liquid_biofuel_limit)
+
+    opts = snakemake.wildcards.sector_opts.split('-')
+    print('Options: ', opts)
+
+    liquid_biofuel_limit = 0
+    for o in opts:
+        if "B" in o:
+            liquid_biofuel_limit = o[o.find("B") + 1:o.find("B") + 4]
+            liquid_biofuel_limit = float(liquid_biofuel_limit.replace("p", "."))
+
+    print('Liq biofuel minimum constraint: ', liquid_biofuel_limit, ' ', type(liquid_biofuel_limit))
+
+    # liquid_biofuel_limit2 = snakemake.config['biomass']['liquid biofuel minimum']
+    # print('Liquid biofuel minimum: ', liquid_biofuel_limit2)
+
     biofuel_i = n.links.query('carrier == "biomass to liquid"').index
     biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
 
     napker = n.loads.p_set.filter(regex='naphtha|kerosene|oil for shipping').sum() * len(n.snapshots)
-    print('Naphtha: ',napker)
+    # print('Naphtha: ',napker)
     landtrans = n.loads_t.p_set.filter(regex='land transport oil$').sum().sum()
     ship_boiler = n.loads.p_set.filter(regex='oil boiler').sum() * len(n.snapshots)
-    print(ship_boiler)
+    # print(ship_boiler)
     liqfuelloadlimit = liquid_biofuel_limit * (napker+landtrans+ship_boiler)
 
     lhs = linexpr((1, biofuel_vars)).sum().sum()
@@ -227,7 +240,11 @@ def extra_functionality(n, snapshots):
     #add_eps_storage_constraint(n)
     add_chp_constraints(n)
     add_battery_constraints(n)
-    add_biofuel_constraint(n)
+
+    opts = snakemake.wildcards.sector_opts.split('-')
+    for o in opts:
+        if "B" in o:
+            add_biofuel_constraint(n)
 
 
 def fix_branches(n, lines_s_nom=None, links_p_nom=None):
@@ -294,7 +311,8 @@ def solve_network(n, config=None, solver_log=None, opts=None):
                                                solver_options=solver_options,
                                                solver_dir=tmpdir, 
                                                extra_functionality=extra_functionality,
-                                               formulation=solve_opts['formulation'])
+                                               formulation=solve_opts['formulation'],
+                                               keep_shadowprices=['Bus','Link','GlobalConstraint','Store'])#True)
                                                #extra_postprocessing=extra_postprocessing
                                                #keep_files=True
                                                #free_memory={'pypsa'}
