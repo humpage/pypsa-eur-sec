@@ -1036,7 +1036,7 @@ def add_storage(network):
                  p_nom_extendable=True,
                  lifetime=costs.at['battery inverter','lifetime'])
 
-
+    #TODO: Check carbon balance
     if options['methanation']:
         network.madd("Link",
                      nodes + " Sabatier",
@@ -1046,10 +1046,11 @@ def add_storage(network):
                      p_nom_extendable=True,
                      carrier="Sabatier",
                      efficiency=costs.at["methanation","efficiency"],
-                     efficiency2=-costs.at["methanation","efficiency"]*costs.at['gas','CO2 intensity'],
+                     efficiency2=-(1-0.24)*0.2376, #delta between input CO2 and the CO2 byproduct, assumed to go back to the store. should be correct for eta=0.91 ##costs.at["methanation","efficiency"]*costs.at['gas','CO2 intensity'],
                      capital_cost=costs.at["methanation","fixed"],
                      lifetime=costs.at['methanation','lifetime'])
 
+    #TODO: Check helmeth mass balance
     if options['helmeth']:
         network.madd("Link",
                      nodes + " helmeth",
@@ -1594,7 +1595,8 @@ def add_biomass(network):
                      marginal_cost=costs.at['digestable biomass', 'fuel'], #Add individual costs
                      e_initial=biomass_pot_node[name].values)
 
-        # TODO: change emissions to those from individual biomass types
+        # TODO: add negative emissions from individual biomass types (i.e. alternative emissions of CH4)
+        #NB: Assuming that the input substrates are given in the biogas potential an biogas cost!
         network.madd("Link",
                      nodes + " " + name + " digestable biomass",
                      bus0=nodes + " " + name + " digestable biomass",
@@ -1602,20 +1604,22 @@ def add_biomass(network):
                      bus2="co2 atmosphere",
                      carrier="digestable biomass",
                      efficiency=1.,
-                     efficiency2=-costs.at['solid biomass', 'CO2 intensity'],
+                     efficiency2=-costs.at['gas', 'CO2 intensity']-0.124, #Adding the CO2 in the biogas mix
                      p_nom_extendable=True)
 
-    #TODO: add a CC option and check emission for zero sum
+    #TODO: check carbon balance and add gas grid cost here?
     network.madd("Link",
-                 nodes + " digestable biomass",
+                 nodes + " digestable biomass CC",
                  bus0=nodes + " digestable biomass",
                  bus1="EU gas",
-                 # bus2="co2 atmosphere",
+                 bus2="co2 stored",
+                 bus3="co2 atmosphere",
                  carrier="digestable biomass to gas",
                  capital_cost=costs.loc["Anaerobic digestion + upgrading", "fixed"],  # Change to DEA values
                  marginal_cost=costs.loc["biogas upgrading", "VOM"],  # Add DEA values for biogas process
-                 efficiency=.7, #.98, #Old: Potential already given in biogas, so just add losses for upgrading
-                 # efficiency2=-costs.at['solid biomass', 'CO2 intensity'],
+                 efficiency=.98, #Potential already given in biogas, so just add losses for upgrading
+                 efficiency2=0.124*0.98, #tCO2/MWh_CH4 -costs.at['Biogas', 'CO2 content'],
+                 efficiency3=0.124*0.02+0.02*costs.at['gas', 'CO2 intensity'], #Assuming 2% losses and 2% flaring
                  p_nom_extendable=True)
 
 
@@ -1733,16 +1737,18 @@ def add_biomass(network):
                  carrier="solid biomass transport")
 
 
-    #TODO: Add marginal costs
+    #TODO: Check CO2 balance!! Add marginal costs
     network.madd("Link",
                  nodes + " solid biomass to gas",
                  bus0=nodes + " solid biomass",
                  bus1="EU gas",
-                 # bus2="co2 atmosphere",
+                 bus2="co2 stored",
+                 bus3="co2 atmosphere",
                  carrier="BioSNG",
                  lifetime=costs.at['BioSNG', 'lifetime'],
-                 efficiency1=costs.at['BioSNG', 'efficiency'],
-                 # efficiency2=-costs.at['gas', 'CO2 intensity'], #Adding solid biomass negative emissions here
+                 efficiency=costs.at['BioSNG', 'efficiency'],
+                 efficiency2=0.238, #Adding solid biomass negative emissions here
+                 efficiency3=0.0048,
                  p_nom_extendable=True,
                  capital_cost=costs.at['BioSNG', 'fixed'],
                  marginal_cost=0., #costs.loc["BioSNG", "VOM"]
@@ -1769,7 +1775,7 @@ def add_biomass(network):
                  bus3="co2 atmosphere",
                  carrier="biomass to liquid",
                  lifetime=costs.at['BtL', 'lifetime'],
-                 efficiency1=costs.at['BtL', 'efficiency-fuel'],
+                 efficiency1=0.47, #costs.at['BtL', 'efficiency-fuel'],
                  efficiency2=costs.at['BtL', 'CO2 stored'],
                  efficiency3=costs.at['BtL', 'CO2 vented'],
                  p_nom_extendable=True,
@@ -2039,15 +2045,18 @@ def add_industry(network):
     #              e_cyclic=True,
     #              carrier="electrofuel")
 
+    #TODO: Check mass and energy balance and add this to technology data
     network.madd("Link",
                  nodes + " Fischer-Tropsch",
                  bus0=nodes + " H2",
                  bus1="EU oil",#nodes + " electrofuel",#"EU oil",
                  bus2="co2 stored",
+                 # bus3="co2 stored",
                  carrier="electrofuel",
                  efficiency=costs.at["Fischer-Tropsch",'efficiency'],
                  capital_cost=costs.at["Fischer-Tropsch",'fixed'],
-                 efficiency2=-costs.at["oil",'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency']+costs.at["BtL",'CO2 stored'],#,
+                 efficiency2=-(1-0.41)*0.3047, #Check this. Should be correct at eta=0.69. #costs.at["oil",'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency'], #+costs.at["BtL",'CO2 stored'],#,
+                 # efficiency3=0.41*0.3047,
                  p_nom_extendable=True,
                  lifetime=costs.at['Fischer-Tropsch','lifetime'])
 
