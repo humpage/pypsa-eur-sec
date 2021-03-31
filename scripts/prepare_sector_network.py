@@ -1043,10 +1043,12 @@ def add_storage(network):
                      bus0=nodes+" H2",
                      bus1=["EU gas"]*len(nodes),
                      bus2="co2 stored",
+                     bus3="co2 atmosphere",
                      p_nom_extendable=True,
                      carrier="Sabatier",
                      efficiency=costs.at["methanation","efficiency"],
-                     efficiency2=-(1-0.24)*0.2376, #delta between input CO2 and the CO2 byproduct, assumed to go back to the store. should be correct for eta=0.91 ##costs.at["methanation","efficiency"]*costs.at['gas','CO2 intensity'],
+                     efficiency2=-costs.at['methanation', 'syngas CO2 intensity']+costs.at['methanation', 'CO2 stored'] * costs.at['methanation', 'capture rate'], # (1-0.24)*0.2376, #delta between input CO2 and the CO2 byproduct, assumed to go back to the store. should be correct for eta=0.91 ##costs.at["methanation","efficiency"]*costs.at['gas','CO2 intensity'],
+                     efficiency3=costs.at['methanation', 'CO2 stored'] * (1 - costs.at['methanation', 'capture rate']),
                      capital_cost=costs.at["methanation","fixed"],
                      lifetime=costs.at['methanation','lifetime'])
 
@@ -1548,17 +1550,17 @@ def add_biomass(network):
                         .mul(pop_layout.fraction, axis="index"))
 
     # print(biomass_pot_node)
-    network.add("Carrier","digestable biomass")
+    network.add("Carrier","digestible biomass")
 
     network.madd("Bus",
-                 nodes + " digestable biomass",
+                 nodes + " digestible biomass",
                  location=nodes,
-                 carrier="digestable biomass")
+                 carrier="digestible biomass")
 
     network.madd("Store",
-                 nodes + " digestable biomass",
-                 bus=nodes + " digestable biomass",
-                 carrier="digestable biomass",
+                 nodes + " digestible biomass",
+                 bus=nodes + " digestible biomass",
+                 carrier="digestible biomass",
                  e_cyclic=True)
 
     network.add("Carrier","solid biomass")
@@ -1574,52 +1576,53 @@ def add_biomass(network):
                  carrier="solid biomass",
                  e_cyclic=True)
 
-    digestable_biomass_types = ["manureslurry", "municipal biowaste",
+    digestible_biomass_types = ["manureslurry", "municipal biowaste",
                                 "sewage sludge", "straw"] #"Food industry residues",
                                 # "Landscape management", "Straw"]
 
-    for name in digestable_biomass_types:
-        network.add("Carrier", name + " digestable biomass")
+    for name in digestible_biomass_types:
+        network.add("Carrier", name + " digestible biomass")
 
         network.madd("Bus",
-                 nodes + " " + name + " digestable biomass",
+                 nodes + " " + name + " digestible biomass",
                  location=nodes,
-                 carrier=name + " digestable biomass")
+                 carrier=name + " digestible biomass")
 
         #TODO: add individual costs
         network.madd("Store",
-                     nodes + " " + name + " digestable biomass",
-                     bus=nodes + " " + name + " digestable biomass",
-                     carrier=name + " digestable biomass",
+                     nodes + " " + name + " digestible biomass",
+                     bus=nodes + " " + name + " digestible biomass",
+                     carrier=name + " digestible biomass",
                      e_nom=biomass_pot_node[name].values,
-                     marginal_cost=costs.at['digestable biomass', 'fuel'], #Add individual costs
+                     marginal_cost=costs.at['digestible biomass', 'fuel'], #Add individual costs
                      e_initial=biomass_pot_node[name].values)
 
         # TODO: add negative emissions from individual biomass types (i.e. alternative emissions of CH4)
         #NB: Assuming that the input substrates are given in the biogas potential an biogas cost!
+
         network.madd("Link",
-                     nodes + " " + name + " digestable biomass",
-                     bus0=nodes + " " + name + " digestable biomass",
-                     bus1=nodes + " digestable biomass",
+                     nodes + " " + name + " digestible biomass",
+                     bus0=nodes + " " + name + " digestible biomass",
+                     bus1=nodes + " digestible biomass",
                      bus2="co2 atmosphere",
-                     carrier="digestable biomass",
+                     carrier="digestible biomass",
                      efficiency=1.,
-                     efficiency2=-costs.at['gas', 'CO2 intensity']-0.124, #Adding the CO2 in the biogas mix
+                     efficiency2=-costs.at['gas', 'CO2 intensity'] / .98 - costs.at["Anaerobic digestion", "CO2 stored"], #Adding the CO2 in the biogas mix
                      p_nom_extendable=True)
 
     #TODO: check carbon balance and add gas grid cost here?
     network.madd("Link",
-                 nodes + " digestable biomass CC",
-                 bus0=nodes + " digestable biomass",
+                 nodes + " digestible biomass CC",
+                 bus0=nodes + " digestible biomass",
                  bus1="EU gas",
                  bus2="co2 stored",
                  bus3="co2 atmosphere",
-                 carrier="digestable biomass to gas",
-                 capital_cost=costs.loc["Anaerobic digestion + upgrading", "fixed"],  # Change to DEA values
-                 marginal_cost=costs.loc["biogas upgrading", "VOM"],  # Add DEA values for biogas process
+                 carrier="digestible biomass to gas",
+                 capital_cost=costs.at["Anaerobic digestion", "fixed"],  # Change to DEA values
+                 marginal_cost=costs.at["biogas upgrading", "VOM"],  # Add DEA values for biogas process
                  efficiency=.98, #Potential already given in biogas, so just add losses for upgrading
-                 efficiency2=0.124*0.98, #tCO2/MWh_CH4 -costs.at['Biogas', 'CO2 content'],
-                 efficiency3=0.124*0.02+0.02*costs.at['gas', 'CO2 intensity'], #Assuming 2% losses and 2% flaring
+                 efficiency2=costs.at["Anaerobic digestion", "CO2 stored"] * costs.at['Anaerobic digestion','capture rate'], #tCO2/MWh_CH4 -costs.at['Biogas', 'CO2 content'],
+                 efficiency3=costs.at["Anaerobic digestion", "CO2 stored"] * (1-costs.at['Anaerobic digestion','capture rate']), #Assuming 2% losses and 2% flaring
                  p_nom_extendable=True)
 
 
@@ -1747,8 +1750,8 @@ def add_biomass(network):
                  carrier="BioSNG",
                  lifetime=costs.at['BioSNG', 'lifetime'],
                  efficiency=costs.at['BioSNG', 'efficiency'],
-                 efficiency2=0.238, #Adding solid biomass negative emissions here
-                 efficiency3=0.0048,
+                 efficiency2=costs.at['BioSNG', 'CO2 stored'] * costs.at['BioSNG', 'capture rate'], #Adding solid biomass negative emissions here
+                 efficiency3=costs.at['BioSNG', 'CO2 stored'] * (1 - costs.at['BioSNG', 'capture rate']),
                  p_nom_extendable=True,
                  capital_cost=costs.at['BioSNG', 'fixed'],
                  marginal_cost=0., #costs.loc["BioSNG", "VOM"]
@@ -1776,8 +1779,8 @@ def add_biomass(network):
                  carrier="biomass to liquid",
                  lifetime=costs.at['BtL', 'lifetime'],
                  efficiency1=0.47, #costs.at['BtL', 'efficiency-fuel'],
-                 efficiency2=costs.at['BtL', 'CO2 stored'],
-                 efficiency3=costs.at['BtL', 'CO2 vented'],
+                 efficiency2=costs.at['BtL', 'CO2 stored'] * costs.at['BtL', 'capture rate'],
+                 efficiency3=costs.at['BtL', 'CO2 stored'] * (1 - costs.at['BtL', 'capture rate']),
                  p_nom_extendable=True,
                  capital_cost=costs.at['BtL', 'fixed'],
                  marginal_cost=0.,  # costs.loc["BtL", "VOM"]
@@ -2051,11 +2054,12 @@ def add_industry(network):
                  bus0=nodes + " H2",
                  bus1="EU oil",#nodes + " electrofuel",#"EU oil",
                  bus2="co2 stored",
-                 # bus3="co2 stored",
+                 bus3="co2 atmosphere",
                  carrier="electrofuel",
                  efficiency=costs.at["Fischer-Tropsch",'efficiency'],
                  capital_cost=costs.at["Fischer-Tropsch",'fixed'],
-                 efficiency2=-(1-0.41)*0.3047, #Check this. Should be correct at eta=0.69. #costs.at["oil",'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency'], #+costs.at["BtL",'CO2 stored'],#,
+                 efficiency2=-costs.at['Fischer-Tropsch', 'syngas CO2 intensity']+costs.at['Fischer-Tropsch', 'CO2 stored'] * costs.at['Fischer-Tropsch', 'capture rate'],#-(1-0.41)*0.3047, #Check this. Should be correct at eta=0.69. #costs.at["oil",'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency'], #+costs.at["BtL",'CO2 stored'],#,
+                 efficiency3=costs.at['Fischer-Tropsch', 'CO2 stored'] * (1-costs.at['Fischer-Tropsch', 'capture rate']),
                  # efficiency3=0.41*0.3047,
                  p_nom_extendable=True,
                  lifetime=costs.at['Fischer-Tropsch','lifetime'])
