@@ -1130,7 +1130,7 @@ def add_land_transport(network):
                      bus=nodes + " EV battery",
                      carrier="land transport EV",
                      p_set=electric_share*(transport[nodes]+shift_df(transport[nodes],1)+shift_df(transport[nodes],2))/3.)
-
+        print('EV demand',electric_share*(transport[nodes]+shift_df(transport[nodes],1)+shift_df(transport[nodes],2))/3.)
         p_nom = nodal_transport_data["number cars"]*0.011*electric_share  #3-phase charger with 11 kW * x% of time grid-connected
 
         network.madd("Link",
@@ -1194,13 +1194,14 @@ def add_land_transport(network):
                      carrier="land transport oil",
                      p_set=ice_share/options['transport_internal_combustion_efficiency']*transport[nodes])
 
-        co2 = ice_share/options['transport_internal_combustion_efficiency']*transport[nodes].sum().sum()/8760.*costs.at["oil",'CO2 intensity']
-
+        # TODO: make hourly for each node? - the method now is inexact when running coarse resolution (e.g. > 1h)
+        # co2 = ice_share/options['transport_internal_combustion_efficiency']*transport[nodes].sum().sum()/8760.*costs.at["oil",'CO2 intensity']
         network.madd("Load",
-                     ["land transport oil emissions"],
+                     nodes,
+                     suffix=" land transport oil emissions",
                      bus="co2 atmosphere",
                      carrier="land transport oil emissions",
-                     p_set=-co2)
+                     p_set=-ice_share/options['transport_internal_combustion_efficiency']*transport[nodes]*costs.at["oil",'CO2 intensity']) #co2_4)
 
 def add_heat(network):
 
@@ -1250,8 +1251,9 @@ def add_heat(network):
 
 
         if name == "urban central":
+            # TODO: seems to be an error in the grouping?
             heat_load = heat_demand.groupby(level=1,axis=1).sum()[nodes[name]].multiply(urban_fraction[nodes[name]]*(1+options['district_heating_loss']))
-
+            print('Heat load: ',heat_load)
         network.madd("Load",
                      nodes[name],
                      suffix=" " + name + " heat",
@@ -2207,6 +2209,7 @@ def remove_biomass_transport(n):
     n.links = n.links[n.links.carrier!="solid biomass transport"]
     # total industry demand for biomass
     biomass_demand = n.loads[n.loads.carrier=="solid biomass for industry"].p_set.sum()
+    print('Biomass demand: ',biomass_demand)
     # remove industry demand
     n.loads = n.loads[n.loads.carrier!="solid biomass for industry"]
     # drop transport and industry links
