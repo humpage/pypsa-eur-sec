@@ -1620,7 +1620,7 @@ def add_biomass(network):
                  carrier="digestible biomass to gas",
                  capital_cost=costs.at["Anaerobic digestion", "fixed"],  # Change to DEA values
                  marginal_cost=costs.at["biogas upgrading", "VOM"],  # Add DEA values for biogas process
-                 efficiency=.98, #Potential already given in biogas, so just add losses for upgrading
+                 efficiency=1, #Potential already given in biogas, so just add losses for upgrading
                  efficiency2=costs.at["Anaerobic digestion", "CO2 stored"] * costs.at['Anaerobic digestion','capture rate'], #tCO2/MWh_CH4 -costs.at['Biogas', 'CO2 content'],
                  efficiency3=costs.at["Anaerobic digestion", "CO2 stored"] * (1-costs.at['Anaerobic digestion','capture rate']),
                  p_nom_extendable=True)
