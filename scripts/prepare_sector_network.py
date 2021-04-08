@@ -1042,12 +1042,12 @@ def add_storage(network):
                      bus0=nodes+" H2",
                      bus1=["EU gas"]*len(nodes),
                      bus2="co2 stored",
-                     bus3="co2 atmosphere",
+                     # bus3="co2 atmosphere",
                      p_nom_extendable=True,
                      carrier="Sabatier",
                      efficiency=costs.at["methanation","efficiency"],
-                     efficiency2=-costs.at['methanation', 'syngas CO2 intensity']+costs.at['methanation', 'CO2 stored'] * costs.at['methanation', 'capture rate'], # (1-0.24)*0.2376, #delta between input CO2 and the CO2 byproduct, assumed to go back to the store. should be correct for eta=0.91 ##costs.at["methanation","efficiency"]*costs.at['gas','CO2 intensity'],
-                     efficiency3=costs.at['methanation', 'CO2 stored'] * (1 - costs.at['methanation', 'capture rate']),
+                     efficiency2=-costs.at['gas', 'CO2 intensity'],#+costs.at['methanation', 'CO2 stored'] * costs.at['methanation', 'capture rate'], # (1-0.24)*0.2376, #delta between input CO2 and the CO2 byproduct, assumed to go back to the store. should be correct for eta=0.91 ##costs.at["methanation","efficiency"]*costs.at['gas','CO2 intensity'],
+                     # efficiency3=costs.at['methanation', 'CO2 stored'] * (1 - costs.at['methanation', 'capture rate']),
                      capital_cost=costs.at["methanation","fixed"],
                      lifetime=costs.at['methanation','lifetime'])
 
@@ -1607,7 +1607,7 @@ def add_biomass(network):
                      bus2="co2 atmosphere",
                      carrier="digestible biomass",
                      efficiency=1.,
-                     efficiency2=-costs.at['gas', 'CO2 intensity'] / .98 - costs.at["Anaerobic digestion", "CO2 stored"], #Adding the CO2 in the biogas mix
+                     efficiency2=-costs.at['gas', 'CO2 intensity'] - costs.at["Anaerobic digestion", "CO2 stored"], #Adding the CO2 in the biogas mix
                      p_nom_extendable=True)
 
     #TODO: add gas grid cost here?
@@ -2048,18 +2048,17 @@ def add_industry(network):
     #              e_nom_extendable=True,
     #              e_cyclic=True,
     #              carrier="electrofuel")
-
     network.madd("Link",
                  nodes + " Fischer-Tropsch",
                  bus0=nodes + " H2",
                  bus1="EU oil",#nodes + " electrofuel",#"EU oil",
                  bus2="co2 stored",
-                 bus3="co2 atmosphere",
+                 # bus3="co2 atmosphere",
                  carrier="electrofuel",
                  efficiency=costs.at["Fischer-Tropsch",'efficiency'],
                  capital_cost=costs.at["Fischer-Tropsch",'fixed'],
-                 efficiency2=-costs.at['Fischer-Tropsch', 'syngas CO2 intensity']+costs.at['Fischer-Tropsch', 'CO2 stored'] * costs.at['Fischer-Tropsch', 'capture rate'],#-(1-0.41)*0.3047, #Check this. Should be correct at eta=0.69. #costs.at["oil",'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency'], #+costs.at["BtL",'CO2 stored'],#,
-                 efficiency3=costs.at['Fischer-Tropsch', 'CO2 stored'] * (1-costs.at['Fischer-Tropsch', 'capture rate']),
+                 efficiency2=-costs.at['oil', 'CO2 intensity'],#+costs.at['Fischer-Tropsch', 'CO2 stored'] * costs.at['Fischer-Tropsch', 'capture rate'],#-(1-0.41)*0.3047, #Check this. Should be correct at eta=0.69. #costs.at["oil",'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency'], #+costs.at["BtL",'CO2 stored'],#,
+                 # efficiency3=costs.at['Fischer-Tropsch', 'CO2 stored'] * (1-costs.at['Fischer-Tropsch', 'capture rate']),
                  p_nom_extendable=True,
                  lifetime=costs.at['Fischer-Tropsch','lifetime'])
 
@@ -2161,8 +2160,8 @@ def add_waste_heat(network):
         urban_central = urban_central.str[:-len(" urban central heat")]
 
         if options['use_fischer_tropsch_waste_heat']:
-            network.links.loc[urban_central + " Fischer-Tropsch","bus3"] = urban_central + " urban central heat"
-            network.links.loc[urban_central + " Fischer-Tropsch","efficiency3"] = 0.95 - network.links.loc[urban_central + " Fischer-Tropsch","efficiency"]
+            network.links.loc[urban_central + " Fischer-Tropsch","bus4"] = urban_central + " urban central heat"
+            network.links.loc[urban_central + " Fischer-Tropsch","efficiency4"] = 0.95 - network.links.loc[urban_central + " Fischer-Tropsch","efficiency"]
 
         if options['use_fuel_cell_waste_heat']:
             network.links.loc[urban_central + " H2 Fuel Cell","bus2"] = urban_central + " urban central heat"
