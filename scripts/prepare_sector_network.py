@@ -1046,7 +1046,7 @@ def add_storage(network):
                      p_nom_extendable=True,
                      carrier="Sabatier",
                      efficiency=costs.at["methanation","efficiency"],
-                     efficiency2=-costs.at['gas', 'CO2 intensity'],#+costs.at['methanation', 'CO2 stored'] * costs.at['methanation', 'capture rate'], # (1-0.24)*0.2376, #delta between input CO2 and the CO2 byproduct, assumed to go back to the store. should be correct for eta=0.91 ##costs.at["methanation","efficiency"]*costs.at['gas','CO2 intensity'],
+                     efficiency2=-costs.at['gas', 'CO2 intensity']*costs.at["methanation","efficiency"],#+costs.at['methanation', 'CO2 stored'] * costs.at['methanation', 'capture rate'], # (1-0.24)*0.2376, #delta between input CO2 and the CO2 byproduct, assumed to go back to the store. should be correct for eta=0.91 ##costs.at["methanation","efficiency"]*costs.at['gas','CO2 intensity'],
                      # efficiency3=costs.at['methanation', 'CO2 stored'] * (1 - costs.at['methanation', 'capture rate']),
                      capital_cost=costs.at["methanation","fixed"],
                      lifetime=costs.at['methanation','lifetime'])
@@ -2057,7 +2057,7 @@ def add_industry(network):
                  carrier="electrofuel",
                  efficiency=costs.at["Fischer-Tropsch",'efficiency'],
                  capital_cost=costs.at["Fischer-Tropsch",'fixed'],
-                 efficiency2=-costs.at['oil', 'CO2 intensity'],#+costs.at['Fischer-Tropsch', 'CO2 stored'] * costs.at['Fischer-Tropsch', 'capture rate'],#-(1-0.41)*0.3047, #Check this. Should be correct at eta=0.69. #costs.at["oil",'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency'], #+costs.at["BtL",'CO2 stored'],#,
+                 efficiency2=-costs.at['oil', 'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency'],#+costs.at['Fischer-Tropsch', 'CO2 stored'] * costs.at['Fischer-Tropsch', 'capture rate'],#-(1-0.41)*0.3047, #Check this. Should be correct at eta=0.69. #costs.at["oil",'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency'], #+costs.at["BtL",'CO2 stored'],#,
                  # efficiency3=costs.at['Fischer-Tropsch', 'CO2 stored'] * (1-costs.at['Fischer-Tropsch', 'capture rate']),
                  p_nom_extendable=True,
                  lifetime=costs.at['Fischer-Tropsch','lifetime'])
