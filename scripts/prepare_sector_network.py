@@ -1130,6 +1130,7 @@ def add_land_transport(network):
                      bus=nodes + " EV battery",
                      carrier="land transport EV",
                      p_set=electric_share*(transport[nodes]+shift_df(transport[nodes],1)+shift_df(transport[nodes],2))/3.)
+
         print('EV demand',electric_share*(transport[nodes]+shift_df(transport[nodes],1)+shift_df(transport[nodes],2))/3.)
         p_nom = nodal_transport_data["number cars"]*0.011*electric_share  #3-phase charger with 11 kW * x% of time grid-connected
 
@@ -1550,7 +1551,7 @@ def add_biomass(network):
                         .set_index(pop_layout.index)
                         .mul(pop_layout.fraction, axis="index"))
 
-    # print(biomass_pot_node)
+    print(biomass_pot_node)
     network.add("Carrier","digestible biomass")
 
     network.madd("Bus",
@@ -1581,7 +1582,12 @@ def add_biomass(network):
                                 "sewage sludge", "straw"] #"Food industry residues",
                                 # "Landscape management", "Straw"]
 
+    biomass_potential = {}
+    biomass_cost = {}
+
     for name in digestible_biomass_types:
+
+        biomass_potential[name] = biomass_pot_node[name].values
         network.add("Carrier", name + " digestible biomass")
 
         network.madd("Bus",
@@ -1590,13 +1596,29 @@ def add_biomass(network):
                  carrier=name + " digestible biomass")
 
         #TODO: add individual costs
+        # network.madd("Store",
+        #              nodes + " " + name + " digestible biomass",
+        #              bus=nodes + " " + name + " digestible biomass",
+        #              carrier=name + " digestible biomass",
+        #              e_nom=biomass_pot_node[name].values,
+        #              # marginal_cost=costs.at['digestible biomass', 'fuel'], #Add individual costs
+        #              e_initial=biomass_pot_node[name].values)
+
         network.madd("Store",
+                    nodes + " " + name + " digestible biomass",
+                    bus=nodes + " " + name + " digestible biomass",
+                    e_nom_extendable=True,
+                    e_cyclic=True,
+                    carrier=name + " digestible biomass")
+
+        network.madd("Generator",
                      nodes + " " + name + " digestible biomass",
                      bus=nodes + " " + name + " digestible biomass",
                      carrier=name + " digestible biomass",
-                     e_nom=biomass_pot_node[name].values,
-                     marginal_cost=costs.at['digestible biomass', 'fuel'], #Add individual costs
-                     e_initial=biomass_pot_node[name].values)
+                     p_nom_extendable=True,
+                     p_nom_max=biomass_potential[name]/8760,
+                     marginal_cost=costs.at['digestible biomass', 'fuel'])
+
 
         #NB: Assuming that the input substrates are given in the biogas potential and biogas cost!
 
@@ -1607,7 +1629,7 @@ def add_biomass(network):
                      bus2="co2 atmosphere",
                      carrier="digestible biomass",
                      efficiency=1.,
-                     efficiency2=-costs.at['gas', 'CO2 intensity'] - costs.at["Anaerobic digestion", "CO2 stored"], #Adding the CO2 in the biogas mix
+                     efficiency2=-costs.at['gas', 'CO2 intensity'] - costs.at["Anaerobic digestion", "CO2 stored"],  #Adding the CO2 in the biogas mix
                      p_nom_extendable=True)
 
     #TODO: add gas grid cost here?
@@ -1628,8 +1650,6 @@ def add_biomass(network):
 
     solid_biomass_types = ["poplar", "forest residues", "industry wood residues"] #"scrap wood"
 
-    biomass_potential = {}
-    biomass_cost = {}
 
     for name in solid_biomass_types:
         network.add("Carrier", name + " solid biomass")
@@ -1646,11 +1666,17 @@ def add_biomass(network):
         network.madd("Store",
                     nodes + " " + name + " solid biomass",
                     bus=nodes + " " + name + " solid biomass",
-                    carrier=name + " solid biomass",
-                    e_nom=biomass_potential[name],
-                    marginal_cost=biomass_cost[name],
-                    e_initial=biomass_potential[name])
+                    e_nom_extendable=True,
+                    e_cyclic=True,
+                    carrier=name + " solid biomass")
 
+        network.madd("Generator",
+                     nodes + " " + name + " solid biomass",
+                     bus=nodes + " " + name + " solid biomass",
+                     carrier=name + " solid biomass",
+                     p_nom_extendable=True,
+                     p_nom_max=biomass_potential[name]/8760,
+                     marginal_cost=biomass_cost[name])
 
         network.madd("Link",
                      nodes + " " + name + " solid biomass",
@@ -1694,12 +1720,20 @@ def add_biomass(network):
                             carrier="solid biomass import")
 
                 network.madd("Store",
+                             [import_name[num] + " solid biomass"],
+                             bus=import_name[num] + " solid biomass",
+                             e_nom_extendable=True,
+                             e_cyclic=True,
+                             carrier="solid biomass import",
+                             )
+
+                network.madd("Generator",
                             [import_name[num] + " solid biomass"],
                             bus=import_name[num] + " solid biomass",
                             carrier="solid biomass import",
-                            e_nom=import_potential[num],
-                            marginal_cost=import_cost[num],
-                            e_initial=import_potential[num])
+                            p_nom_extendable=True,
+                            p_nom_max=import_potential[num]/8760,
+                            marginal_cost=import_cost[num])
 
                 network.madd("Link",
                             nodes + " " + import_name[num] + " solid biomass",
