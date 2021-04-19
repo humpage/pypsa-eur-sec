@@ -2197,6 +2197,12 @@ def add_waste_heat(network):
             network.links.loc[urban_central + " Fischer-Tropsch","bus4"] = urban_central + " urban central heat"
             network.links.loc[urban_central + " Fischer-Tropsch","efficiency4"] = 0.95 - network.links.loc[urban_central + " Fischer-Tropsch","efficiency"]
 
+        if options['use_biofuel_waste_heat']:
+            network.links.loc[urban_central + " biomass to liquid","bus4"] = urban_central + " urban central heat"
+            network.links.loc[urban_central + " biomass to liquid","efficiency4"] = 0.95 - network.links.loc[urban_central + " biomass to liquid","efficiency"]
+            network.links.loc[urban_central + " solid biomass to gas","bus4"] = urban_central + " urban central heat"
+            network.links.loc[urban_central + " solid biomass to gas","efficiency4"] = 0.95 - network.links.loc[urban_central + " solid biomass to gas","efficiency"]
+
         if options['use_fuel_cell_waste_heat']:
             network.links.loc[urban_central + " H2 Fuel Cell","bus2"] = urban_central + " urban central heat"
             network.links.loc[urban_central + " H2 Fuel Cell","efficiency2"] = 0.95 - network.links.loc[urban_central + " H2 Fuel Cell","efficiency"]
