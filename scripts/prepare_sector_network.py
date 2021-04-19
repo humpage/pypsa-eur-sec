@@ -892,6 +892,15 @@ def insert_gas_distribution_costs(network):
     mchp = network.links.index[network.links.carrier.str.contains("micro gas")]
     network.links.loc[mchp,  "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
 
+    # TODO: Research methane grid costs and implement!
+    # biogas
+    mchp = network.links.index[network.links.carrier.str.contains("digestible biomass to gas")]
+    network.links.loc[mchp,  "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
+
+    # lowT steam methane
+    mchp = network.links.index[network.links.carrier.str.contains("methane for lowT industry")]
+    network.links.loc[mchp,  "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
+
 def add_electricity_grid_connection(network):
 
     carriers = ["onwind","solar"]
@@ -1632,7 +1641,7 @@ def add_biomass(network):
                      efficiency2=-costs.at['gas', 'CO2 intensity'] - costs.at["Anaerobic digestion", "CO2 stored"],  #Adding the CO2 in the biogas mix
                      p_nom_extendable=True)
 
-    #TODO: add gas grid cost here?
+    #TODO: gas grid cost added for biogas processes in insert_gas_distribution_costs, but demands refining! Also add CO2 transport cost!
     network.madd("Link",
                  nodes + " digestible biomass CC",
                  bus0=nodes + " digestible biomass",
@@ -1640,10 +1649,10 @@ def add_biomass(network):
                  bus2="co2 stored",
                  bus3="co2 atmosphere",
                  carrier="digestible biomass to gas",
-                 capital_cost=costs.at["Anaerobic digestion", "fixed"],  # Change to DEA values
+                 capital_cost=costs.at["Anaerobic digestion", "fixed"] + costs.at["biogas upgrading", "fixed"],  # Change to DEA values
                  marginal_cost=costs.at["biogas upgrading", "VOM"],  # Add DEA values for biogas process
-                 efficiency=1, #Potential already given in biogas, so just add losses for upgrading
-                 efficiency2=costs.at["Anaerobic digestion", "CO2 stored"] * costs.at['Anaerobic digestion','capture rate'], #tCO2/MWh_CH4 -costs.at['Biogas', 'CO2 content'],
+                 efficiency=1,
+                 efficiency2=costs.at["Anaerobic digestion", "CO2 stored"] * costs.at['Anaerobic digestion','capture rate'],
                  efficiency3=costs.at["Anaerobic digestion", "CO2 stored"] * (1-costs.at['Anaerobic digestion','capture rate']),
                  p_nom_extendable=True)
 
@@ -2085,14 +2094,12 @@ def add_industry(network):
     network.madd("Link",
                  nodes + " Fischer-Tropsch",
                  bus0=nodes + " H2",
-                 bus1="EU oil",#nodes + " electrofuel",#"EU oil",
+                 bus1="EU oil",
                  bus2="co2 stored",
-                 # bus3="co2 atmosphere",
                  carrier="electrofuel",
                  efficiency=costs.at["Fischer-Tropsch",'efficiency'],
                  capital_cost=costs.at["Fischer-Tropsch",'fixed'],
-                 efficiency2=-costs.at['oil', 'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency'],#+costs.at['Fischer-Tropsch', 'CO2 stored'] * costs.at['Fischer-Tropsch', 'capture rate'],#-(1-0.41)*0.3047, #Check this. Should be correct at eta=0.69. #costs.at["oil",'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency'], #+costs.at["BtL",'CO2 stored'],#,
-                 # efficiency3=costs.at['Fischer-Tropsch', 'CO2 stored'] * (1-costs.at['Fischer-Tropsch', 'capture rate']),
+                 efficiency2=-costs.at['oil', 'CO2 intensity']*costs.at["Fischer-Tropsch",'efficiency'],
                  p_nom_extendable=True,
                  lifetime=costs.at['Fischer-Tropsch','lifetime'])
 
@@ -2197,11 +2204,13 @@ def add_waste_heat(network):
             network.links.loc[urban_central + " Fischer-Tropsch","bus4"] = urban_central + " urban central heat"
             network.links.loc[urban_central + " Fischer-Tropsch","efficiency4"] = 0.95 - network.links.loc[urban_central + " Fischer-Tropsch","efficiency"]
 
-        if options['use_biofuel_waste_heat']:
-            network.links.loc[urban_central + " biomass to liquid","bus4"] = urban_central + " urban central heat"
-            network.links.loc[urban_central + " biomass to liquid","efficiency4"] = 0.95 - network.links.loc[urban_central + " biomass to liquid","efficiency"]
-            network.links.loc[urban_central + " solid biomass to gas","bus4"] = urban_central + " urban central heat"
-            network.links.loc[urban_central + " solid biomass to gas","efficiency4"] = 0.95 - network.links.loc[urban_central + " solid biomass to gas","efficiency"]
+        for o in opts:
+            if "B" in o:
+                if options['use_biofuel_waste_heat']:
+                    network.links.loc[urban_central + " biomass to liquid","bus4"] = urban_central + " urban central heat"
+                    network.links.loc[urban_central + " biomass to liquid","efficiency4"] = 0.95 - network.links.loc[urban_central + " biomass to liquid","efficiency"]
+                    network.links.loc[urban_central + " solid biomass to gas","bus4"] = urban_central + " urban central heat"
+                    network.links.loc[urban_central + " solid biomass to gas","efficiency4"] = 0.95 - network.links.loc[urban_central + " solid biomass to gas","efficiency"]
 
         if options['use_fuel_cell_waste_heat']:
             network.links.loc[urban_central + " H2 Fuel Cell","bus2"] = urban_central + " urban central heat"
@@ -2247,8 +2256,9 @@ def remove_biomass_transport(n):
     # remove biomass transport links
     n.links = n.links[n.links.carrier!="solid biomass transport"]
     # total industry demand for biomass
-    biomass_demand = n.loads[n.loads.carrier=="solid biomass for industry"].p_set.sum()
-    print('Biomass demand: ',biomass_demand)
+    steam_demand = n.loads[n.loads.carrier=="solid biomass for industry"].p_set.sum()
+    print('Steam demand: ',steam_demand)
+    print('Steam demand: ',steam_demand)
     # remove industry demand
     n.loads = n.loads[n.loads.carrier!="solid biomass for industry"]
     # drop transport and industry links
