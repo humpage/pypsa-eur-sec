@@ -434,6 +434,80 @@ def set_line_volume_limit(n, lv):
 
     return n
 
+
+
+# def _add_links_from_tyndp(buses, links):
+#     links_tyndp = pd.read_csv(snakemake.input.links_tyndp)
+#
+#     # # remove all links from list which lie outside all of the desired countries
+#     # europe_shape = gpd.read_file(snakemake.input.europe_shape).loc[0, 'geometry']
+#     # europe_shape_prepped = shapely.prepared.prep(europe_shape)
+#     # x1y1_in_europe_b = links_tyndp[['x1', 'y1']].apply(lambda p: europe_shape_prepped.contains(Point(p)), axis=1)
+#     # x2y2_in_europe_b = links_tyndp[['x2', 'y2']].apply(lambda p: europe_shape_prepped.contains(Point(p)), axis=1)
+#     # is_within_covered_countries_b = x1y1_in_europe_b & x2y2_in_europe_b
+#     #
+#     # if not is_within_covered_countries_b.all():
+#     #     logger.info("TYNDP links outside of the covered area (skipping): " +
+#     #                 ", ".join(links_tyndp.loc[~ is_within_covered_countries_b, "Name"]))
+#     #
+#     #     links_tyndp = links_tyndp.loc[is_within_covered_countries_b]
+#     #     if links_tyndp.empty:
+#     #         return buses, links
+#
+#     has_replaces_b = links_tyndp.replaces.notnull()
+#     oids = dict(Bus=_get_oid(buses), Link=_get_oid(links))
+#     keep_b = dict(Bus=pd.Series(True, index=buses.index),
+#                   Link=pd.Series(True, index=links.index))
+#     for reps in links_tyndp.loc[has_replaces_b, 'replaces']:
+#         for comps in reps.split(':'):
+#             oids_to_remove = comps.split('.')
+#             c = oids_to_remove.pop(0)
+#             keep_b[c] &= ~oids[c].isin(oids_to_remove)
+#     buses = buses.loc[keep_b['Bus']]
+#     links = links.loc[keep_b['Link']]
+#
+#     links_tyndp["j"] = _find_closest_links(links, links_tyndp, distance_upper_bound=0.20)
+#     # Corresponds approximately to 20km tolerances
+#
+#     if links_tyndp["j"].notnull().any():
+#         logger.info("TYNDP links already in the dataset (skipping): " + ", ".join(links_tyndp.loc[links_tyndp["j"].notnull(), "Name"]))
+#         links_tyndp = links_tyndp.loc[links_tyndp["j"].isnull()]
+#
+#     tree = sp.spatial.KDTree(buses[['x', 'y']])
+#     _, ind0 = tree.query(links_tyndp[["x1", "y1"]])
+#     ind0_b = ind0 < len(buses)
+#     links_tyndp.loc[ind0_b, "bus0"] = buses.index[ind0[ind0_b]]
+#
+#     _, ind1 = tree.query(links_tyndp[["x2", "y2"]])
+#     ind1_b = ind1 < len(buses)
+#     links_tyndp.loc[ind1_b, "bus1"] = buses.index[ind1[ind1_b]]
+#
+#     links_tyndp_located_b = links_tyndp["bus0"].notnull() & links_tyndp["bus1"].notnull()
+#     if not links_tyndp_located_b.all():
+#         logger.warning("Did not find connected buses for TYNDP links (skipping): " + ", ".join(links_tyndp.loc[~links_tyndp_located_b, "Name"]))
+#         links_tyndp = links_tyndp.loc[links_tyndp_located_b]
+#
+#     logger.info("Adding the following TYNDP links: " + ", ".join(links_tyndp["Name"]))
+#
+#     links_tyndp = links_tyndp[["bus0", "bus1"]].assign(
+#         carrier='DC',
+#         p_nom=links_tyndp["Power (MW)"],
+#         length=links_tyndp["Length (given) (km)"].fillna(links_tyndp["Length (distance*1.2) (km)"]),
+#         under_construction=True,
+#         underground=False,
+#         geometry=(links_tyndp[["x1", "y1", "x2", "y2"]]
+#                   .apply(lambda s: str(LineString([[s.x1, s.y1], [s.x2, s.y2]])), axis=1)),
+#         tags=('"name"=>"' + links_tyndp["Name"] + '", ' +
+#               '"ref"=>"' + links_tyndp["Ref"] + '", ' +
+#               '"status"=>"' + links_tyndp["status"] + '"')
+#     )
+#
+#     links_tyndp.index = "T" + links_tyndp.index.astype(str)
+#
+#     return buses, links.append(links_tyndp, sort=True)
+
+
+
 def average_every_nhours(n, offset):
     logger.info('Resampling the network to {}'.format(offset))
     m = n.copy(with_time=False)
@@ -894,8 +968,11 @@ def insert_gas_distribution_costs(network):
 
     # TODO: Research methane grid costs and implement!
     # biogas
-    mchp = network.links.index[network.links.carrier.str.contains("digestible biomass to gas")]
-    network.links.loc[mchp,  "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
+    biogas = network.links.index[network.links.carrier.str.contains("digestible biomass to gas")]
+    network.links.loc[biogas,  "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
+
+    biosng = network.links.index[network.links.carrier.str.contains("solid biomass to gas")]
+    network.links.loc[biosng,  "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
 
     # lowT steam methane
     mchp = network.links.index[network.links.carrier.str.contains("methane for lowT industry")]
@@ -1712,16 +1789,16 @@ def add_biomass(network):
             tot_EU_biomass = biomass_pot_node.values.sum() - biomass_pot_node["not included"].values.sum()
             print('Total EU biomass: ', tot_EU_biomass*3.6/1e9)
 
-            for num in range(1, 20):
+            for num in range(1, 5):
                 import_name[num] = "import" + str(num)
                 if num == 1:
                     import_potential[num] = max(20e9 / 3.6 - tot_EU_biomass,0) # substract EU biomass from 20 EJ. If EU biomass > 20, return 0
                     import_cost[num] = 15 * 3.6  # EUR/MWh
                     superfluous = min(20e9 / 3.6 - tot_EU_biomass, 0)
                 else:
-                    import_potential[num] = max(1e9 / 3.6 + superfluous,0)  # EJ --> MWh
-                    import_cost[num] = (15 + 0.25 * (num - 1)) * 3.6  # EUR/MWh
-                    superfluous += min(-superfluous, 1e9 / 3.6)
+                    import_potential[num] = max(5e9 / 3.6 + superfluous,0)  # EJ --> MWh
+                    import_cost[num] = (15 + 5*0.25 * (num - 1)) * 3.6  # EUR/MWh
+                    superfluous += min(-superfluous, 5e9 / 3.6)
 
                 network.madd("Bus",
                             [import_name[num] + " solid biomass"],
@@ -2328,6 +2405,8 @@ def get_parameter(item):
 def hvdc_transport_model(n):
 
     print("Changing AC lines to HVDC links")
+    print('Line lenghts: ',n.lines.length)
+    print('Lines: ',n.lines)
     n.madd("Link",
            n.lines.index,
            bus0=n.lines.bus0,
@@ -2335,8 +2414,8 @@ def hvdc_transport_model(n):
            p_nom_extendable=True,
            p_nom=n.lines.s_nom,
            p_min_pu=-1,
-           efficiency=1,
-           marginal_cost=0,
+           efficiency=1-0.03*n.lines.length/1000,
+           marginal_cost=0,#n.lines.marginal_cost,
            carrier="DC",
            length=n.lines.length,
            capital_cost=n.lines.capital_cost)
@@ -2549,6 +2628,9 @@ if __name__ == "__main__":
 
     if snakemake.config["sector"]['electricity_distribution_grid']:
         insert_electricity_distribution_grid(n)
+
+
+
     for o in opts:
         if "+" in o:
             oo = o.split("+")
