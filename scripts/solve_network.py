@@ -131,9 +131,9 @@ def add_biofuel_constraint(n):
     napkership = n.loads.p_set.filter(regex='naphtha|kerosene|oil for shipping').sum() * len(n.snapshots)
     # print('Naphtha: ',napker)
     landtrans = n.loads_t.p_set.filter(regex='land transport oil$').sum().sum()
-    boiler = n.loads.p_set.filter(regex='oil boiler').sum() * len(n.snapshots)
+    # boiler = n.loads.p_set.filter(regex='oil boiler').sum() * len(n.snapshots)
     # print(ship_boiler)
-    total_oil_load = napkership+landtrans+boiler
+    total_oil_load = napkership+landtrans#+boiler
     liqfuelloadlimit = liquid_biofuel_limit * total_oil_load
 
     lhs = linexpr((biofuel_vars_eta, biofuel_vars)).sum().sum()
