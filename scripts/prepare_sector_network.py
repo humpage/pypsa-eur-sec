@@ -1788,17 +1788,18 @@ def add_biomass(network):
             superfluous = {}
             tot_EU_biomass = biomass_pot_node.values.sum() - biomass_pot_node["not included"].values.sum()
             print('Total EU biomass: ', tot_EU_biomass*3.6/1e9)
+            step_size = 5 #EJ
 
-            for num in range(1, 5):
+            for num in range(1, 8):
                 import_name[num] = "import" + str(num)
                 if num == 1:
                     import_potential[num] = max(20e9 / 3.6 - tot_EU_biomass,0) # substract EU biomass from 20 EJ. If EU biomass > 20, return 0
                     import_cost[num] = 15 * 3.6  # EUR/MWh
                     superfluous = min(20e9 / 3.6 - tot_EU_biomass, 0)
                 else:
-                    import_potential[num] = max(5e9 / 3.6 + superfluous,0)  # EJ --> MWh
-                    import_cost[num] = (15 + 5*0.25 * (num - 1)) * 3.6  # EUR/MWh
-                    superfluous += min(-superfluous, 5e9 / 3.6)
+                    import_potential[num] = max(step_size*1e9 / 3.6 + superfluous,0)  # EJ --> MWh
+                    import_cost[num] = (15 + step_size*0.25 * (num - 1)) * 3.6  # EUR/MWh
+                    superfluous += min(-superfluous, step_size*e9 / 3.6)
 
                 network.madd("Bus",
                             [import_name[num] + " solid biomass"],
