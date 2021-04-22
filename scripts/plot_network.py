@@ -23,14 +23,20 @@ override_component_attrs["Link"].loc["bus2"] = [
     "string", np.nan, np.nan, "2nd bus", "Input (optional)"]
 override_component_attrs["Link"].loc["bus3"] = [
     "string", np.nan, np.nan, "3rd bus", "Input (optional)"]
+override_component_attrs["Link"].loc["bus4"] = [
+    "string", np.nan, np.nan, "4th bus", "Input (optional)"]
 override_component_attrs["Link"].loc["efficiency2"] = [
     "static or series", "per unit", 1., "2nd bus efficiency", "Input (optional)"]
 override_component_attrs["Link"].loc["efficiency3"] = [
     "static or series", "per unit", 1., "3rd bus efficiency", "Input (optional)"]
+override_component_attrs["Link"].loc["efficiency4"] = [
+    "static or series", "per unit", 1., "4th bus efficiency", "Input (optional)"]
 override_component_attrs["Link"].loc["p2"] = [
     "series", "MW", 0., "2nd bus output", "Output"]
 override_component_attrs["Link"].loc["p3"] = [
     "series", "MW", 0., "3rd bus output", "Output"]
+override_component_attrs["Link"].loc["p4"] = [
+    "series", "MW", 0., "4th bus output", "Output"]
 override_component_attrs["StorageUnit"].loc["p_dispatch"] = [
     "series", "MW", 0., "Storage discharging.", "Output"]
 override_component_attrs["StorageUnit"].loc["p_store"] = [
@@ -104,6 +110,150 @@ def assign_location(n):
 
 
 # ----------------- PLOT FUNCTIONS --------------------------------------------
+def plot_map_generators(network, components=["links", "stores", "storage_units", "generators"],
+             bus_size_factor=1.7e10, transmission=False):
+
+    n = network.copy()
+    assign_location(n)
+    # Drop non-electric buses so they don't clutter the plot
+    n.buses.drop(n.buses.index[n.buses.carrier != "AC"], inplace=True)
+
+    costs = pd.DataFrame(index=n.buses.index)
+
+    for comp in components:
+        df_c = getattr(n, comp)
+        df_c_t = getattr(n, comp+"_t")
+        df_c["nice_group"] = df_c.carrier.map(rename_techs_tyndp)
+
+        # attr = "e_nom_opt" if comp == "stores" else "p_nom_opt"
+
+        costs_c = ((df_c_t.p.sum())
+                   .groupby([df_c.location, df_c.nice_group]).sum()
+                   .unstack().fillna(0.))
+
+        costs = pd.concat([costs, costs_c], axis=1)
+        print(comp, costs_c)
+
+        print(comp, costs)
+
+    costs = costs.groupby(costs.columns, axis=1).sum()
+
+    costs.drop(list(costs.columns[(costs == 0.).all()]), axis=1, inplace=True)
+
+    new_columns = ((preferred_order & costs.columns)
+                   .append(costs.columns.difference(preferred_order)))
+    costs = costs[new_columns]
+
+    for item in new_columns:
+        if item not in snakemake.config['plotting']['tech_colors']:
+            print("Warning!",item,"not in config/plotting/tech_colors")
+
+    costs = costs.stack()  # .sort_index()
+
+    # hack because impossible to drop buses...
+    n.buses.loc["EU gas", ["x", "y"]] = n.buses.loc["DE0 0", ["x", "y"]]
+
+    n.links.drop(n.links.index[(n.links.carrier != "DC") & (
+        n.links.carrier != "B2B")], inplace=True)
+
+    # drop non-bus
+        # to_drop = costs.index.levels[0] ^ n.buses.index
+        # if len(to_drop) != 0:
+        #     print("dropping non-buses", to_drop)
+        #     costs.drop(to_drop, level=0, inplace=True, axis=0)
+
+    # make sure they are removed from index
+    costs.index = pd.MultiIndex.from_tuples(costs.index.values)
+
+    # PDF has minimum width, so set these to zero
+    line_lower_threshold = 500.
+    line_upper_threshold = 1e4
+    linewidth_factor = 2e3
+    ac_color = "gray"
+    dc_color = "m"
+
+    if snakemake.wildcards["lv"] == "1.0":
+        # should be zero
+        line_widths = n.lines.s_nom_opt - n.lines.s_nom
+        link_widths = n.links.p_nom_opt - n.links.p_nom
+        title = "Transmission reinforcement"
+
+        if transmission:
+            line_widths = n.lines.s_nom_opt
+            link_widths = n.links.p_nom_opt
+            linewidth_factor = 2e3
+            line_lower_threshold = 0.
+            title = "Today's transmission"
+    else:
+        line_widths = n.lines.s_nom_opt - n.lines.s_nom_min
+        link_widths = n.links.p_nom_opt - n.links.p_nom_min
+        title = "Transmission reinforcement"
+
+        if transmission:
+            line_widths = n.lines.s_nom_opt
+            link_widths = n.links.p_nom_opt
+            title = "Total transmission"
+
+    line_widths[line_widths < line_lower_threshold] = 0.
+    link_widths[link_widths < line_lower_threshold] = 0.
+
+    line_widths[line_widths > line_upper_threshold] = line_upper_threshold
+    link_widths[link_widths > line_upper_threshold] = line_upper_threshold
+
+    fig, ax = plt.subplots(subplot_kw={"projection": ccrs.PlateCarree()})
+    fig.set_size_inches(7, 6)
+
+    n.plot(bus_sizes=costs / bus_size_factor,
+           bus_colors=snakemake.config['plotting']['tech_colors'],
+           line_colors=ac_color,
+           link_colors=dc_color,
+           line_widths=line_widths / linewidth_factor,
+           link_widths=link_widths / linewidth_factor,
+           ax=ax,  boundaries=(-10, 30, 34, 70),
+           color_geomap={'ocean': 'lightblue', 'land': "palegoldenrod"})
+
+
+    handles,labels = ax.get_legend_handles_labels()
+
+    handles.reverse()
+    labels.reverse()
+
+    ax.legend(handles,labels,ncol=4,loc="upper left")
+
+
+
+    #
+    # handles = make_legend_circles_for(
+    #     [5e3, 1e3], scale=bus_size_factor, facecolor="gray")
+    # labels = ["{} bEUR/a".format(s) for s in (5, 1)]
+    # l2 = ax.legend(handles, labels,
+    #                loc="upper left", bbox_to_anchor=(0.01, 1.01),
+    #                labelspacing=1.0,
+    #                framealpha=1.,
+    #                # title='System cost',
+    #                title='Generation',
+    #                handler_map=make_handler_map_to_scale_circles_as_in(ax))
+    # ax.add_artist(l2)
+    #
+    # handles = []
+    # labels = []
+    #
+    # for s in (10, 5):
+    #     handles.append(plt.Line2D([0], [0], color=ac_color,
+    #                               linewidth=s * 1e3 / linewidth_factor))
+    #     labels.append("{} GW".format(s))
+    #
+    # l1_1 = ax.legend(handles, labels,
+    #                  loc="upper left", bbox_to_anchor=(0.30, 1.01),
+    #                  framealpha=1,
+    #                  labelspacing=0.8, handletextpad=1.5,
+    #                  title=title)
+    #
+    # ax.add_artist(l1_1)
+
+    fig.savefig(snakemake.output.map.replace("-costs-all","-generation"), transparent=True,
+                bbox_inches="tight")
+
 def plot_map(network, components=["links", "stores", "storage_units", "generators"],
              bus_size_factor=1.7e10, transmission=False):
 
@@ -126,6 +276,7 @@ def plot_map(network, components=["links", "stores", "storage_units", "generator
         costs = pd.concat([costs, costs_c], axis=1)
 
         print(comp, costs)
+
     costs = costs.groupby(costs.columns, axis=1).sum()
 
     costs.drop(list(costs.columns[(costs == 0.).all()]), axis=1, inplace=True)
@@ -201,9 +352,9 @@ def plot_map(network, components=["links", "stores", "storage_units", "generator
            link_widths=link_widths / linewidth_factor,
            ax=ax,  boundaries=(-10, 30, 34, 70),
            color_geomap={'ocean': 'lightblue', 'land': "palegoldenrod"})
-
+    #
     handles = make_legend_circles_for(
-        [5e9, 1e9], scale=bus_size_factor, facecolor="gray")
+        [5e3, 1e3], scale=bus_size_factor, facecolor="gray")
     labels = ["{} bEUR/a".format(s) for s in (5, 1)]
     l2 = ax.legend(handles, labels,
                    loc="upper left", bbox_to_anchor=(0.01, 1.01),
@@ -535,8 +686,12 @@ if __name__ == "__main__":
     n = pypsa.Network(snakemake.input.network,
                       override_component_attrs=override_component_attrs)
 
+    plot_map_generators(n, components=["generators", "storage_units"],
+             bus_size_factor=5e6, transmission=False)
+
     plot_map(n, components=["generators", "links", "stores", "storage_units"],
              bus_size_factor=1.5e10, transmission=False)
+
 
     plot_h2_map(n)
     plot_map_without(n)
