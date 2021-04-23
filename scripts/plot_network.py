@@ -151,16 +151,18 @@ def plot_map_generators(network, components=["links", "stores", "storage_units",
     costs = costs.stack()  # .sort_index()
 
     # hack because impossible to drop buses...
-    n.buses.loc["EU gas", ["x", "y"]] = n.buses.loc["DE0 0", ["x", "y"]]
+    # n.buses.loc["EU gas", ["x", "y"]] = n.buses.loc["DE0 0", ["x", "y"]]
 
     n.links.drop(n.links.index[(n.links.carrier != "DC") & (
         n.links.carrier != "B2B")], inplace=True)
 
     # drop non-bus
-        # to_drop = costs.index.levels[0] ^ n.buses.index
-        # if len(to_drop) != 0:
-        #     print("dropping non-buses", to_drop)
-        #     costs.drop(to_drop, level=0, inplace=True, axis=0)
+    to_drop = costs.index.levels[0] ^ n.buses.index
+    print('Costs index: ', costs.index.levels[0])
+    print('Bus index', n.buses.index)
+    if len(to_drop) != 0:
+        print("dropping non-buses", to_drop)
+        costs.drop(to_drop, level=0, inplace=True, axis=0)
 
     # make sure they are removed from index
     costs.index = pd.MultiIndex.from_tuples(costs.index.values)
@@ -687,7 +689,7 @@ if __name__ == "__main__":
                       override_component_attrs=override_component_attrs)
 
     plot_map_generators(n, components=["generators", "storage_units"],
-             bus_size_factor=5e6, transmission=False)
+             bus_size_factor=5e6, transmission=True)
 
     plot_map(n, components=["generators", "links", "stores", "storage_units"],
              bus_size_factor=1.5e10, transmission=False)
