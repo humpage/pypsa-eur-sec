@@ -1795,11 +1795,11 @@ def add_biomass(network):
                 if num == 1:
                     import_potential[num] = max(20e9 / 3.6 - tot_EU_biomass,0) # substract EU biomass from 20 EJ. If EU biomass > 20, return 0
                     import_cost[num] = 15 * 3.6  # EUR/MWh
-                    superfluous = min(20e9 / 3.6 - tot_EU_biomass, 0)
+                    superfluous = min(20e9 / 3.6 - tot_EU_biomass, 0) #If EU biomass > 20, reduce the following group(s)
                 else:
                     import_potential[num] = max(step_size*1e9 / 3.6 + superfluous,0)  # EJ --> MWh
                     import_cost[num] = (15 + step_size*0.25 * (num - 1)) * 3.6  # EUR/MWh
-                    superfluous += min(-superfluous, step_size*e9 / 3.6)
+                    superfluous += min(-superfluous, step_size*1e9 / 3.6)
 
                 network.madd("Bus",
                             [import_name[num] + " solid biomass"],
@@ -2406,28 +2406,24 @@ def get_parameter(item):
 def hvdc_transport_model(n):
 
     print("Changing AC lines to HVDC links")
-    print('Line lenghts: ',n.lines.length)
-    print('Lines: ',n.lines)
     n.madd("Link",
            n.lines.index,
            bus0=n.lines.bus0,
            bus1=n.lines.bus1,
            p_nom_extendable=True,
            p_nom=n.lines.s_nom,
+           p_nom_min=n.lines.s_nom,
            p_min_pu=-1,
            efficiency=1-0.03*n.lines.length/1000,
-           marginal_cost=0,#n.lines.marginal_cost,
+           marginal_cost=0,
            carrier="DC",
            length=n.lines.length,
            capital_cost=n.lines.capital_cost)
-
 
     # Remove AC lines
     print("Removing AC lines")
     lines_rm = n.lines.index
     n.mremove("Line", lines_rm)
-
-
 
 #%%
 if __name__ == "__main__":
