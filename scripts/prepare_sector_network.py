@@ -1217,7 +1217,6 @@ def add_land_transport(network):
                      carrier="land transport EV",
                      p_set=electric_share*(transport[nodes]+shift_df(transport[nodes],1)+shift_df(transport[nodes],2))/3.)
 
-        print('EV demand',electric_share*(transport[nodes]+shift_df(transport[nodes],1)+shift_df(transport[nodes],2))/3.)
         p_nom = nodal_transport_data["number cars"]*0.011*electric_share  #3-phase charger with 11 kW * x% of time grid-connected
 
         network.madd("Link",
@@ -1340,7 +1339,6 @@ def add_heat(network):
         if name == "urban central":
             # TODO: seems to be an error in the grouping?
             heat_load = heat_demand.groupby(level=1,axis=1).sum()[nodes[name]].multiply(urban_fraction[nodes[name]]*(1+options['district_heating_loss']))
-            print('Heat load: ',heat_load)
         network.madd("Load",
                      nodes[name],
                      suffix=" " + name + " heat",
@@ -2425,6 +2423,11 @@ def hvdc_transport_model(n):
     lines_rm = n.lines.index
     n.mremove("Line", lines_rm)
 
+    # print('DC links: ', n.links.loc[n.links.index[n.links.carrier == 'DC']])
+    dclinks= n.links.index[n.links.carrier == 'DC']
+    n.links.loc[n.links.carrier == 'DC', 'efficiency'] = 1 - 0.03 * n.links.loc[n.links.carrier == 'DC', 'length'] / 1000
+    # n.links.efficiency.loc[dclinks] = 1-0.03*n.links.length.loc[dclinks]/1000,
+    print('DC link efficieny: ',n.links.efficiency.loc[dclinks])
 #%%
 if __name__ == "__main__":
     # Detect running outside of snakemake and mock snakemake for testing
