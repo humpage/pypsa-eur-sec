@@ -1731,6 +1731,20 @@ def add_biomass(network):
                  efficiency3=costs.at["Anaerobic digestion", "CO2 stored"] * (1-costs.at['Anaerobic digestion','capture rate']),
                  p_nom_extendable=True)
 
+    network.madd("Link",
+                 nodes + " digestible biomass to hydrogen CC",
+                 bus0=nodes + " digestible biomass",
+                 bus1=nodes + " H2",
+                 bus2="co2 stored",
+                 bus3="co2 atmosphere",
+                 carrier="digestible biomass to hydrogen",
+                 capital_cost=3500,
+                 marginal_cost=0,#costs.at["biogas upgrading", "VOM"],  # Add DEA values for biogas process
+                 efficiency=0.6,
+                 efficiency2=costs.at["Anaerobic digestion", "CO2 stored"] * costs.at['Anaerobic digestion','capture rate'],
+                 efficiency3=costs.at["Anaerobic digestion", "CO2 stored"] * (1-costs.at['Anaerobic digestion','capture rate']),
+                 p_nom_extendable=True)
+
 
     solid_biomass_types = ["poplar", "forest residues", "industry wood residues"] #"scrap wood"
 
@@ -1873,6 +1887,23 @@ def add_biomass(network):
                  efficiency3=costs.at['BioSNG', 'CO2 stored'] * (1 - costs.at['BioSNG', 'capture rate']),
                  p_nom_extendable=True,
                  capital_cost=costs.at['BioSNG', 'fixed'],
+                 marginal_cost=0., #costs.loc["BioSNG", "VOM"]
+                 )
+
+
+    network.madd("Link",
+                 nodes + " solid biomass to hydrogen",
+                 bus0=nodes + " solid biomass",
+                 bus1=nodes + " H2",
+                 bus2="co2 stored",
+                 bus3="co2 atmosphere",
+                 carrier="solid biomass to hydrogen",
+                 #lifetime=costs.at['BioSNG', 'lifetime'],
+                 efficiency=0.5,#costs.at['BioSNG', 'efficiency'],
+                 efficiency2=costs.at['solid biomass', 'CO2 intensity'] * costs.at['BioSNG', 'capture rate'],
+                 efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (1 - costs.at['BioSNG', 'capture rate']),
+                 p_nom_extendable=True,
+                 capital_cost=3500,#costs.at['BioSNG', 'fixed'],
                  marginal_cost=0., #costs.loc["BioSNG", "VOM"]
                  )
 
@@ -2423,11 +2454,10 @@ def hvdc_transport_model(n):
     lines_rm = n.lines.index
     n.mremove("Line", lines_rm)
 
-    # print('DC links: ', n.links.loc[n.links.index[n.links.carrier == 'DC']])
-    dclinks= n.links.index[n.links.carrier == 'DC']
+    # Set efficiency of all DC links to include losses depending on length
     n.links.loc[n.links.carrier == 'DC', 'efficiency'] = 1 - 0.03 * n.links.loc[n.links.carrier == 'DC', 'length'] / 1000
-    # n.links.efficiency.loc[dclinks] = 1-0.03*n.links.length.loc[dclinks]/1000,
-    print('DC link efficieny: ',n.links.efficiency.loc[dclinks])
+
+
 #%%
 if __name__ == "__main__":
     # Detect running outside of snakemake and mock snakemake for testing
