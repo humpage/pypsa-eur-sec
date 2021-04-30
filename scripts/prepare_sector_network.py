@@ -1981,6 +1981,39 @@ def add_biomass(network):
     #              p_nom_extendable=True,
     #              )
 
+    #TODO: Add real data for bioelectricity without CHP!
+    network.madd("Link",
+                 nodes + " solid biomass to electricity",
+                 bus0=nodes + " solid biomass",
+                 bus1=nodes,
+                 bus3="co2 atmosphere",
+                 carrier="solid biomass to electricity",
+                 p_nom_extendable=True,
+                 capital_cost=0.7 * costs.at['central solid biomass CHP', 'fixed'] * costs.at[
+                     'central solid biomass CHP', 'efficiency'],
+                 marginal_cost=costs.at['central solid biomass CHP', 'VOM'],
+                 efficiency=0.4,
+                 efficiency3=costs.at['solid biomass', 'CO2 intensity'],
+                 lifetime=costs.at['central solid biomass CHP', 'lifetime'])
+
+    network.madd("Link",
+                 nodes + " solid biomass to electricity CC",
+                 bus0=nodes + " solid biomass",
+                 bus1=nodes,
+                 bus3="co2 atmosphere",
+                 bus4="co2 stored",
+                 carrier="solid biomass to electricity CC",
+                 p_nom_extendable=True,
+                 capital_cost=0.7 * costs.at['central solid biomass CHP', 'fixed'] * costs.at[
+                     'central solid biomass CHP CCS', 'efficiency'],
+                 marginal_cost=costs.at['central solid biomass CHP', 'VOM'],
+                 efficiency=costs.at['central solid biomass CHP', 'efficiency'],
+                 efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (1 - options["cc_fraction"]),
+                 efficiency4=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
+                 # c_b=costs.at['central solid biomass CHP', 'c_b'],
+                 # c_v=costs.at['central solid biomass CHP', 'c_v'],
+                 # p_nom_ratio=costs.at['central solid biomass CHP', 'p_nom_ratio'],
+                 lifetime=costs.at['central solid biomass CHP CCS', 'lifetime'])
 
     #AC buses with district heating
     urban_central = network.buses.index[network.buses.carrier == "urban central heat"]
@@ -2025,6 +2058,7 @@ def add_biomass(network):
                      c_v=costs.at['central solid biomass CHP','c_v'],
                      p_nom_ratio=costs.at['central solid biomass CHP','p_nom_ratio'],
                      lifetime=costs.at['central solid biomass CHP CCS','lifetime'])
+
 
 
 def add_industry(network):
