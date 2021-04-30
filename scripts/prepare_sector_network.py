@@ -1718,6 +1718,18 @@ def add_biomass(network):
 
     #TODO: gas grid cost added for biogas processes in insert_gas_distribution_costs, but demands refining! Also add CO2 transport cost!
     network.madd("Link",
+                 nodes + " digestible biomass",
+                 bus0=nodes + " digestible biomass",
+                 bus1="EU gas",
+                 bus3="co2 atmosphere",
+                 carrier="digestible biomass to gas",
+                 capital_cost=costs.at["Anaerobic digestion", "fixed"] + costs.at["biogas upgrading", "fixed"],  # Change to DEA values
+                 marginal_cost=costs.at["biogas upgrading", "VOM"],  # Add DEA values for biogas process
+                 efficiency=1,
+                 efficiency3=costs.at["Anaerobic digestion", "CO2 stored"],
+                 p_nom_extendable=True)
+
+    network.madd("Link",
                  nodes + " digestible biomass CC",
                  bus0=nodes + " digestible biomass",
                  bus1="EU gas",
@@ -1801,13 +1813,14 @@ def add_biomass(network):
             tot_EU_biomass = biomass_pot_node.values.sum() - biomass_pot_node["not included"].values.sum()
             print('Total EU biomass: ', tot_EU_biomass*3.6/1e9)
             step_size = 5 #EJ
+            biomass_import_limit_low_level = 20e9 #EJ
 
-            for num in range(1, 8):
+            for num in range(1, 4):
                 import_name[num] = "import" + str(num)
                 if num == 1:
-                    import_potential[num] = max(20e9 / 3.6 - tot_EU_biomass,0) # substract EU biomass from 20 EJ. If EU biomass > 20, return 0
+                    import_potential[num] = max(biomass_import_limit_low_level / 3.6 - tot_EU_biomass,0) # substract EU biomass from 20 EJ. If EU biomass > 20, return 0
                     import_cost[num] = 15 * 3.6  # EUR/MWh
-                    superfluous = min(20e9 / 3.6 - tot_EU_biomass, 0) #If EU biomass > 20, reduce the following group(s)
+                    superfluous = min(biomass_import_limit_low_level / 3.6 - tot_EU_biomass, 0) #If EU biomass > 20, reduce the following group(s)
                 else:
                     import_potential[num] = max(step_size*1e9 / 3.6 + superfluous,0)  # EJ --> MWh
                     import_cost[num] = (15 + step_size*0.25 * (num - 1)) * 3.6  # EUR/MWh
@@ -1873,9 +1886,23 @@ def add_biomass(network):
                  carrier="solid biomass transport")
 
 
-    #TODO: Add marginal costs
+    #TODO: Add marginal costs and CC costs
     network.madd("Link",
                  nodes + " solid biomass to gas",
+                 bus0=nodes + " solid biomass",
+                 bus1="EU gas",
+                 bus3="co2 atmosphere",
+                 carrier="BioSNG",
+                 lifetime=costs.at['BioSNG', 'lifetime'],
+                 efficiency=costs.at['BioSNG', 'efficiency'],
+                 efficiency3=costs.at['BioSNG', 'CO2 stored'],
+                 p_nom_extendable=True,
+                 capital_cost=costs.at['BioSNG', 'fixed'],
+                 marginal_cost=0., #costs.loc["BioSNG", "VOM"]
+                 )
+
+    network.madd("Link",
+                 nodes + " solid biomass to gas CC",
                  bus0=nodes + " solid biomass",
                  bus1="EU gas",
                  bus2="co2 stored",
@@ -1922,6 +1949,20 @@ def add_biomass(network):
 
     network.madd("Link",
                  nodes + " biomass to liquid",
+                 bus0=nodes + " solid biomass",
+                 bus1="EU oil",#nodes + " liquid biofuel",#"EU oil",
+                 bus3="co2 atmosphere",
+                 carrier="biomass to liquid",
+                 lifetime=costs.at['BtL', 'lifetime'],
+                 efficiency=costs.at['BtL', 'efficiency'],
+                 efficiency3=costs.at['BtL', 'CO2 stored'],
+                 p_nom_extendable=True,
+                 capital_cost=costs.at['BtL', 'fixed'],
+                 marginal_cost=0.,  # costs.loc["BtL", "VOM"]
+                 )
+
+    network.madd("Link",
+                 nodes + " biomass to liquid CC",
                  bus0=nodes + " solid biomass",
                  bus1="EU oil",#nodes + " liquid biofuel",#"EU oil",
                  bus2="co2 stored",
@@ -2026,6 +2067,7 @@ def add_industry(network):
                         efficiency2=costs.at['solid biomass','CO2 intensity'],
                         capital_cost=costs.at['solid biomass to steam','fixed'])
             # TODO: cement capture rather low-cost compared to other processes (high conc. CO2) --> adapt!
+
             network.madd("Link",
                          nodes,
                          suffix=" solid biomass for lowT industry CC",
