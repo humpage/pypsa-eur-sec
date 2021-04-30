@@ -182,7 +182,8 @@ def prepare_building_stock_data():
 
     # add for some missing countries floor area from other data sources
     area_missing = pd.read_csv(snakemake.input.floor_area_missing,
-                               index_col=[0, 1], usecols=[0, 1, 2, 3])
+                               index_col=[0, 1], usecols=[0, 1, 2, 3],
+                               encoding='ISO-8859-1')
     area_tot = area_tot.append(area_missing.unstack(level=-1).dropna().stack())
     area_tot = area_tot.loc[~area_tot.index.duplicated(keep='last')]
 
@@ -193,7 +194,7 @@ def prepare_building_stock_data():
 
     area_per_pop = area_tot.unstack().reindex(index=ct_total.index).apply(lambda x: x / ct_total[x.index])
     missing_area_ct = ct_total.index.difference(area_tot.index.levels[0])
-    for ct in (missing_area_ct & ct_total.index):
+    for ct in missing_area_ct.intersection(ct_total.index):
         averaged_data = pd.DataFrame(
             area_per_pop.value.reindex(map_for_missings[ct]).mean()
             * ct_total[ct],
@@ -342,7 +343,7 @@ def calculate_cost_energy_curve(u_values, l_strength, l_weight, average_surface_
     res = res.reset_index().set_index(["country", "sector"])
 
     # map missing countries
-    for ct in pd.Index(map_for_missings.keys()) & countries:
+    for ct in pd.Index(map_for_missings.keys()).intersection(countries):
         averaged_data = res.reindex(index=map_for_missings[ct], level=0).mean(level=1)
         index = pd.MultiIndex.from_product([[ct], averaged_data.index.to_list()])
         averaged_data.index = index
@@ -376,12 +377,12 @@ if __name__ == "__main__":
                 construction_index="data/retro/comparative_level_investment.csv",
                 average_surface="data/retro/average_surface_components.csv",
                 floor_area_missing="data/retro/floor_area_missing.csv",
-                clustered_pop_layout="resources/pop_layout_{network}_s{simpl}_{clusters}.csv",
+                clustered_pop_layout="resources/pop_layout_elec_s{simpl}_{clusters}.csv",
                 cost_germany="data/retro/retro_cost_germany.csv",
                 window_assumptions="data/retro/window_assumptions.csv"),
             output=dict(
-                retro_cost="resources/retro_cost_{network}_s{simpl}_{clusters}.csv",
-                floor_area="resources/floor_area_{network}_s{simpl}_{clusters}.csv")
+                retro_cost="resources/retro_cost_elec_s{simpl}_{clusters}.csv",
+                floor_area="resources/floor_area_elec_s{simpl}_{clusters}.csv")
         )
         with open('config.yaml', encoding='utf8') as f:
             snakemake.config = yaml.safe_load(f)
