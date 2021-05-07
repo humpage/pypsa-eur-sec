@@ -700,6 +700,8 @@ def prepare_data(network):
     #multiply back in the heating/cooling demand for EVs
     transport = transport.multiply(1+dd_EV)
 
+    #Add transport demand factor depending on the year
+    transport = transport * get_parameter(options["land_transport_demand"])
 
     ## derive plugged-in availability for PKW's (cars)
 
@@ -2205,7 +2207,7 @@ def add_industry(network):
                  # suffix=" oil for shipping",
                  bus="EU oil",
                  carrier="oil for shipping",
-                 p_set = (1-options['shipping_H2_share'])*nodal_energy_totals.loc[nodes,["total international navigation","total domestic navigation"]].sum(axis=1).sum()*1e6/8760.)
+                 p_set = (1-options['shipping_H2_share'])*get_parameter(options["shipping_demand"])*nodal_energy_totals.loc[nodes,["total international navigation","total domestic navigation"]].sum(axis=1).sum()*1e6/8760.)
 
 
     network.madd("Load",
@@ -2213,7 +2215,7 @@ def add_industry(network):
                  suffix=" H2 for shipping",
                  bus=nodes + " H2",
                  carrier="H2 for shipping",
-                 p_set = options['shipping_H2_share']*nodal_energy_totals.loc[nodes,["total international navigation","total domestic navigation"]].sum(axis=1)*1e6*options['shipping_average_efficiency']/costs.at["fuel cell","efficiency"]/8760.)
+                 p_set = options['shipping_H2_share']*get_parameter(options["shipping_demand"])*nodal_energy_totals.loc[nodes,["total international navigation","total domestic navigation"]].sum(axis=1)*1e6*options['shipping_average_efficiency']/costs.at["fuel cell","efficiency"]/8760.)
 
 
     if "EU oil" not in network.buses.index:
@@ -2284,7 +2286,7 @@ def add_industry(network):
                  ["kerosene for aviation"],
                  bus="EU oil",
                  carrier="kerosene for aviation",
-                 p_set = nodal_energy_totals.loc[nodes,["total international aviation","total domestic aviation"]].sum(axis=1).sum()*1e6/8760.)
+                 p_set = get_parameter(options["aviation_demand"])*nodal_energy_totals.loc[nodes,["total international aviation","total domestic aviation"]].sum(axis=1).sum()*1e6/8760.)
 
     #NB: CO2 gets released again to atmosphere when plastics decay or kerosene is burned
     #except for the process emissions when naphtha is used for petrochemicals, which can be captured with other industry process emissions
