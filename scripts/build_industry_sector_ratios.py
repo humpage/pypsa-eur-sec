@@ -5,6 +5,14 @@ import numpy as np
 
 base_dir = "data/jrc-idees-2015"
 
+#Scenario parameters from config.yaml
+investment_year = int(snakemake.wildcards.planning_horizons[-4:])
+
+options = snakemake.config["sector"]
+
+industry_electrification = options["industry_electrification"][investment_year]
+
+
 # year for which data is retrieved
 raw_year = 2015
 year = raw_year-2016
@@ -82,6 +90,7 @@ s_ued = excel_ued.iloc[61:67,year]
 
 assert s_fec.index[0] == subsector
 
+# TODO: need to adapt by including coal?
 # Efficiency changes due to transforming all the smelters into methane
 eff_met=s_ued['Natural gas (incl. biogas)']/s_fec['Natural gas (incl. biogas)']
 
@@ -100,7 +109,7 @@ assert s_fec.index[0] == subsector
 df.loc['elec',sector] += s_fec[subsector]
 
 #### Steel: Furnaces, Refining and Rolling
-#> assume fully electrified
+#> assume partially electrified accd. to config
 #
 #> other processes are scaled by the used energy
 
@@ -114,12 +123,13 @@ s_ued = excel_ued.iloc[68:75,year]
 assert s_fec.index[0] == subsector
 
 # this process can be electrified
-eff = s_ued['Steel: Furnaces, Refining and Rolling - Electric']/s_fec['Steel: Furnaces, Refining and Rolling - Electric']
+eff_elec = s_ued['Steel: Furnaces, Refining and Rolling - Electric']/s_fec['Steel: Furnaces, Refining and Rolling - Electric']
 
-df.loc['elec',sector] += s_ued[subsector]/eff
+df.loc['methane',sector] += (1-industry_electrification)*s_ued[subsector]
+df.loc['elec',sector] += industry_electrification*s_ued[subsector]/eff_elec
 
 #### Steel: Products finishing
-#> assume fully electrified
+#> assume partially electrified
 
 subsector = 'Steel: Products finishing'
 
@@ -131,9 +141,10 @@ s_ued = excel_ued.iloc[75:92,year]
 assert s_fec.index[0] == subsector
 
 # this process can be electrified
-eff = s_ued['Steel: Products finishing - Electric']/s_fec['Steel: Products finishing - Electric']
+eff_elec = s_ued['Steel: Products finishing - Electric']/s_fec['Steel: Products finishing - Electric']
 
-df.loc['elec',sector] += s_ued[subsector]/eff
+df.loc['methane',sector] += (1-industry_electrification)*s_ued[subsector]
+df.loc['elec',sector] += industry_electrification*s_ued[subsector]/eff_elec
 
 #### Process emissions (per physical output)
 
@@ -215,7 +226,7 @@ df.loc['coke',sector] += s_fec['Coke']
 
 
 #### Steel: Furnaces, Refining and Rolling
-#> assume fully electrified
+#> assume partially electrified
 #
 #> other processes are scaled by the used energy
 
@@ -229,12 +240,13 @@ s_ued = excel_ued.iloc[25:32,year]
 assert s_fec.index[0] == subsector
 
 # this process can be electrified
-eff = s_ued['Steel: Furnaces, Refining and Rolling - Electric']/s_fec['Steel: Furnaces, Refining and Rolling - Electric']
+eff_elec = s_ued['Steel: Furnaces, Refining and Rolling - Electric']/s_fec['Steel: Furnaces, Refining and Rolling - Electric']
 
-df.loc['elec',sector] += s_ued[subsector]/eff
+df.loc['methane',sector] += (1-industry_electrification)*s_ued[subsector]
+df.loc['elec',sector] += industry_electrification*s_ued[subsector]/eff_elec
 
 #### Steel: Products finishing
-#> assume fully electrified
+#> assume partially electrified
 
 subsector = 'Steel: Products finishing'
 
@@ -246,10 +258,10 @@ s_ued = excel_ued.iloc[32:49,year]
 assert s_fec.index[0] == subsector
 
 # this process can be electrified
-eff = s_ued['Steel: Products finishing - Electric']/s_fec['Steel: Products finishing - Electric']
+eff_elec = s_ued['Steel: Products finishing - Electric']/s_fec['Steel: Products finishing - Electric']
 
-df.loc['elec',sector] += s_ued[subsector]/eff
-
+df.loc['methane',sector] += (1-industry_electrification)*s_ued[subsector]
+df.loc['elec',sector] += industry_electrification*s_ued[subsector]/eff_elec
 
 #### Process emissions (per physical output)
 
@@ -348,7 +360,7 @@ eff_ch4 = s_ued['Natural gas (incl. biogas)']/s_fec['Natural gas (incl. biogas)'
 df.loc['methane',sector] += s_ued[subsector]/eff_ch4
 
 #### Chemicals: Furnaces
-#> assume fully electrified
+#> assume partially electrified
 
 subsector = 'Chemicals: Furnaces'
 
@@ -362,10 +374,11 @@ assert s_fec.index[0] == subsector
 #efficiency of electrification
 eff_elec = s_ued['Chemicals: Furnaces - Electric']/s_fec['Chemicals: Furnaces - Electric']
 
-df.loc['elec',sector] += s_ued[subsector]/eff_elec
+df.loc['methane',sector] += (1-industry_electrification)*s_ued[subsector]
+df.loc['elec',sector] += industry_electrification*s_ued[subsector]/eff_elec
 
 #### Chemicals: Process cooling
-#> assume fully electrified
+#> assume partially electrified
 
 subsector = 'Chemicals: Process cooling'
 
@@ -378,7 +391,8 @@ assert s_fec.index[0] == subsector
 
 eff_elec = s_ued['Chemicals: Process cooling - Electric']/s_fec['Chemicals: Process cooling - Electric']
 
-df.loc['elec',sector] += s_ued[subsector]/eff_elec
+df.loc['methane',sector] += (1-industry_electrification)*s_ued[subsector]
+df.loc['elec',sector] += industry_electrification*s_ued[subsector]/eff_elec
 
 #### Chemicals: Generic electric process
 
@@ -398,6 +412,7 @@ s_emi = excel_emi.iloc[3:57,year]
 assert s_emi.index[0] == sector
 
 
+#TODO: make choice from config.yaml at thich rate ammonia production is electrified. Rest natural gas.
 ## Correct everything by subtracting 2015's ammonia demand and putting in ammonia demand for H2 and electricity separately
 
 s_out = excel_out.iloc[8:9,year]
@@ -462,7 +477,7 @@ df.loc['elec',sector] += s_fec[['Lighting','Air compressors','Motor drives','Fan
 df.loc['heat',sector] += s_fec['Low enthalpy heat']
 
 #### Chemicals: High enthalpy heat  processing
-#> assume fully electrified
+#> assume partially electrified
 
 subsector = 'Chemicals: High enthalpy heat  processing'
 
@@ -475,10 +490,11 @@ assert s_fec.index[0] == subsector
 
 eff_elec = s_ued['High enthalpy heat  processing - Electric (microwave)']/s_fec['High enthalpy heat  processing - Electric (microwave)']
 
-df.loc['elec',sector] += s_ued[subsector]/eff_elec
+df.loc['methane',sector] += (1-industry_electrification)*s_ued[subsector]
+df.loc['elec',sector] += industry_electrification*s_ued[subsector]/eff_elec
 
 #### Chemicals: Furnaces
-#> assume fully electrified
+#> assume partially electrified
 
 subsector = 'Chemicals: Furnaces'
 
@@ -491,10 +507,13 @@ assert s_fec.index[0] == subsector
 
 eff_elec = s_ued['Chemicals: Furnaces - Electric']/s_fec['Chemicals: Furnaces - Electric']
 
-df.loc['elec',sector] += s_ued[subsector]/eff_elec
+df.loc['methane',sector] += (1-industry_electrification)*s_ued[subsector]
+df.loc['elec',sector] += industry_electrification*s_ued[subsector]/eff_elec
 
 #### Chemicals: Process cooling
-#> assume fully electrified
+#> assume partially electrified
+
+#TODO: NB: there is a share of this electrified in status quo - adapt!
 
 subsector = 'Chemicals: Process cooling'
 
@@ -505,9 +524,10 @@ s_ued = excel_ued.iloc[89:103,year]
 
 assert s_fec.index[0] == subsector
 
-eff = s_ued['Chemicals: Process cooling - Electric']/s_fec['Chemicals: Process cooling - Electric']
+eff_elec = s_ued['Chemicals: Process cooling - Electric']/s_fec['Chemicals: Process cooling - Electric']
 
-df.loc['elec',sector] += s_ued[subsector]/eff
+df.loc['methane',sector] += (1-industry_electrification)*s_ued[subsector]
+df.loc['elec',sector] += industry_electrification*s_ued[subsector]/eff_elec
 
 #### Chemicals: Generic electric process
 
@@ -556,7 +576,7 @@ df.loc['elec',sector] += s_fec[['Lighting','Air compressors','Motor drives','Fan
 df.loc['heat',sector] += s_fec['Low enthalpy heat']
 
 #### Chemicals: High enthalpy heat  processing
-#> assume fully electrified
+#> assume partially electrified
 
 subsector = 'Chemicals: High enthalpy heat  processing'
 
@@ -569,10 +589,11 @@ assert s_fec.index[0] == subsector
 
 eff_elec = s_ued['High enthalpy heat  processing - Electric (microwave)']/s_fec['High enthalpy heat  processing - Electric (microwave)']
 
-df.loc['elec',sector] += s_ued[subsector]/eff_elec
+df.loc['methane',sector] += (1-industry_electrification)*s_ued[subsector]
+df.loc['elec',sector] += industry_electrification*s_ued[subsector]/eff_elec
 
 #### Chemicals: Furnaces
-#> assume fully electrified
+#> assume partially electrified
 
 subsector = 'Chemicals: Furnaces'
 
@@ -583,12 +604,13 @@ s_ued = excel_ued.iloc[129:137,year]
 
 assert s_fec.index[0] == subsector
 
-eff = s_ued['Chemicals: Furnaces - Electric']/s_fec['Chemicals: Furnaces - Electric']
+eff_elec = s_ued['Chemicals: Furnaces - Electric']/s_fec['Chemicals: Furnaces - Electric']
 
-df.loc['elec',sector] += s_ued[subsector]/eff
+df.loc['methane',sector] += (1-industry_electrification)*s_ued[subsector]
+df.loc['elec',sector] += industry_electrification*s_ued[subsector]/eff_elec
 
 #### Chemicals: Process cooling
-#> assume fully electrified
+#> assume partially electrified
 
 subsector = 'Chemicals: Process cooling'
 
@@ -601,7 +623,8 @@ assert s_fec.index[0] == subsector
 
 eff_elec = s_ued['Chemicals: Process cooling - Electric']/s_fec['Chemicals: Process cooling - Electric']
 
-df.loc['elec',sector] += s_ued[subsector]/eff_elec
+df.loc['methane',sector] += (1-industry_electrification)*s_ued[subsector]
+df.loc['elec',sector] += industry_electrification*s_ued[subsector]/eff_elec
 
 #### Chemicals: Generic electric process
 
@@ -676,6 +699,10 @@ df.loc['elec',sector] += s_fec[['Lighting','Air compressors','Motor drives','Fan
 # Low enthalpy heat
 df.loc['heat',sector] += s_fec['Low enthalpy heat']
 
+#TODO: here, "other liquids" make up the main share in reality. Maybe methane is ok as proxy? Or rather oil?
+# A large fraction today is waste (Fractions of municipal waste, hazardous and non-hazardous industrial waste,
+# commercial waste, agricultural waste & residues, construction & demolition waste and extractive (mining) waste)
+
 # pre-processing: keep existing elec and biomass, rest to methane
 df.loc['elec', sector] += s_fec['Cement: Grinding, milling of raw material']
 df.loc['biomass', sector] += s_fec['Biomass']
@@ -722,9 +749,11 @@ df.loc[sources,sector] = df.loc[sources,sector]*conv_factor/s_out.values # unit 
 #
 #> This sector has process emissions.
 #
-#> Includes four subcategories: (a) Mixing of raw material, (b) Drying and sintering of raw material, (c) Primary production process, (d) Product finishing. (b)represents 65% of fec and (a) 4%. So (a) is joined to (b).
+#> Includes four subcategories: (a) Mixing of raw material, (b) Drying and sintering of raw material,
+# (c) Primary production process, (d) Product finishing. (b)represents 65% of fec and (a) 4%. So (a) is joined to (b).
 #
 #> Everything is electrified
+#TODO: make choice from config.yaml at which rate this is electrified. Rest natural gas.
 
 sector = 'Ceramics & other NMM'
 
@@ -745,13 +774,16 @@ df.loc['heat', sector] += s_fec['Low enthalpy heat']
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Ceramics: Microwave drying and sintering']/s_fec['Ceramics: Microwave drying and sintering']
-df.loc['elec', sector] += s_ued[['Ceramics: Mixing of raw material','Ceramics: Drying and sintering of raw material']].sum()/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued[['Ceramics: Mixing of raw material','Ceramics: Drying and sintering of raw material']].sum()
+df.loc['elec', sector] += industry_electrification*s_ued[['Ceramics: Mixing of raw material','Ceramics: Drying and sintering of raw material']].sum()/eff_elec
 
 eff_elec=s_ued['Ceramics: Electric kiln']/s_fec['Ceramics: Electric kiln']
-df.loc['elec', sector] += s_ued['Ceramics: Primary production process']/eff_elec
+df.loc['methane', sector] += (1-industry_electrificatio)*s_ued['Ceramics: Primary production process']
+df.loc['elec', sector] += industry_electrification*s_ued['Ceramics: Primary production process']/eff_elec
 
 eff_elec=s_ued['Ceramics: Electric furnace']/s_fec['Ceramics: Electric furnace']
-df.loc['elec', sector] += s_ued['Ceramics: Product finishing']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Ceramics: Product finishing']/eff_elec
+df.loc['elec', sector] += industry_electrification*s_ued['Ceramics: Product finishing']/eff_elec
 
 s_emi = excel_emi.iloc[45:94,year]
 
@@ -776,6 +808,7 @@ df.loc[sources,sector] = df.loc[sources,sector]*conv_factor/s_out.values # unit 
 #> Includes four subcategories: (a) Melting tank, (b) Forming, (c) Annealing, (d) Finishing processes. (a)represents 73%. (b), (d) are joined to (c).
 #
 #> Everything is electrified.
+#TODO: make choice from config.yaml at which rate this is electrified. Rest natural gas.
 
 sector = 'Glass production'
 
@@ -796,10 +829,12 @@ df.loc['heat', sector] += s_fec['Low enthalpy heat']
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Glass: Electric melting tank']/s_fec['Glass: Electric melting tank']
-df.loc['elec', sector] += s_ued['Glass: Melting tank']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Glass: Melting tank']
+df.loc['elec', sector] += industry_electrification*s_ued['Glass: Melting tank']/eff_elec
 
 eff_elec=s_ued['Glass: Annealing - electric']/s_fec['Glass: Annealing - electric']
-df.loc['elec', sector] += s_ued[['Glass: Forming','Glass: Annealing','Glass: Finishing processes']].sum()/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued[['Glass: Forming','Glass: Annealing','Glass: Finishing processes']].sum()
+df.loc['elec', sector] += industry_electrification*s_ued[['Glass: Forming','Glass: Annealing','Glass: Finishing processes']].sum()/eff_elec
 
 s_emi = excel_emi.iloc[95:124,year]
 
@@ -1014,16 +1049,20 @@ df.loc['heat', sector] += s_fec['Low enthalpy heat']
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Food: Direct Heat - Electric']/s_fec['Food: Direct Heat - Electric']
-df.loc['elec', sector] += s_ued['Food: Oven (direct heat)']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Food: Oven (direct heat)']
+df.loc['elec', sector] += industry_electrification*s_ued['Food: Oven (direct heat)']/eff_elec
 
 eff_elec=s_ued['Food: Process Heat - Electric']/s_fec['Food: Process Heat - Electric']
-df.loc['elec', sector] += s_ued['Food: Specific process heat']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Food: Specific process heat']
+df.loc['elec', sector] += industry_electrification*s_ued['Food: Specific process heat']/eff_elec
 
 eff_elec=s_ued['Food: Electric drying']/s_fec['Food: Electric drying']
-df.loc['elec', sector] += s_ued['Food: Drying']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Food: Drying']
+df.loc['elec', sector] += industry_electrification*s_ued['Food: Drying']/eff_elec
 
 eff_elec=s_ued['Food: Electric cooling']/s_fec['Food: Electric cooling']
-df.loc['elec', sector] += s_ued['Food: Process cooling and refrigeration']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Food: Process cooling and refrigeration']
+df.loc['elec', sector] += industry_electrification*s_ued['Food: Process cooling and refrigeration']/eff_elec
 
 # Steam processing goes all to biomass without change in efficiency
 df.loc['biomass', sector] += s_fec['Food: Steam processing']
@@ -1064,6 +1103,8 @@ excel_emi = pd.read_excel('{}/JRC-IDEES-2015_Industry_{}.xlsx'.format(base_dir,c
 #
 #> There are no process emissions associated to Alumina manufacturing
 
+
+
 sector = 'Alumina production'
 
 df[sector] = 0
@@ -1099,7 +1140,8 @@ s_ued = excel_ued.iloc[24:30,year]
 assert s_fec.index[0] == 'Alumina production: Refining'
 
 eff_elec=s_ued['Electricity']/s_fec['Electricity']
-df.loc['elec', sector] += s_ued['Alumina production: Refining']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Alumina production: Refining']
+df.loc['elec', sector] += industry_electrification*s_ued['Alumina production: Refining']/eff_elec
 
 # read the corresponding lines
 s_out = excel_out.iloc[9:10,year]
@@ -1109,6 +1151,8 @@ assert sector in str(s_out.index)
 # final energy consumption per t
 sources=['elec','biomass', 'methane', 'hydrogen', 'heat','naphtha']
 df.loc[sources,sector] = df.loc[sources,sector]*conv_factor/s_out['Alumina production (kt)'] # unit MWh/t material
+#TODO: Add process emissions
+
 
 ### Aluminium primary route
 #
@@ -1136,11 +1180,13 @@ df.loc['elec', sector] += s_fec['Aluminium electrolysis (smelting)']
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Aluminium processing - Electric']/s_fec['Aluminium processing - Electric']
-df.loc['elec', sector] += s_ued['Aluminium processing  (metallurgy e.g. cast house, reheating)']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Aluminium processing  (metallurgy e.g. cast house, reheating)']
+df.loc['elec', sector] += industry_electrification*s_ued['Aluminium processing  (metallurgy e.g. cast house, reheating)']/eff_elec
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Aluminium finishing - Electric']/s_fec['Aluminium finishing - Electric']
-df.loc['elec', sector] += s_ued['Aluminium finishing']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Aluminium finishing']
+df.loc['elec', sector] += industry_electrification*s_ued['Aluminium finishing']/eff_elec
 
 s_emi = excel_emi.iloc[31:67,year]
 
@@ -1179,15 +1225,18 @@ df.loc['heat', sector] += s_fec['Low enthalpy heat']
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Secondary aluminium - Electric']/s_fec['Secondary aluminium - Electric']
-df.loc['elec', sector] += s_ued['Secondary aluminium (incl. pre-treatment, remelting)']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Secondary aluminium (incl. pre-treatment, remelting)']
+df.loc['elec', sector] += industry_electrification*s_ued['Secondary aluminium (incl. pre-treatment, remelting)']/eff_elec
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Aluminium processing - Electric']/s_fec['Aluminium processing - Electric']
-df.loc['elec', sector] += s_ued['Aluminium processing  (metallurgy e.g. cast house, reheating)']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Aluminium processing  (metallurgy e.g. cast house, reheating)']
+df.loc['elec', sector] += industry_electrification*['Aluminium processing  (metallurgy e.g. cast house, reheating)']/eff_elec
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Aluminium finishing - Electric']/s_fec['Aluminium finishing - Electric']
-df.loc['elec', sector] += s_ued['Aluminium finishing']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Aluminium finishing']
+df.loc['elec', sector] += industry_electrification*s_ued['Aluminium finishing']/eff_elec
 
 # read the corresponding lines
 s_out = excel_out.iloc[12:13,year]
@@ -1221,15 +1270,18 @@ df.loc['heat', sector] += s_fec['Low enthalpy heat']
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Metal production - Electric']/s_fec['Metal production - Electric']
-df.loc['elec', sector] += s_ued['Other Metals: production']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Other Metals: production']
+df.loc['elec', sector] += industry_electrification*s_ued['Other Metals: production']/eff_elec
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Metal processing - Electric']/s_fec['Metal processing - Electric']
-df.loc['elec', sector] += s_ued['Metal processing  (metallurgy e.g. cast house, reheating)']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Metal processing  (metallurgy e.g. cast house, reheating)']
+df.loc['elec', sector] += industry_electrification*s_ued['Metal processing  (metallurgy e.g. cast house, reheating)']/eff_elec
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Metal finishing - Electric']/s_fec['Metal finishing - Electric']
-df.loc['elec', sector] += s_ued['Metal finishing']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Metal finishing']
+df.loc['elec', sector] += industry_electrification*s_ued['Metal finishing']/eff_elec
 
 s_emi = excel_emi.iloc[110:153,year]
 
@@ -1278,15 +1330,18 @@ df.loc['heat', sector] += s_fec['Low enthalpy heat']
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Trans. Eq.: Electric Foundries']/s_fec['Trans. Eq.: Electric Foundries']
-df.loc['elec', sector] += s_ued['Trans. Eq.: Foundries']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Trans. Eq.: Foundries']
+df.loc['elec', sector] += industry_electrification*s_ued['Trans. Eq.: Foundries']/eff_elec
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Trans. Eq.: Electric connection']/s_fec['Trans. Eq.: Electric connection']
-df.loc['elec', sector] += s_ued['Trans. Eq.: Connection techniques']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Trans. Eq.: Connection techniques']
+df.loc['elec', sector] += industry_electrification*['Trans. Eq.: Connection techniques']/eff_elec
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Trans. Eq.: Heat treatment - Electric']/s_fec['Trans. Eq.: Heat treatment - Electric']
-df.loc['elec', sector] += s_ued['Trans. Eq.: Heat treatment']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Trans. Eq.: Heat treatment']
+df.loc['elec', sector] += industry_electrification*s_ued['Trans. Eq.: Heat treatment']/eff_elec
 
 df.loc['elec', sector] += s_fec['Trans. Eq.: General machinery']
 df.loc['elec', sector] += s_fec['Trans. Eq.: Product finishing']
@@ -1336,15 +1391,18 @@ df.loc['heat', sector] += s_fec['Low enthalpy heat']
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Mach. Eq.: Electric Foundries']/s_fec['Mach. Eq.: Electric Foundries']
-df.loc['elec', sector] += s_ued['Mach. Eq.: Foundries']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Mach. Eq.: Foundries']
+df.loc['elec', sector] += industry_electrification*s_ued['Mach. Eq.: Foundries']/eff_elec
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Mach. Eq.: Electric connection']/s_fec['Mach. Eq.: Electric connection']
-df.loc['elec', sector] += s_ued['Mach. Eq.: Connection techniques']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Mach. Eq.: Connection techniques']
+df.loc['elec', sector] += industry_electrification*s_ued['Mach. Eq.: Connection techniques']/eff_elec
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Mach. Eq.: Heat treatment - Electric']/s_fec['Mach. Eq.: Heat treatment - Electric']
-df.loc['elec', sector] += s_ued['Mach. Eq.: Heat treatment']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Mach. Eq.: Heat treatment']
+df.loc['elec', sector] += industry_electrification*s_ued['Mach. Eq.: Heat treatment']/eff_elec
 
 df.loc['elec', sector] += s_fec['Mach. Eq.: General machinery']
 df.loc['elec', sector] += s_fec['Mach. Eq.: Product finishing']
@@ -1361,7 +1419,6 @@ sources=['elec','biomass', 'methane', 'hydrogen', 'heat','naphtha']
 df.loc[sources,sector] = df.loc[sources,sector]*conv_factor/s_out['Physical output (index)'] # unit MWh/t material
 
 ## Textiles and leather
-
 sector = 'Textiles and leather'
 # read the input sheets
 excel_fec = pd.read_excel('{}/JRC-IDEES-2015_Industry_{}.xlsx'.format(base_dir,country), sheet_name=sub_sheet_name_dict[sector]+'_fec',
@@ -1393,7 +1450,8 @@ df.loc['heat', sector] += s_fec['Low enthalpy heat']
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Textiles: Electric drying']/s_fec['Textiles: Electric drying']
-df.loc['elec', sector] += s_ued['Textiles: Drying']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Textiles: Drying']
+df.loc['elec', sector] += industry_electrification*s_ued['Textiles: Drying']/eff_elec
 
 df.loc['elec', sector] += s_fec['Textiles: Electric general machinery']
 df.loc['elec', sector] += s_fec['Textiles: Finishing Electric']
@@ -1441,9 +1499,12 @@ df.loc['elec', sector] += s_fec[['Lighting','Air compressors','Motor drives','Fa
 # Low enthalpy heat
 df.loc['heat', sector] += s_fec['Low enthalpy heat']
 
+
+#TODO: make choice from config.yaml at which rate this is electrified. Rest natural gas.
 # Efficiency changes due to electrification
 eff_elec=s_ued['Wood: Electric drying']/s_fec['Wood: Electric drying']
-df.loc['elec', sector] += s_ued['Wood: Drying']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Wood: Drying']
+df.loc['elec', sector] += industry_electrification*['Wood: Drying']/eff_elec
 
 df.loc['elec', sector] += s_fec['Wood: Electric mechanical processes']
 df.loc['elec', sector] += s_fec['Wood: Finishing Electric']
@@ -1492,16 +1553,22 @@ df.loc['heat', sector] += s_fec['Low enthalpy heat']
 
 # Efficiency changes due to electrification
 eff_elec=s_ued['Other Industrial sectors: Electric processing']/s_fec['Other Industrial sectors: Electric processing']
-df.loc['elec', sector] += s_ued['Other Industrial sectors: Process heating']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Other Industrial sectors: Process heating']
+df.loc['elec', sector] += industry_electrification*s_ued['Other Industrial sectors: Process heating']/eff_elec
 
 eff_elec=s_ued['Other Industries: Electric drying']/s_fec['Other Industries: Electric drying']
-df.loc['elec', sector] += s_ued['Other Industrial sectors: Drying']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Other Industrial sectors: Drying']
+df.loc['elec', sector] += industry_electrification*s_ued['Other Industrial sectors: Drying']/eff_elec
 
 eff_elec=s_ued['Other Industries: Electric cooling']/s_fec['Other Industries: Electric cooling']
-df.loc['elec', sector] += s_ued['Other Industrial sectors: Process Cooling']/eff_elec
+df.loc['methane', sector] += (1-industry_electrification)*s_ued['Other Industrial sectors: Process Cooling']
+df.loc['elec', sector] += industry_electrification*s_ued['Other Industrial sectors: Process Cooling']/eff_elec
 
 # Diesel motors are electrified
-df.loc['elec', sector] += s_fec['Other Industrial sectors: Diesel motors (incl. biofuels)']
+# TODO: eff_elec
+df.loc['naphtha', sector] += (1-industry_electrification)*s_fec['Other Industrial sectors: Diesel motors (incl. biofuels)']
+df.loc['elec', sector] += industry_electrification*s_fec['Other Industrial sectors: Diesel motors (incl. biofuels)']
+
 df.loc['elec', sector] += s_fec['Other Industrial sectors: Electric machinery']
 
 # Steam processing is supplied with biomass

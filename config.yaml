@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: 'results/'
 summary_dir: results
 costs_dir: '../technology-data/outputs/'
-run: 'hiB_results13' # use this to keep track of runs with different settings
+run: 'hiB_results14_indTest' # use this to keep track of runs with different settings
 foresight: 'overnight' #'overnight' # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
@@ -114,6 +114,11 @@ sector:
   'bev_availability' : 0.5  #How many cars do smart charging
   'v2g' : True #allows feed-in to grid from EV battery
   #what is not EV or FCEV is oil-fuelled ICE
+  'industry_electrification': # 1 means completely electrified
+    2020: 0
+    2030: 0.05
+    2040: 0.1
+    2050: 0.3
   'land_transport_fuel_cell_share': # 1 means all FCEVs
     2020: 0
     2030: 0

@@ -282,7 +282,7 @@ rule build_retro_cost:
     input:
         building_stock="data/retro/data_building_stock.csv",
         data_tabula="data/retro/tabula-calculator-calcsetbuilding.csv",
-        air_temperature = "resources/temp_air_total_{network}_s{simpl}_{clusters}.nc",
+        air_temperature = "resources/temp_air_total_elec_s{simpl}_{clusters}.nc",
         u_values_PL="data/retro/u_values_poland.csv",
         tax_w="data/retro/electricity_taxes_eu.csv",
         construction_index="data/retro/comparative_level_investment.csv",
