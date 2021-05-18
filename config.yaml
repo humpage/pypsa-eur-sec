@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: 'results/'
 summary_dir: results
 costs_dir: '../technology-data/outputs/'
-run: 'hiB_results13' # use this to keep track of runs with different settings
+run: 'hiB_results15_indTest' # use this to keep track of runs with different settings
 foresight: 'overnight' #'overnight' # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
@@ -52,9 +52,34 @@ snapshots:
   end: "2014-01-01"
   closed: 'left' # end is not inclusive
 
+#atlite:
+#  cutout_dir: '../pypsa-eur/cutouts'
+#  cutout_name: "europe-2013-era5"
+
 atlite:
-  cutout_dir: '../pypsa-eur/cutouts'
-  cutout_name: "europe-2013-era5"
+  nprocesses: 4
+  cutout: ../pypsa-eur/cutouts/europe-2013-era5.nc
+    # use 'base' to determine geographical bounds and time span from config
+    # base: 
+      # module: era5  
+    #europe-2013-era5:
+    #path: '../pypsa-eur/cutouts/europe-2013-era5.nc'
+    #module: era5 # in priority order 
+    #x: [-12., 35.]
+    #y: [33., 72]
+    #dx: 0.3
+    #dy: 0.3
+    #time: ['2013', '2013']
+#    europe-2013-sarah:
+#      module: [sarah, era5] # in priority order 
+#      x: [-12., 45.]
+#      y: [33., 65]
+#      dx: 0.2
+#      dy: 0.2
+#      time: ['2013', '2013']
+#      sarah_interpolate: false
+#      sarah_dir: 
+#      features: [influx, temperature]
 
 # this information is NOT used but needed as an argument for
 # pypsa-eur/scripts/add_electricity.py/load_costs in make_summary.py
@@ -92,6 +117,12 @@ biomass:
 #    biogas: ['Manure biomass potential', 'Sludge biomass']
   liquid biofuel minimum: 0.5 #share
   
+solar_thermal:
+  clearsky_model: simple  # should be "simple" or "enhanced"?
+  orientation:
+    slope: 45.
+    azimuth: 180.
+  
 # only relevant for foresight = myopic or perfect
 existing_capacities:
   grouping_years: [1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2019]
@@ -114,6 +145,11 @@ sector:
   'bev_availability' : 0.5  #How many cars do smart charging
   'v2g' : True #allows feed-in to grid from EV battery
   #what is not EV or FCEV is oil-fuelled ICE
+  'industry_electrification': # 1 means completely electrified
+    2020: 0
+    2030: 0.05
+    2040: 0.1
+    2050: 0.3
   'land_transport_fuel_cell_share': # 1 means all FCEVs
     2020: 0
     2030: 0
