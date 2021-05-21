@@ -1817,7 +1817,7 @@ def add_biomass(network):
             superfluous = {}
             tot_EU_biomass = biomass_pot_node.values.sum() - biomass_pot_node["not included"].values.sum()
             print('Total EU biomass: ', tot_EU_biomass*3.6/1e9)
-            step_size = 5 #EJ
+            step_size = 10 #EJ
             biomass_import_limit_low_level = 20e9 #EJ
 
             for num in range(1, 4):
@@ -1891,7 +1891,7 @@ def add_biomass(network):
                  carrier="solid biomass transport")
 
 
-    #TODO: Add marginal costs and CC costs
+    #TODO: Add marginal costs
     network.madd("Link",
                  nodes + " solid biomass to gas",
                  bus0=nodes + " solid biomass",

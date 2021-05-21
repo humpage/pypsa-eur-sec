@@ -121,59 +121,17 @@ def add_biofuel_constraint(n):
 
     print('Liq biofuel minimum constraint: ', liquid_biofuel_limit, ' ', type(liquid_biofuel_limit))
 
-    # liquid_biofuel_limit2 = snakemake.config['biomass']['liquid biofuel minimum']
-    # print('Liquid biofuel minimum: ', liquid_biofuel_limit2)
-
     biofuel_i = n.links.query('carrier == "biomass to liquid"').index
     biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
     biofuel_vars_eta = n.links.query('carrier == "biomass to liquid"').efficiency
 
-    napkership = n.loads.p_set.filter(regex='naphtha|kerosene|oil for shipping').sum() * len(n.snapshots)
-    # print('Naphtha: ',napker)
+    napkership = n.loads.p_set.filter(regex='naphtha for industry|kerosene for aviation|oil for shipping').sum() * len(n.snapshots)
     landtrans = n.loads_t.p_set.filter(regex='land transport oil$').sum().sum()
-    # boiler = n.loads.p_set.filter(regex='oil boiler').sum() * len(n.snapshots)
-    # print(ship_boiler)
-    total_oil_load = napkership+landtrans#+boiler
+    total_oil_load = napkership+landtrans
     liqfuelloadlimit = liquid_biofuel_limit * total_oil_load
 
     lhs = linexpr((biofuel_vars_eta, biofuel_vars)).sum().sum()
     define_constraints(n, lhs, ">=", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
-
-    # efuel_i = n.links.query('carrier == "electrofuel"').index
-    # efuel_vars = get_var(n, "Link", "p").loc[:, efuel_i]
-    #
-    # oil_i = n.generators.query('carrier == "oil"').index
-    # oil_vars = get_var(n, "Generator", "p").loc[:,oil_i]
-    #
-    # # print(biofuel_vars,efuel_vars)
-    # lhs2 = linexpr((1,biofuel_vars)).sum().sum()
-    # lhs3 = linexpr((1,efuel_vars)).sum().sum()
-    # # print(lhs2)
-    # lhs4 = linexpr((1,oil_vars)).sum().sum()
-    # # print(lhs2,lhs3,lhs4)
-    #
-    # define_constraints(n, lhs2+lhs3+lhs4, "<=", total_oil_load*1.0001, 'oil_balance')
-
-#
-# def add_liquid_fuel_constraint(n):
-#
-#     biofuel_i = n.links.query('carrier == "biomass to liquid"').index
-#     biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
-#     efuel_i = n.links.query('carrier == "electrofuel"').index
-#     efuel_vars = get_var(n, "Link", "p").loc[:, efuel_i]
-#
-#     # Share of BtL of EU oil usage
-#     BtLshareOil = n.links_t.p0.filter(regex='biomass to liquid').sum().sum() / n.loads_t.p.filter(
-#         regex='land transport oil$|naphtha|kerosene|oil for shipping|oil boiler').sum().sum()
-#     print(BtLshareOil)
-#     eFuelshareOil = n.links_t.p0.filter(regex='Fischer-Tropsch').sum().sum() / n.loads_t.p.filter(
-#         regex='land transport oil$|naphtha|kerosene|oil for shipping|oil boiler').sum().sum()
-#     print(eFuelshareOil)
-#     oilshareOil = n.generators_t.p.filter(regex='EU oil').sum().sum() / n.loads_t.p.filter(
-#         regex='land transport oil$|naphtha|kerosene|oil for shipping|oil boiler').sum().sum()
-#     print(oilshareOil)
-#     print(BtLshareOil + eFuelshareOil + oilshareOil)
-
 
 def add_eps_storage_constraint(n):
     if not hasattr(n, 'epsilon'):
