@@ -1817,7 +1817,7 @@ def add_biomass(network):
             superfluous = {}
             tot_EU_biomass = biomass_pot_node.values.sum() - biomass_pot_node["not included"].values.sum()
             print('Total EU biomass: ', tot_EU_biomass*3.6/1e9)
-            step_size = 5 #EJ
+            step_size = 10 #EJ
             biomass_import_limit_low_level = 20e9 #EJ
 
             for num in range(1, 4):
@@ -1891,7 +1891,7 @@ def add_biomass(network):
                  carrier="solid biomass transport")
 
 
-    #TODO: Add marginal costs and CC costs
+    #TODO: Add marginal costs
     network.madd("Link",
                  nodes + " solid biomass to gas",
                  bus0=nodes + " solid biomass",
@@ -2570,7 +2570,7 @@ if __name__ == "__main__":
                 	    retro_cost_energy = "resources/retro_cost_elec_s{simpl}_{clusters}.csv",
                         floor_area = "resources/floor_area_elec_s{simpl}_{clusters}.csv"
             ),
-            output=['results/version-cb48be3/prenetworks/{network}_s{simpl}_{clusters}_lv{lv}__{sector_opts}_{planning_horizons}.nc']
+            output=['results/version-cb48be3/prenetworks/elec_s{simpl}_{clusters}_lv{lv}__{sector_opts}_{planning_horizons}.nc']
         )
         import yaml
         with open('config.yaml', encoding='utf8') as f:

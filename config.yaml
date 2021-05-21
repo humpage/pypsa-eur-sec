@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: 'results/'
 summary_dir: results
 costs_dir: '../technology-data/outputs/'
-run: 'hiB_results15_indTest' # use this to keep track of runs with different settings
+run: 'hiB_results2050' # use this to keep track of runs with different settings
 foresight: 'overnight' #'overnight' # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
@@ -15,7 +15,7 @@ scenario:
   lv: ["opt"] # allowed transmission line volume expansion, can be any float >= 1.0 (today) or "opt"
   clusters: [42] # number of nodes in Europe, any integer between 37 (1 node per country-zone) and several hundred
   opts: [''] # only relevant for PyPSA-Eur
-  sector_opts: [Co2L0p40-97H-T-H-B0p0-I-S600] #Co2L0p00-73H-T-H-I-S600, Co2L0p00-73H-T-H-B0p0-I-S600, Co2L0p00-73H-T-H-B0p4-I-S600, Co2L0p00-73H-T-H-B0p0Im-I-S600, Co2L0p00-73H-T-H-B0p4Im-I-S600, Co2L0p00-73H-T-H-B0p8Im-I-S600]  # this is where the main scenario settings are
+  sector_opts: [Co2Lm0p10-97H-T-H-I-S600,Co2Lm0p10-97H-T-H-B0p0Im-I-S600,Co2Lm0p10-97H-T-H-B0p4Im-I-S600,Co2Lm0p10-97H-T-H-B1p0Im-I-S600] #Co2L0p40-97H-T-H-I-S600,Co2L0p40-97H-T-H-B0p0Im-I-S600,Co2L0p40-97H-T-H-B0p4Im-I-S600,Co2L0p40-97H-T-H-B1p0Im-I-S600] #Co2Lm0p10-97H-T-H-I-S600,Co2Lm0p10-97H-T-H-B0p0Im-I-S600,Co2Lm0p10-97H-T-H-B0p4Im-I-S600,Co2Lm0p10-97H-T-H-B1p0Im-I-S600] #Co2L0p00-73H-T-H-I-S600, Co2L0p00-73H-T-H-B0p0-I-S600, Co2L0p00-73H-T-H-B0p4-I-S600, Co2L0p00-73H-T-H-B0p0Im-I-S600, Co2L0p00-73H-T-H-B0p4Im-I-S600, Co2L0p00-73H-T-H-B0p8Im-I-S600]  # this is where the main scenario settings are
   # to really understand the options here, look in scripts/prepare_sector_network.py
   # Co2Lx specifies the CO2 target in x% of the 1990 values; default will give default (5%);
   # Co2L0p25 will give 25% CO2 emissions; Co2Lm0p05 will give 5% negative emissions
@@ -52,34 +52,9 @@ snapshots:
   end: "2014-01-01"
   closed: 'left' # end is not inclusive
 
-#atlite:
-#  cutout_dir: '../pypsa-eur/cutouts'
-#  cutout_name: "europe-2013-era5"
-
 atlite:
-  nprocesses: 4
-  cutout: ../pypsa-eur/cutouts/europe-2013-era5.nc
-    # use 'base' to determine geographical bounds and time span from config
-    # base: 
-      # module: era5  
-    #europe-2013-era5:
-    #path: '../pypsa-eur/cutouts/europe-2013-era5.nc'
-    #module: era5 # in priority order 
-    #x: [-12., 35.]
-    #y: [33., 72]
-    #dx: 0.3
-    #dy: 0.3
-    #time: ['2013', '2013']
-#    europe-2013-sarah:
-#      module: [sarah, era5] # in priority order 
-#      x: [-12., 45.]
-#      y: [33., 65]
-#      dx: 0.2
-#      dy: 0.2
-#      time: ['2013', '2013']
-#      sarah_interpolate: false
-#      sarah_dir: 
-#      features: [influx, temperature]
+  cutout_dir: '../pypsa-eur/cutouts'
+  cutout_name: "europe-2013-era5"
 
 # this information is NOT used but needed as an argument for
 # pypsa-eur/scripts/add_electricity.py/load_costs in make_summary.py
@@ -148,8 +123,8 @@ sector:
   'industry_electrification': # 1 means completely electrified
     2020: 0
     2030: 0.05
-    2040: 0.1
-    2050: 0.3
+    2040: 0.2
+    2050: 1
   'land_transport_fuel_cell_share': # 1 means all FCEVs
     2020: 0
     2030: 0
@@ -182,20 +157,25 @@ sector:
   'time_dep_hp_cop' : True #time dependent heat pump coefficient of performance
   'heat_pump_sink_T' : 55. # Celsius, based on DTU / large area radiators; used in build_cop_profiles.py
    # conservatively high to cover hot water and space heating in poorly-insulated buildings
-  'retrofitting' :
-    'retro_exogen': True # space heat demand savings exogenously
-    'dE': # reduction of space heat demand (applied before losses in DH)
-      2020 : 0.
-      2030 : 0.15
-      2040 : 0.3
-      2050 : 0.4
+  'reduce_space_heat_exogenously': True  # reduces space heat demand by a given factor (applied before losses in DH)
+  # this can represent e.g. building renovation, building demolition, or if
+  # the factor is negative: increasing floor area, increased thermal comfort, population growth
+  'reduce_space_heat_exogenously_factor': # per unit reduction in space heat demand
+  # the default factors are determined by the LTS scenario from http://tool.european-calculator.eu/app/buildings/building-types-area/?levers=1ddd4444421213bdbbbddd44444ffffff11f411111221111211l212221
+          2020:    0.10  # this results in a space heat demand reduction of 10%
+          2025:    0.09  # first heat demand increases compared to 2020 because of larger floor area per capita
+          2030:    0.09
+          2035:    0.11
+          2040:    0.16
+          2045:    0.21
+          2050:    0.29
+  'retrofitting' :  # co-optimises building renovation to reduce space heat demand
     'retro_endogen': False  # co-optimise space heat savings
-    'cost_factor' : 1.0
+    'cost_factor' : 1.0   # weight costs for building renovation
     'interest_rate': 0.04  # for investment in building components
     'annualise_cost': True  # annualise the investment costs
     'tax_weighting': False   # weight costs depending on taxes in countries
-    'construction_index': True   # weight costs depending on labour/material costs per ct
-    'l_strength': ["0.076", "0.197"] # additional insulation thickness[m], determines number of retro steps(=generators per bus) and maximum possible savings
+    'construction_index': True   # weight costs depending on labour/material costs per country
   'tes' : True
   'tes_tau' : 3.
   'boilers' : True
@@ -304,7 +284,7 @@ plotting:
       bus_size_factor: 5.e+4
       linewidth_factor: 3.e+3 # 1.e+3  #3.e+3
 
-  costs_max: 1200
+  costs_max: 1600
   costs_threshold: 10
 
 
