@@ -1631,10 +1631,6 @@ def add_biomass(network):
     biomass_potentials = pd.read_csv(snakemake.input.biomass_potentials,
                                      index_col=0)
 
-     # costs for biomass transport
-    transport_costs = pd.read_csv(snakemake.input.biomass_transport,
-                                  index_col=0)
-
     # potential per node distributed within country by population
     biomass_pot_node = (biomass_potentials.loc[pop_layout.ct]
                         .set_index(pop_layout.index)
@@ -1861,34 +1857,6 @@ def add_biomass(network):
                             efficiency=1.,
                             efficiency2=-costs.at['solid biomass', 'CO2 intensity'], #Here, if the store at bus1 is cyclic
                             p_nom_extendable=True)
-
-
-    # add biomass transport
-    biomass_transport = create_network_topology(n, "Biomass transport ")
-
-    # make transport in both directions
-    df = biomass_transport.copy()
-    df["bus1"] = biomass_transport.bus0
-    df["bus0"] = biomass_transport.bus1
-    df.rename(index=lambda x: "Biomass transport " + df.at[x, "bus0"]
-                              + " -> " + df.at[x, "bus1"], inplace=True)
-    biomass_transport = pd.concat([biomass_transport, df])
-
-    # costs
-    bus0_costs = biomass_transport.bus0.apply(lambda x: transport_costs.loc[x[:2]])
-    bus1_costs = biomass_transport.bus1.apply(lambda x: transport_costs.loc[x[:2]])
-    biomass_transport["costs"] = pd.concat([bus0_costs, bus1_costs],
-                                           axis=1).mean(axis=1)
-
-    network.madd("Link",
-                 biomass_transport.index,
-                 bus0=biomass_transport.bus0 + " solid biomass",
-                 bus1=biomass_transport.bus1 + " solid biomass",
-                 p_nom_extendable=True,
-                 length=biomass_transport.length.values,
-                 marginal_cost=biomass_transport.costs * biomass_transport.length.values,
-                 capital_cost=1,
-                 carrier="solid biomass transport")
 
 
     #TODO: Add marginal costs
@@ -2414,78 +2382,111 @@ def remove_h2_network(n):
            carrier="H2 Store",
            capital_cost=h2_capital_cost)
 
-def remove_biomass_transport(n):
+# def remove_biomass_transport(n):
+#
+#     print("no transport of solid biomass considered")
+#
+#     # remove country specific biomass buses
+#     n.buses = n.buses[~n.buses.carrier.str.contains("biomass")]
+#     # biomass potential
+#     biomass_pot = n.stores[n.stores.carrier=="solid biomass"].e_nom.sum()
+#     # remove biomass store per country
+#     n.stores = n.stores[n.stores.carrier!="solid biomass"]
+#     # remove biomass transport links
+#     n.links = n.links[n.links.carrier!="solid biomass transport"]
+#     # total industry demand for biomass
+#     steam_demand = n.loads[n.loads.carrier=="solid biomass for industry"].p_set.sum()
+#     print('Steam demand: ',steam_demand)
+#     print('Steam demand: ',steam_demand)
+#     # remove industry demand
+#     n.loads = n.loads[n.loads.carrier!="solid biomass for industry"]
+#     # drop transport and industry links
+#     n.links = n.links[~n.links.carrier.isin(['solid biomass transport',
+#                                              'solid biomass for industry',
+#                                              'solid biomass for industry CCS'])]
+#
+#     # add back EU bus + load + store + industry links
+#     n.madd("Bus",
+#            ["EU solid biomass"],
+#             location="EU",
+#             carrier="solid biomass")
+#
+#     n.madd("Bus",
+#            ["solid biomass for industry"],
+#            location="EU",
+#            carrier="solid biomass for industry")
+#
+#     n.madd("Load",
+#            ["solid biomass for industry"],
+#            bus="solid biomass for industry",
+#            carrier="solid biomass for industry",
+#            p_set=biomass_demand)
+#
+#     n.madd("Store",
+#            ["EU solid biomass"],
+#            bus="EU solid biomass",
+#            carrier="solid biomass",
+#            e_nom=biomass_pot,
+#            marginal_cost=costs.at['solid biomass','fuel'],
+#            e_initial=biomass_pot)
+#
+#     n.madd("Link",
+#            ["solid biomass for industry"],
+#            bus0="EU solid biomass",
+#            bus1="solid biomass for industry",
+#            carrier="solid biomass for industry",
+#            p_nom_extendable=True,
+#            efficiency=1.)
+#
+#     n.madd("Link",
+#             ["solid biomass for industry CCS"],
+#             bus0="EU solid biomass",
+#             bus1="solid biomass for industry",
+#             bus2="co2 atmosphere",
+#             bus3="co2 stored",
+#             carrier="solid biomass for industry CCS",
+#             p_nom_extendable=True,
+#             capital_cost=costs.at["cement capture","fixed"]*costs.at['solid biomass','CO2 intensity']*8760, #8760 converts EUR/(tCO2/a) to EUR/(tCO2/h)
+#             efficiency=0.9,
+#             efficiency2=costs.at['solid biomass','CO2 intensity']*(1-options["cc_fraction"]),
+#             efficiency3=costs.at['solid biomass','CO2 intensity']*options["cc_fraction"],
+#             lifetime=costs.at['cement capture','lifetime'])
+#
+#     # set CHP buses from country to single EU bus
+#     n.links.loc[n.links.carrier.str.contains("biomass CHP"), "bus0"] = "EU solid biomass"
 
-    print("no transport of solid biomass considered")
 
-    # remove country specific biomass buses
-    n.buses = n.buses[~n.buses.carrier.str.contains("biomass")]
-    # biomass potential
-    biomass_pot = n.stores[n.stores.carrier=="solid biomass"].e_nom.sum()
-    # remove biomass store per country
-    n.stores = n.stores[n.stores.carrier!="solid biomass"]
-    # remove biomass transport links
-    n.links = n.links[n.links.carrier!="solid biomass transport"]
-    # total industry demand for biomass
-    steam_demand = n.loads[n.loads.carrier=="solid biomass for industry"].p_set.sum()
-    print('Steam demand: ',steam_demand)
-    print('Steam demand: ',steam_demand)
-    # remove industry demand
-    n.loads = n.loads[n.loads.carrier!="solid biomass for industry"]
-    # drop transport and industry links
-    n.links = n.links[~n.links.carrier.isin(['solid biomass transport',
-                                             'solid biomass for industry',
-                                             'solid biomass for industry CCS'])]
+def add_biomass_transport(n):
+    # add biomass transport
+    biomass_transport = create_network_topology(n, "Biomass transport ")
 
-    # add back EU bus + load + store + industry links
-    n.madd("Bus",
-           ["EU solid biomass"],
-            location="EU",
-            carrier="solid biomass")
+     # costs for biomass transport
+    transport_costs = pd.read_csv(snakemake.input.biomass_transport,
+                                  index_col=0)
 
-    n.madd("Bus",
-           ["solid biomass for industry"],
-           location="EU",
-           carrier="solid biomass for industry")
+    # make transport in both directions
+    df = biomass_transport.copy()
+    df["bus1"] = biomass_transport.bus0
+    df["bus0"] = biomass_transport.bus1
+    df.rename(index=lambda x: "Biomass transport " + df.at[x, "bus0"]
+                                  + " -> " + df.at[x, "bus1"], inplace=True)
+    biomass_transport = pd.concat([biomass_transport, df])
 
-    n.madd("Load",
-           ["solid biomass for industry"],
-           bus="solid biomass for industry",
-           carrier="solid biomass for industry",
-           p_set=biomass_demand)
-
-    n.madd("Store",
-           ["EU solid biomass"],
-           bus="EU solid biomass",
-           carrier="solid biomass",
-           e_nom=biomass_pot,
-           marginal_cost=costs.at['solid biomass','fuel'],
-           e_initial=biomass_pot)
+    # costs
+    bus0_costs = biomass_transport.bus0.apply(lambda x: transport_costs.loc[x[:2]])
+    bus1_costs = biomass_transport.bus1.apply(lambda x: transport_costs.loc[x[:2]])
+    biomass_transport["costs"] = pd.concat([bus0_costs, bus1_costs],
+                                           axis=1).mean(axis=1)
 
     n.madd("Link",
-           ["solid biomass for industry"],
-           bus0="EU solid biomass",
-           bus1="solid biomass for industry",
-           carrier="solid biomass for industry",
+           biomass_transport.index,
+           bus0=biomass_transport.bus0 + " solid biomass",
+           bus1=biomass_transport.bus1 + " solid biomass",
            p_nom_extendable=True,
-           efficiency=1.)
-
-    n.madd("Link",
-            ["solid biomass for industry CCS"],
-            bus0="EU solid biomass",
-            bus1="solid biomass for industry",
-            bus2="co2 atmosphere",
-            bus3="co2 stored",
-            carrier="solid biomass for industry CCS",
-            p_nom_extendable=True,
-            capital_cost=costs.at["cement capture","fixed"]*costs.at['solid biomass','CO2 intensity']*8760, #8760 converts EUR/(tCO2/a) to EUR/(tCO2/h)
-            efficiency=0.9,
-            efficiency2=costs.at['solid biomass','CO2 intensity']*(1-options["cc_fraction"]),
-            efficiency3=costs.at['solid biomass','CO2 intensity']*options["cc_fraction"],
-            lifetime=costs.at['cement capture','lifetime'])
-
-    # set CHP buses from country to single EU bus
-    n.links.loc[n.links.carrier.str.contains("biomass CHP"), "bus0"] = "EU solid biomass"
+           length=biomass_transport.length.values,
+           marginal_cost=biomass_transport.costs * biomass_transport.length.values,
+           capital_cost=1,
+           carrier="solid biomass transport")
 
 
 def get_parameter(item):
@@ -2672,8 +2673,8 @@ if __name__ == "__main__":
     if options["hvdc"]:
         hvdc_transport_model(n)
 
-    if not options["bioT"]:
-        remove_biomass_transport(n)
+    if options["bioT"]:
+        add_biomass_transport(n)
 
     for o in opts:
         m = re.match(r'^\d+h$', o, re.IGNORECASE)
