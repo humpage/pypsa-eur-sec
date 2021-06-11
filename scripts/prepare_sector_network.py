@@ -137,14 +137,11 @@ def add_lifetime_wind_solar(n):
                         if carrier in index], 'lifetime']=costs.at[carrier_name,'lifetime']
 
 
-def create_network_topology(n, prefix):
+def create_network_topology(n, prefix="", connector=" -> "):
     """
     create a network topology as the electric network,
     returns a pandas dataframe with bus0, bus1 and length
     """
-
-    topo = pd.DataFrame(columns=["bus0", "bus1", "length"])
-    connector = " -> "
     attrs = ["bus0", "bus1", "length"]
 
     candidates = pd.concat([n.lines[attrs],
@@ -157,9 +154,7 @@ def create_network_topology(n, prefix):
     candidates = pd.concat((candidates_p, candidates_n), sort=False)
 
     topo = candidates.groupby(["bus0", "bus1"], as_index=False).mean()
-    topo.rename(index=lambda x: prefix + topo.at[x, "bus0"]
-                + connector + topo.at[x, "bus1"],
-                inplace=True)
+    topo.index = topo.apply(lambda x: prefix + x.bus0 + connector + x.bus1, axis=1)
     return topo
 
 
@@ -2382,87 +2377,14 @@ def remove_h2_network(n):
            carrier="H2 Store",
            capital_cost=h2_capital_cost)
 
-# def remove_biomass_transport(n):
-#
-#     print("no transport of solid biomass considered")
-#
-#     # remove country specific biomass buses
-#     n.buses = n.buses[~n.buses.carrier.str.contains("biomass")]
-#     # biomass potential
-#     biomass_pot = n.stores[n.stores.carrier=="solid biomass"].e_nom.sum()
-#     # remove biomass store per country
-#     n.stores = n.stores[n.stores.carrier!="solid biomass"]
-#     # remove biomass transport links
-#     n.links = n.links[n.links.carrier!="solid biomass transport"]
-#     # total industry demand for biomass
-#     steam_demand = n.loads[n.loads.carrier=="solid biomass for industry"].p_set.sum()
-#     print('Steam demand: ',steam_demand)
-#     print('Steam demand: ',steam_demand)
-#     # remove industry demand
-#     n.loads = n.loads[n.loads.carrier!="solid biomass for industry"]
-#     # drop transport and industry links
-#     n.links = n.links[~n.links.carrier.isin(['solid biomass transport',
-#                                              'solid biomass for industry',
-#                                              'solid biomass for industry CCS'])]
-#
-#     # add back EU bus + load + store + industry links
-#     n.madd("Bus",
-#            ["EU solid biomass"],
-#             location="EU",
-#             carrier="solid biomass")
-#
-#     n.madd("Bus",
-#            ["solid biomass for industry"],
-#            location="EU",
-#            carrier="solid biomass for industry")
-#
-#     n.madd("Load",
-#            ["solid biomass for industry"],
-#            bus="solid biomass for industry",
-#            carrier="solid biomass for industry",
-#            p_set=biomass_demand)
-#
-#     n.madd("Store",
-#            ["EU solid biomass"],
-#            bus="EU solid biomass",
-#            carrier="solid biomass",
-#            e_nom=biomass_pot,
-#            marginal_cost=costs.at['solid biomass','fuel'],
-#            e_initial=biomass_pot)
-#
-#     n.madd("Link",
-#            ["solid biomass for industry"],
-#            bus0="EU solid biomass",
-#            bus1="solid biomass for industry",
-#            carrier="solid biomass for industry",
-#            p_nom_extendable=True,
-#            efficiency=1.)
-#
-#     n.madd("Link",
-#             ["solid biomass for industry CCS"],
-#             bus0="EU solid biomass",
-#             bus1="solid biomass for industry",
-#             bus2="co2 atmosphere",
-#             bus3="co2 stored",
-#             carrier="solid biomass for industry CCS",
-#             p_nom_extendable=True,
-#             capital_cost=costs.at["cement capture","fixed"]*costs.at['solid biomass','CO2 intensity']*8760, #8760 converts EUR/(tCO2/a) to EUR/(tCO2/h)
-#             efficiency=0.9,
-#             efficiency2=costs.at['solid biomass','CO2 intensity']*(1-options["cc_fraction"]),
-#             efficiency3=costs.at['solid biomass','CO2 intensity']*options["cc_fraction"],
-#             lifetime=costs.at['cement capture','lifetime'])
-#
-#     # set CHP buses from country to single EU bus
-#     n.links.loc[n.links.carrier.str.contains("biomass CHP"), "bus0"] = "EU solid biomass"
 
+def add_biomass_transport(network):
 
-def add_biomass_transport(n):
-    # add biomass transport
-    biomass_transport = create_network_topology(n, "Biomass transport ")
-
-     # costs for biomass transport
+    # costs for biomass transport
     transport_costs = pd.read_csv(snakemake.input.biomass_transport,
                                   index_col=0)
+    # add biomass transport
+    biomass_transport = create_network_topology(n, "Biomass transport ")
 
     # make transport in both directions
     df = biomass_transport.copy()
@@ -2478,13 +2400,13 @@ def add_biomass_transport(n):
     biomass_transport["costs"] = pd.concat([bus0_costs, bus1_costs],
                                            axis=1).mean(axis=1)
 
-    n.madd("Link",
+    network.madd("Link",
            biomass_transport.index,
            bus0=biomass_transport.bus0 + " solid biomass",
            bus1=biomass_transport.bus1 + " solid biomass",
            p_nom_extendable=True,
            length=biomass_transport.length.values,
-           marginal_cost=biomass_transport.costs * biomass_transport.length.values,
+           marginal_cost=biomass_transport.costs*0.01 * biomass_transport.length.values,
            capital_cost=1,
            carrier="solid biomass transport")
 
@@ -2651,9 +2573,14 @@ if __name__ == "__main__":
     if "I" in opts:
         add_industry(n)
 
+    if options["hvdc"]:
+        hvdc_transport_model(n)
+
     for o in opts:
         if "B" in o:
             add_biomass(n)
+            if options["bioT"]:
+                add_biomass_transport(n)
 
     if "T" in opts:
         add_land_transport(n)
@@ -2669,12 +2596,6 @@ if __name__ == "__main__":
 
     if "noH2network" in opts:
         remove_h2_network(n)
-
-    if options["hvdc"]:
-        hvdc_transport_model(n)
-
-    if options["bioT"]:
-        add_biomass_transport(n)
 
     for o in opts:
         m = re.match(r'^\d+h$', o, re.IGNORECASE)
