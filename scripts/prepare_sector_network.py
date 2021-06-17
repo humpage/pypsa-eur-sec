@@ -1274,6 +1274,12 @@ def add_land_transport(network):
 
     if ice_share > 0:
 
+        if "EU oil" not in network.buses.index:
+            network.madd("Bus",
+                         ["EU oil"],
+                         location="EU",
+                         carrier="oil")
+
         network.madd("Load",
                      nodes,
                      suffix=" land transport oil",
@@ -2279,6 +2285,7 @@ def add_industry(network):
     #remove today's industrial electricity demand by scaling down total electricity demand
     for ct in n.buses.country.dropna().unique():
         loads = n.loads.index[(n.loads.index.str[:2] == ct) & (n.loads.carrier == "electricity")]
+        if n.loads_t.p_set[loads].empty: continue
         factor = 1 - industrial_demand.loc[loads,"current electricity"].sum()/n.loads_t.p_set[loads].sum().sum()
         n.loads_t.p_set[loads] *= factor
 
