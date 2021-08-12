@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: 'results/'
 summary_dir: results
 costs_dir: '../technology-data/outputs/'
-run: 'hiB_testLoRes_BioT_test' # use this to keep track of runs with different settings
+run: 'hiB_testHiRes' # use this to keep track of runs with different settings
 foresight: 'overnight' #'overnight' # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
@@ -15,7 +15,7 @@ scenario:
   lv: ["opt"] # allowed transmission line volume expansion, can be any float >= 1.0 (today) or "opt"
   clusters: [37] # number of nodes in Europe, any integer between 37 (1 node per country-zone) and several hundred
   opts: [''] # only relevant for PyPSA-Eur
-  sector_opts: [Co2Lm0p10-97H-T-H-I-S600,Co2Lm0p10-97H-T-H-B0p0-I-S600,Co2Lm0p10-97H-T-H-B0p0Im-I-S600] #,Co2Lm0p10-5H-T-H-B0p0-I-S600] #Co2Lm0p10-97H-T-H-I-S600,Co2Lm0p10-97H-T-H-B0p0Im-I-S600,Co2Lm0p10-97H-T-H-B0p4Im-I-S600,Co2Lm0p10-97H-T-H-B1p0Im-I-S600] #Co2L0p40-97H-T-H-I-S600,Co2L0p40-97H-T-H-B0p0Im-I-S600,Co2L0p40-97H-T-H-B0p4Im-I-S600,Co2L0p40-97H-T-H-B1p0Im-I-S600] #Co2Lm0p10-97H-T-H-I-S600,Co2Lm0p10-97H-T-H-B0p0Im-I-S600,Co2Lm0p10-97H-T-H-B0p4Im-I-S600,Co2Lm0p10-97H-T-H-B1p0Im-I-S600] #Co2L0p00-73H-T-H-I-S600, Co2L0p00-73H-T-H-B0p0-I-S600, Co2L0p00-73H-T-H-B0p4-I-S600, Co2L0p00-73H-T-H-B0p0Im-I-S600, Co2L0p00-73H-T-H-B0p4Im-I-S600, Co2L0p00-73H-T-H-B0p8Im-I-S600]  # this is where the main scenario settings are
+  sector_opts: [Co2Lm0p05-5H-T-H-I-S600,Co2Lm0p05-5H-T-H-B0p0-I-S600] #,Co2Lm0p10-5H-T-H-B0p0-I-S600] #Co2Lm0p10-97H-T-H-I-S600,Co2Lm0p10-97H-T-H-B0p0Im-I-S600,Co2Lm0p10-97H-T-H-B0p4Im-I-S600,Co2Lm0p10-97H-T-H-B1p0Im-I-S600] #Co2L0p40-97H-T-H-I-S600,Co2L0p40-97H-T-H-B0p0Im-I-S600,Co2L0p40-97H-T-H-B0p4Im-I-S600,Co2L0p40-97H-T-H-B1p0Im-I-S600] #Co2Lm0p10-97H-T-H-I-S600,Co2Lm0p10-97H-T-H-B0p0Im-I-S600,Co2Lm0p10-97H-T-H-B0p4Im-I-S600,Co2Lm0p10-97H-T-H-B1p0Im-I-S600] #Co2L0p00-73H-T-H-I-S600, Co2L0p00-73H-T-H-B0p0-I-S600, Co2L0p00-73H-T-H-B0p4-I-S600, Co2L0p00-73H-T-H-B0p0Im-I-S600, Co2L0p00-73H-T-H-B0p4Im-I-S600, Co2L0p00-73H-T-H-B0p8Im-I-S600]  # this is where the main scenario settings are
   # to really understand the options here, look in scripts/prepare_sector_network.py
   # Co2Lx specifies the CO2 target in x% of the 1990 values; default will give default (5%);
   # Co2L0p25 will give 25% CO2 emissions; Co2Lm0p05 will give 5% negative emissions
@@ -202,7 +202,7 @@ sector:
   'electricity_grid_connection' : True  # only applies to onshore wind and utility PV
   'gas_distribution_grid' : True
   'gas_distribution_grid_cost_factor' : 1.0  #multiplies cost in data/costs.csv
-  'bioT': True  # biomass transport between countries
+  'bioT': False # biomass transport between countries
   #'biomass_import' : True #biomass import toggle
   #'liquid_biofuel_limit_on' : True #Minimum limit of biomass to liquid fuels
   'hvdc' : True #HVDC transport model
