@@ -2,9 +2,10 @@
 .ipynb_checkpoints
 __pycache__
 gurobi.log
+.vscode
 
 /bak
-/resources
+/resources*
 /results
 /networks
 /benchmarks
@@ -26,7 +27,7 @@ gurobi.log
 /data/.nfs*
 /data/Industrial_Database.csv
 /data/retro/tabula-calculator-calcsetbuilding.csv
-
+/data
 *.org
 
 *.nc
@@ -51,3 +52,4 @@ data/myb1-2017-nitro.xls
 grid.png
 analysis_jupyterTest.ipynb
 jupyterAnalysis.ipynb
+*.xls
