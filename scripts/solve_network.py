@@ -207,7 +207,6 @@ def add_chp_constraints(n):
             add_biofuel_constraint(n)
 
 
-# <<<<<<< HEAD
 # def fix_branches(n, lines_s_nom=None, links_p_nom=None):
 #     if lines_s_nom is not None and len(lines_s_nom) > 0:
 #         n.lines.loc[lines_s_nom.index,"s_nom"] = lines_s_nom.values
@@ -217,10 +216,8 @@ def add_chp_constraints(n):
 #         print('Links p_nom: ',links_p_nom.values)
 #         # n.links.loc[links_p_nom.index,"p_nom_extendable"] = True
 #         n.links.loc[links_p_nom.index,"p_nom_extendable"] = False
-# =======
-# def extra_functionality(n, snapshots):
-#     add_battery_constraints(n)
-# >>>>>>> 87596dd015ab8f2fff8ef77881a1bd82a7255b14
+def extra_functionality(n, snapshots):
+    add_battery_constraints(n)
 
 
 def solve_network(n, config, opts='', **kwargs):

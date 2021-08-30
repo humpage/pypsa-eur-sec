@@ -604,10 +604,10 @@ def prepare_data(n):
 
     energy_totals_transport = nodal_energy_totals["total road"] + nodal_energy_totals["total rail"] - nodal_energy_totals["electricity rail"]
 
-    #Add transport demand factor depending on the year
-    transport = transport * get(options["land_transport_demand"])
+    transport = (transport_shape.multiply(energy_totals_transport) * 1e6 * Nyears).divide(efficiency_gain * ice_correction).multiply(1 + dd_EV)
 
-    # transport = (transport_shape.multiply(energy_totals_transport) * 1e6 * Nyears).divide(efficiency_gain * ice_correction).multiply(1 + dd_EV)
+    #Add transport demand factor depending on the year
+    transport = transport * get(options["land_transport_demand"],investment_year)
 
     ## derive plugged-in availability for PKW's (cars)
 
@@ -862,21 +862,20 @@ def insert_gas_distribution_costs(n, costs):
     mchp = n.links.index[n.links.carrier.str.contains("micro gas")]
     n.links.loc[mchp,  "capital_cost"] += capital_cost
 
-
-def add_electricity_grid_connection(n, costs):
-
     # TODO: Research methane grid costs and implement!
     # biogas
-    biogas = network.links.index[network.links.carrier.str.contains("digestible biomass to gas")]
-    network.links.loc[biogas,  "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
+    biogas = n.links.index[n.links.carrier.str.contains("digestible biomass to gas")]
+    n.links.loc[biogas,  "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
 
-    biosng = network.links.index[network.links.carrier.str.contains("solid biomass to gas")]
-    network.links.loc[biosng,  "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
+    biosng = n.links.index[n.links.carrier.str.contains("solid biomass to gas")]
+    n.links.loc[biosng,  "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
 
     # lowT steam methane
-    mchp = network.links.index[network.links.carrier.str.contains("methane for lowT industry")]
-    network.links.loc[mchp,  "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
+    mchp = n.links.index[n.links.carrier.str.contains("methane for lowT industry")]
+    n.links.loc[mchp,  "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
 
+
+def add_electricity_grid_connection(n, costs):
 
     carriers = ["onwind", "solar"]
 
@@ -1210,7 +1209,7 @@ def add_land_transport(n, costs):
 # <<<<<<< HEAD
 #         # TODO: make hourly for each node? - the method now is inexact when running coarse resolution (e.g. > 1h)
 #         # co2 = ice_share/options['transport_internal_combustion_efficiency']*transport[nodes].sum().sum()/8760.*costs.at["oil",'CO2 intensity']
-#         network.madd("Load",
+#         n.madd("Load",
 #                      nodes,
 #                      suffix=" land transport oil emissions",
 #                      bus="co2 atmosphere",
@@ -1598,27 +1597,27 @@ def add_biomass(n, costs):
                         .mul(pop_layout.fraction, axis="index"))
 
     print(biomass_pot_node)
-    network.add("Carrier","digestible biomass")
+    n.add("Carrier","digestible biomass")
 
-    network.madd("Bus",
+    n.madd("Bus",
                  nodes + " digestible biomass",
                  location=nodes,
                  carrier="digestible biomass")
 
-    network.madd("Store",
+    n.madd("Store",
                  nodes + " digestible biomass",
                  bus=nodes + " digestible biomass",
                  carrier="digestible biomass",
                  e_cyclic=True)
 
-    network.add("Carrier","solid biomass")
+    n.add("Carrier","solid biomass")
 
-    network.madd("Bus",
+    n.madd("Bus",
                  nodes + " solid biomass",
                  location=nodes,
                  carrier="solid biomass")
 
-    network.madd("Store",
+    n.madd("Store",
                  nodes + " solid biomass",
                  bus=nodes + " solid biomass",
                  carrier="solid biomass",
@@ -1634,15 +1633,15 @@ def add_biomass(n, costs):
     for name in digestible_biomass_types:
 
         biomass_potential[name] = biomass_pot_node[name].values
-        network.add("Carrier", name + " digestible biomass")
+        n.add("Carrier", name + " digestible biomass")
 
-        network.madd("Bus",
+        n.madd("Bus",
                  nodes + " " + name + " digestible biomass",
                  location=nodes,
                  carrier=name + " digestible biomass")
 
         #TODO: add individual costs
-        # network.madd("Store",
+        # n.madd("Store",
         #              nodes + " " + name + " digestible biomass",
         #              bus=nodes + " " + name + " digestible biomass",
         #              carrier=name + " digestible biomass",
@@ -1650,14 +1649,14 @@ def add_biomass(n, costs):
         #              # marginal_cost=costs.at['digestible biomass', 'fuel'], #Add individual costs
         #              e_initial=biomass_pot_node[name].values)
 
-        network.madd("Store",
+        n.madd("Store",
                     nodes + " " + name + " digestible biomass",
                     bus=nodes + " " + name + " digestible biomass",
                     e_nom_extendable=True,
                     e_cyclic=True,
                     carrier=name + " digestible biomass")
 
-        network.madd("Generator",
+        n.madd("Generator",
                      nodes + " " + name + " digestible biomass",
                      bus=nodes + " " + name + " digestible biomass",
                      carrier=name + " digestible biomass",
@@ -1668,7 +1667,7 @@ def add_biomass(n, costs):
 
         #NB: Assuming that the input substrates are given in the biogas potential and biogas cost!
 
-        network.madd("Link",
+        n.madd("Link",
                      nodes + " " + name + " digestible biomass",
                      bus0=nodes + " " + name + " digestible biomass",
                      bus1=nodes + " digestible biomass",
@@ -1679,7 +1678,7 @@ def add_biomass(n, costs):
                      p_nom_extendable=True)
 
     #TODO: gas grid cost added for biogas processes in insert_gas_distribution_costs, but demands refining! Also add CO2 transport cost!
-    # network.madd("Link",
+    # n.madd("Link",
     #              nodes + " digestible biomass",
     #              bus0=nodes + " digestible biomass",
     #              bus1="EU gas",
@@ -1691,7 +1690,7 @@ def add_biomass(n, costs):
     #              efficiency3=costs.at["Anaerobic digestion", "CO2 stored"],
     #              p_nom_extendable=True)
 
-    network.madd("Link",
+    n.madd("Link",
                  nodes + " digestible biomass CC",
                  bus0=nodes + " digestible biomass",
                  bus1="EU gas",
@@ -1705,7 +1704,7 @@ def add_biomass(n, costs):
                  efficiency3=costs.at["Anaerobic digestion", "CO2 stored"] * (1-costs.at['Anaerobic digestion','capture rate']),
                  p_nom_extendable=True)
 
-    network.madd("Link",
+    n.madd("Link",
                  nodes + " digestible biomass to hydrogen CC",
                  bus0=nodes + " digestible biomass",
                  bus1=nodes + " H2",
@@ -1724,9 +1723,9 @@ def add_biomass(n, costs):
 
 
     for name in solid_biomass_types:
-        network.add("Carrier", name + " solid biomass")
+        n.add("Carrier", name + " solid biomass")
 
-        network.madd("Bus",
+        n.madd("Bus",
                      nodes + " " + name + " solid biomass",
                      location=nodes,
                      carrier=name + " solid biomass")
@@ -1735,14 +1734,14 @@ def add_biomass(n, costs):
         #TODO: change to individual biomass type cost, per node
         biomass_cost[name] = costs.at['solid biomass', 'fuel']
 
-        network.madd("Store",
+        n.madd("Store",
                     nodes + " " + name + " solid biomass",
                     bus=nodes + " " + name + " solid biomass",
                     e_nom_extendable=True,
                     e_cyclic=True,
                     carrier=name + " solid biomass")
 
-        network.madd("Generator",
+        n.madd("Generator",
                      nodes + " " + name + " solid biomass",
                      bus=nodes + " " + name + " solid biomass",
                      carrier=name + " solid biomass",
@@ -1750,7 +1749,7 @@ def add_biomass(n, costs):
                      p_nom_max=biomass_potential[name]/8760,
                      marginal_cost=biomass_cost[name])
 
-        network.madd("Link",
+        n.madd("Link",
                      nodes + " " + name + " solid biomass",
                      bus0=nodes + " " + name + " solid biomass",
                      bus1=nodes + " solid biomass",
@@ -1767,7 +1766,7 @@ def add_biomass(n, costs):
         if o[o.find("B") + 4:] == "Im":
             print("Adding biomass import")
 
-            network.add("Carrier","solid biomass import")
+            n.add("Carrier","solid biomass import")
             import_potential = {}
             import_cost = {}
             import_name = {}
@@ -1788,12 +1787,12 @@ def add_biomass(n, costs):
                     import_cost[num] = (15 + step_size*0.25 * (num - 1)) * 3.6  # EUR/MWh
                     superfluous += min(-superfluous, step_size*1e9 / 3.6)
 
-                network.madd("Bus",
+                n.madd("Bus",
                             [import_name[num] + " solid biomass"],
                             location="EU",
                             carrier="solid biomass import")
 
-                network.madd("Store",
+                n.madd("Store",
                              [import_name[num] + " solid biomass"],
                              bus=import_name[num] + " solid biomass",
                              e_nom_extendable=True,
@@ -1801,7 +1800,7 @@ def add_biomass(n, costs):
                              carrier="solid biomass import",
                              )
 
-                network.madd("Generator",
+                n.madd("Generator",
                             [import_name[num] + " solid biomass"],
                             bus=import_name[num] + " solid biomass",
                             carrier="solid biomass import",
@@ -1809,7 +1808,7 @@ def add_biomass(n, costs):
                             p_nom_max=import_potential[num]/8760,
                             marginal_cost=import_cost[num])
 
-                network.madd("Link",
+                n.madd("Link",
                             nodes + " " + import_name[num] + " solid biomass",
                             bus0=import_name[num] + " solid biomass",
                             bus1=nodes + " solid biomass",
@@ -1821,7 +1820,7 @@ def add_biomass(n, costs):
 
 
     #TODO: Add marginal costs
-    network.madd("Link",
+    n.madd("Link",
                  nodes + " solid biomass to gas",
                  bus0=nodes + " solid biomass",
                  bus1="EU gas",
@@ -1835,7 +1834,7 @@ def add_biomass(n, costs):
                  marginal_cost=0., #costs.loc["BioSNG", "VOM"]
                  )
 
-    network.madd("Link",
+    n.madd("Link",
                  nodes + " solid biomass to gas CC",
                  bus0=nodes + " solid biomass",
                  bus1="EU gas",
@@ -1852,7 +1851,7 @@ def add_biomass(n, costs):
                  )
 
 
-    network.madd("Link",
+    n.madd("Link",
                  nodes + " solid biomass to hydrogen",
                  bus0=nodes + " solid biomass",
                  bus1=nodes + " H2",
@@ -1869,19 +1868,19 @@ def add_biomass(n, costs):
                  )
 
     #
-    # network.madd("Bus",
+    # n.madd("Bus",
     #              nodes + " liquid biofuel",
     #              location=nodes,
     #              carrier="biomass to liquid")
     #
-    # network.madd("Store",
+    # n.madd("Store",
     #              nodes + " liquid biofuel",
     #              bus=nodes + " liquid biofuel",
     #              e_nom_extendable=True,
     #              e_cyclic=True,
     #              carrier="biomass to liquid")
 
-    network.madd("Link",
+    n.madd("Link",
                  nodes + " biomass to liquid",
                  bus0=nodes + " solid biomass",
                  bus1="EU oil",#nodes + " liquid biofuel",#"EU oil",
@@ -1895,7 +1894,7 @@ def add_biomass(n, costs):
                  marginal_cost=0.,  # costs.loc["BtL", "VOM"]
                  )
 
-    network.madd("Link",
+    n.madd("Link",
                  nodes + " biomass to liquid CC",
                  bus0=nodes + " solid biomass",
                  bus1="EU oil",#nodes + " liquid biofuel",#"EU oil",
@@ -1911,7 +1910,7 @@ def add_biomass(n, costs):
                  marginal_cost=0.,  # costs.loc["BtL", "VOM"]
                  )
     #
-    # network.madd("Link",
+    # n.madd("Link",
     #              nodes + " liquid biofuel",
     #              bus0=nodes + " liquid biofuel",
     #              bus1="EU oil",
@@ -1920,7 +1919,7 @@ def add_biomass(n, costs):
     #              )
 
     #TODO: Add real data for bioelectricity without CHP!
-    network.madd("Link",
+    n.madd("Link",
                  nodes + " solid biomass to electricity",
                  bus0=nodes + " solid biomass",
                  bus1=nodes,
@@ -1934,7 +1933,7 @@ def add_biomass(n, costs):
                  efficiency3=costs.at['solid biomass', 'CO2 intensity'],
                  lifetime=costs.at['central solid biomass CHP', 'lifetime'])
 
-    network.madd("Link",
+    n.madd("Link",
                  nodes + " solid biomass to electricity CC",
                  bus0=nodes + " solid biomass",
                  bus1=nodes,
@@ -1957,7 +1956,7 @@ def add_biomass(n, costs):
     if not urban_central.empty and options["chp"]:
         urban_central = urban_central.str[:-len(" urban central heat")]
 
-        network.madd("Link",
+        n.madd("Link",
                      urban_central + " urban central solid biomass CHP",
                      bus0=urban_central + " solid biomass",
                      bus1=urban_central,
@@ -1973,7 +1972,7 @@ def add_biomass(n, costs):
                      lifetime=costs.at['central solid biomass CHP','lifetime'])
 
 
-        network.madd("Link",
+        n.madd("Link",
                      urban_central + " urban central solid biomass CHP CC",
                      bus0=urban_central + " solid biomass",
                      bus1=urban_central,
@@ -1999,7 +1998,7 @@ def add_biomass(n, costs):
 
 
 
-def add_industry(network):
+def add_industry(n, costs):
     print("adding industrial demand")
 
     nodes = pop_layout.index
@@ -2007,12 +2006,12 @@ def add_industry(network):
     # 1e6 to convert TWh to MWh
     industrial_demand = pd.read_csv(snakemake.input.industrial_demand, index_col=0) * 1e6
 
-    network.madd("Bus",
+    n.madd("Bus",
                  nodes + " lowT process steam",
                  carrier="lowT process steam")
 
 
-    network.madd("Load",
+    n.madd("Load",
                  nodes,
                  suffix=" lowT process steam",
                  bus=nodes + " lowT process steam",
@@ -2021,7 +2020,7 @@ def add_industry(network):
 
     for o in opts:
         if "B" in o:
-            network.madd("Link",
+            n.madd("Link",
                         nodes,
                         suffix=" solid biomass for lowT industry",
                         bus0=nodes + " solid biomass",
@@ -2034,7 +2033,7 @@ def add_industry(network):
                         capital_cost=costs.at['solid biomass to steam','fixed'])
             # TODO: cement capture rather low-cost compared to other processes (high conc. CO2) --> adapt!
 
-            network.madd("Link",
+            n.madd("Link",
                          nodes,
                          suffix=" solid biomass for lowT industry CC",
                          bus0=nodes + " solid biomass",
@@ -2053,7 +2052,7 @@ def add_industry(network):
                          lifetime=costs.at['cement capture', 'lifetime'])
 
 
-    network.madd("Link",
+    n.madd("Link",
                  nodes,
                  suffix=" methane for lowT industry",
                  bus0="EU gas",
@@ -2065,7 +2064,7 @@ def add_industry(network):
                  capital_cost=costs.at['gas to steam','fixed'],
                  efficiency2=costs.at['gas','CO2 intensity'])
 
-    network.madd("Link",
+    n.madd("Link",
                  nodes,
                  suffix=" methane for lowT industry CC",
                  bus0="EU gas",
@@ -2081,7 +2080,7 @@ def add_industry(network):
                  lifetime=costs.at['cement capture','lifetime'])
 
     #TODO: adapt this to real values for H2 to steam
-    network.madd("Link",
+    n.madd("Link",
                  nodes,
                  suffix=" H2 for lowT industry",
                  bus0=nodes + " H2",
@@ -2092,18 +2091,18 @@ def add_industry(network):
                  capital_cost=costs.at['gas to steam','fixed'])
 
 
-    network.madd("Bus",
+    n.madd("Bus",
                  ["gas for industry"],
                  location="EU",
                  carrier="gas for industry")
 
-    network.madd("Load",
+    n.madd("Load",
                  ["gas for industry"],
                  bus="gas for industry",
                  carrier="gas for industry",
                  p_set=industrial_demand.loc[nodes,"methane"].sum()/8760.)
 
-    network.madd("Link",
+    n.madd("Link",
                  ["gas for industry"],
                  bus0="EU gas",
                  bus1="gas for industry",
@@ -2113,7 +2112,7 @@ def add_industry(network):
                  efficiency=1.,
                  efficiency2=costs.at['gas','CO2 intensity'])
 
-    network.madd("Link",
+    n.madd("Link",
                  ["gas for industry CC"],
                  bus0="EU gas",
                  bus1="gas for industry",
@@ -2128,7 +2127,7 @@ def add_industry(network):
                  lifetime=costs.at['cement capture','lifetime'])
 
 
-    network.madd("Load",
+    n.madd("Load",
                  nodes,
                  suffix=" H2 for industry",
                  bus=nodes + " H2",
@@ -2163,7 +2162,7 @@ def add_industry(network):
     all_navigation = ["total international navigation", "total domestic navigation"]
     efficiency = options['shipping_average_efficiency'] / costs.at["fuel cell", "efficiency"]
     shipping_hydrogen_share = get(options['shipping_hydrogen_share'], investment_year)
-    p_set = shipping_hydrogen_share * get(options["shipping_demand"]) * nodal_energy_totals.loc[nodes, all_navigation].sum(axis=1) * 1e6 * efficiency / 8760
+    p_set = shipping_hydrogen_share * get(options["shipping_demand"],investment_year) * nodal_energy_totals.loc[nodes, all_navigation].sum(axis=1) * 1e6 * efficiency / 8760
 
     n.madd("Load",
         nodes,
@@ -2187,7 +2186,7 @@ def add_industry(network):
             p_set=p_set
         )
         
-        co2 = shipping_oil_share * get(options["shipping_demand"]) * nodal_energy_totals.loc[nodes, all_navigation].sum().sum() * 1e6 / 8760 * costs.at["oil", "CO2 intensity"]
+        co2 = shipping_oil_share * get(options["shipping_demand"],investment_year) * nodal_energy_totals.loc[nodes, all_navigation].sum().sum() * 1e6 / 8760 * costs.at["oil", "CO2 intensity"]
 
         n.add("Load",
             "shipping oil emissions",
@@ -2267,7 +2266,7 @@ def add_industry(network):
     )
 
     all_aviation = ["total international aviation", "total domestic aviation"]
-    p_set = get(options["aviation_demand"]) * nodal_energy_totals.loc[nodes, all_aviation].sum(axis=1).sum() * 1e6 / 8760
+    p_set = get(options["aviation_demand"],investment_year) * nodal_energy_totals.loc[nodes, all_aviation].sum(axis=1).sum() * 1e6 / 8760
 
     n.add("Load",
         "kerosene for aviation",
@@ -2367,16 +2366,16 @@ def add_waste_heat(n):
 
         # TODO what is the 0.95 and should it be a config option?
         if options['use_fischer_tropsch_waste_heat']:
-            network.links.loc[urban_central + " Fischer-Tropsch","bus4"] = urban_central + " urban central heat"
-            network.links.loc[urban_central + " Fischer-Tropsch","efficiency4"] = 0.95 - network.links.loc[urban_central + " Fischer-Tropsch","efficiency"]
+            n.links.loc[urban_central + " Fischer-Tropsch","bus4"] = urban_central + " urban central heat"
+            n.links.loc[urban_central + " Fischer-Tropsch","efficiency4"] = 0.95 - n.links.loc[urban_central + " Fischer-Tropsch","efficiency"]
 
         for o in opts:
             if "B" in o:
                 if options['use_biofuel_waste_heat']:
-                    network.links.loc[urban_central + " biomass to liquid","bus4"] = urban_central + " urban central heat"
-                    network.links.loc[urban_central + " biomass to liquid","efficiency4"] = 0.95 - network.links.loc[urban_central + " biomass to liquid","efficiency"]
-                    network.links.loc[urban_central + " solid biomass to gas","bus4"] = urban_central + " urban central heat"
-                    network.links.loc[urban_central + " solid biomass to gas","efficiency4"] = 0.95 - network.links.loc[urban_central + " solid biomass to gas","efficiency"]
+                    n.links.loc[urban_central + " biomass to liquid","bus4"] = urban_central + " urban central heat"
+                    n.links.loc[urban_central + " biomass to liquid","efficiency4"] = 0.95 - n.links.loc[urban_central + " biomass to liquid","efficiency"]
+                    n.links.loc[urban_central + " solid biomass to gas","bus4"] = urban_central + " urban central heat"
+                    n.links.loc[urban_central + " solid biomass to gas","efficiency4"] = 0.95 - n.links.loc[urban_central + " solid biomass to gas","efficiency"]
 
 
         if options['use_fuel_cell_waste_heat']:
@@ -2430,7 +2429,7 @@ def maybe_adjust_costs_and_potentials(n, opts):
             print("changing", attr , "for", carrier, "by factor", factor)
 
 
-def add_biomass_transport(network):
+def add_biomass_transport(n):
 
     # costs for biomass transport
     transport_costs = pd.read_csv(snakemake.input.biomass_transport,
@@ -2452,7 +2451,7 @@ def add_biomass_transport(network):
     biomass_transport["costs"] = pd.concat([bus0_costs, bus1_costs],
                                            axis=1).mean(axis=1)
 
-    network.madd("Link",
+    n.madd("Link",
            biomass_transport.index,
            bus0=biomass_transport.bus0 + " solid biomass",
            bus1=biomass_transport.bus1 + " solid biomass",
@@ -2568,12 +2567,12 @@ if __name__ == "__main__":
         add_industry(n, costs)
 
     if options["hvdc"]:
-        hvdc_transport_model(n,costs)
+        hvdc_transport_model(n)
 
     for o in opts:
         if "B" in o:
             add_biomass(n,costs)
-            if options["bioT"]:
+            if options["biomass_transport"]:
                 add_biomass_transport(n)
 
     if "T" in opts:
