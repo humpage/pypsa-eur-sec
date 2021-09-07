@@ -19,7 +19,7 @@ scenario:
   opts: # only relevant for PyPSA-Eur
     - ''
   sector_opts: # this is where the main scenario settings are
-    - 179H-T-H-B0p4Im-I-S600-CCL
+    - 23H-T-H-I-S600-CCL
     - 23H-T-H-B0p0-I-S600-CCL
     - 23H-T-H-B0p4-I-S600-CCL
     - 23H-T-H-B0p0Im-I-S600-CCL
