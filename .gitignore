@@ -53,3 +53,4 @@ grid.png
 analysis_jupyterTest.ipynb
 jupyterAnalysis.ipynb
 *.xls
+.bashrc
