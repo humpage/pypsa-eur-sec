@@ -4,9 +4,11 @@ import pypsa
 
 import numpy as np
 
+import pandas as pd
+
 from pypsa.linopt import get_var, linexpr, define_constraints
 
-from pypsa.linopf import network_lopf, ilopf
+from pypsa.linopf import network_lopf, ilopf, join_exprs
 
 from vresutils.benchmark import memory_logger
 
@@ -69,33 +71,43 @@ def prepare_network(n, solve_opts=None):
 
     return n
 
-# <<<<<<< HEAD
-# def add_opts_constraints(n, opts=None):
-#     if opts is None:
-#         opts = snakemake.wildcards.opts.split('-')
-#
-#     if 'BAU' in opts:
-#         mincaps = snakemake.config['electricity']['BAU_mincapacities']
-#         def bau_mincapacities_rule(model, carrier):
-#             gens = n.generators.index[n.generators.p_nom_extendable & (n.generators.carrier == carrier)]
-#             return sum(model.generator_p_nom[gen] for gen in gens) >= mincaps[carrier]
-#         n.model.bau_mincapacities = pypsa.opt.Constraint(list(mincaps), rule=bau_mincapacities_rule)
-#
-#     if 'SAFE' in opts:
-#         peakdemand = (1. + snakemake.config['electricity']['SAFE_reservemargin']) * n.loads_t.p_set.sum(axis=1).max()
-#         conv_techs = snakemake.config['plotting']['conv_techs']
-#         exist_conv_caps = n.generators.loc[n.generators.carrier.isin(conv_techs) & ~n.generators.p_nom_extendable, 'p_nom'].sum()
-#         ext_gens_i = n.generators.index[n.generators.carrier.isin(conv_techs) & n.generators.p_nom_extendable]
-#         n.model.safe_peakdemand = pypsa.opt.Constraint(expr=sum(n.model.generator_p_nom[gen] for gen in ext_gens_i) >= peakdemand - exist_conv_caps)
+
+def add_ccl_constraints(n):
+
+    agg_p_nom_limits = n.config['existing_capacities'].get('agg_p_nom_limits')
+
+    # try:
+    agg_p_nom_minmax = pd.read_csv(agg_p_nom_limits, index_col=list(range(2)))
+    print(agg_p_nom_minmax)
+    # except IOError:
+    #     logger.exception("Need to specify the path to a .csv file containing "
+    #                      "aggregate capacity limits per country in "
+    #                      "config['electricity']['agg_p_nom_limit'].")
+    logger.info("Adding per carrier generation capacity constraints for individual countries")
+    print('adding per carrier generation capacity constraints for individual countries')
+    gen_country = n.generators.bus.map(n.buses.country)
+    # cc means country and carrier
+    p_nom_per_cc = (pd.DataFrame(
+        {'p_nom': linexpr((1, get_var(n, 'Generator', 'p_nom'))),
+         'country': gen_country, 'carrier': n.generators.carrier})
+                    .dropna(subset=['p_nom'])
+                    .groupby(['country', 'carrier']).p_nom
+                    .apply(join_exprs))
+    minimum = agg_p_nom_minmax['min'].dropna()
+    if not minimum.empty:
+        define_constraints(n, p_nom_per_cc[minimum.index], '>=', minimum, 'agg_p_nom', 'min')
+    maximum = agg_p_nom_minmax['max'].dropna()
+    if not maximum.empty:
+        define_constraints(n, p_nom_per_cc[maximum.index], '<=', maximum, 'agg_p_nom', 'max')
 
 
 def add_biofuel_constraint(n):
 
-    opts = snakemake.wildcards.sector_opts.split('-')
-    print('Options: ', opts)
+    # opts = snakemake.wildcards.sector_opts.split('-')
+    # print('Options: ', opts)
 
     liquid_biofuel_limit = 0
-    for o in opts:
+    for o in n.opts:
         if "B" in o:
             liquid_biofuel_limit = o[o.find("B") + 1:o.find("B") + 4]
             liquid_biofuel_limit = float(liquid_biofuel_limit.replace("p", "."))
@@ -114,13 +126,6 @@ def add_biofuel_constraint(n):
     lhs = linexpr((biofuel_vars_eta, biofuel_vars)).sum().sum()
     define_constraints(n, lhs, ">=", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
 
-# def add_eps_storage_constraint(n):
-#     if not hasattr(n, 'epsilon'):
-#         n.epsilon = 1e-5
-#     fix_sus_i = n.storage_units.index[~ n.storage_units.p_nom_extendable]
-#     n.model.objective.expr += sum(n.epsilon * n.model.state_of_charge[su, n.snapshots[0]] for su in fix_sus_i)
-# =======
-# >>>>>>> 87596dd015ab8f2fff8ef77881a1bd82a7255b14
 
 def add_battery_constraints(n):
 
@@ -201,173 +206,27 @@ def add_chp_constraints(n):
 
         define_constraints(n, lhs, "<=", 0, 'chplink', 'backpressure')
 
-    opts = snakemake.wildcards.sector_opts.split('-')
-    for o in opts:
+    # opts = snakemake.wildcards.sector_opts.split('-')
+    for o in n.opts:
         if "B" in o:
             add_biofuel_constraint(n)
 
 
-# def fix_branches(n, lines_s_nom=None, links_p_nom=None):
-#     if lines_s_nom is not None and len(lines_s_nom) > 0:
-#         n.lines.loc[lines_s_nom.index,"s_nom"] = lines_s_nom.values
-#         n.lines.loc[lines_s_nom.index,"s_nom_extendable"] = False
-#     if links_p_nom is not None and len(links_p_nom) > 0:
-#         n.links.loc[links_p_nom.index,"p_nom"] = links_p_nom.values
-#         print('Links p_nom: ',links_p_nom.values)
-#         # n.links.loc[links_p_nom.index,"p_nom_extendable"] = True
-#         n.links.loc[links_p_nom.index,"p_nom_extendable"] = False
 def extra_functionality(n, snapshots):
+    print('adding extra constraints')
     add_battery_constraints(n)
+    add_biofuel_constraint(n)
+
+    opts = snakemake.wildcards.sector_opts.split('-')
+    if 'CCL' in opts:# and n.generators.p_nom_extendable: #.any():
+        print('adding ccl constraints')
+        add_ccl_constraints(n)
 
 
 def solve_network(n, config, opts='', **kwargs):
     solver_options = config['solving']['solver'].copy()
     solver_name = solver_options.pop('name')
-# <<<<<<< HEAD
-#
-#     def run_lopf(n, allow_warning_status=False, fix_zero_lines=False, fix_ext_lines=False):
-#         free_output_series_dataframes(n)
-#
-#         if fix_zero_lines:
-#             fix_lines_b = (n.lines.s_nom_opt == 0.) & n.lines.s_nom_extendable
-#             fix_links_b = (n.links.carrier=='DC') & (n.links.p_nom_opt == 0.) & n.links.p_nom_extendable
-#             fix_branches(n,
-#                          lines_s_nom=pd.Series(0., n.lines.index[fix_lines_b]),
-#                          links_p_nom=pd.Series(0., n.links.index[fix_links_b]))
-#
-#         if fix_ext_lines:
-#             fix_branches(n,
-#                          lines_s_nom=n.lines.loc[n.lines.s_nom_extendable, 's_nom_opt'],
-#                          links_p_nom=n.links.loc[(n.links.carrier=='DC') & n.links.p_nom_extendable, 'p_nom_opt'])
-#             if "line_volume_constraint" in n.global_constraints.index:
-#                 n.global_constraints.drop("line_volume_constraint",inplace=True)
-#         else:
-#             if "line_volume_constraint" not in n.global_constraints.index:
-#                 line_volume = getattr(n, 'line_volume_limit', None)
-#                 if line_volume is not None and not np.isinf(line_volume):
-#                     n.add("GlobalConstraint",
-#                           "line_volume_constraint",
-#                           type="transmission_volume_expansion_limit",
-#                           carrier_attribute="AC,DC",
-#                           sense="<=",
-#                           constant=line_volume)
-#
-#
-#         # Firing up solve will increase memory consumption tremendously, so
-#         # make sure we freed everything we can
-#         gc.collect()
-#
-#         #from pyomo.opt import ProblemFormat
-#         #print("Saving model to MPS")
-#         #n.model.write('/home/ka/ka_iai/ka_kc5996/projects/pypsa-eur/128-B-I.mps', format=ProblemFormat.mps)
-#         #print("Model is saved to MPS")
-#         #sys.exit()
-#
-#
-#         status, termination_condition = n.lopf(pyomo=False,
-#                                                solver_name=solver_name,
-#                                                solver_logfile=solver_log,
-#                                                solver_options=solver_options,
-#                                                solver_dir=tmpdir,
-#                                                extra_functionality=extra_functionality,
-#                                                formulation=solve_opts['formulation'],
-#                                                keep_shadowprices=True,
-#                                                keep_references=True,
-#                                                keep_files=True)
-#                                                # extra_postprocessing=extra_postprocessing)
-#                                                #keep_files=True
-#                                                #free_memory={'pypsa'}
-#
-#         assert status == "ok" or allow_warning_status and status == 'warning', \
-#             ("network_lopf did abort with status={} "
-#              "and termination_condition={}"
-#              .format(status, termination_condition))
-#
-#         if not fix_ext_lines and "line_volume_constraint" in n.global_constraints.index:
-#             n.line_volume_limit_dual = n.global_constraints.at["line_volume_constraint","mu"]
-#             print("line volume limit dual:",n.line_volume_limit_dual)
-#
-#         return status, termination_condition
-#
-#     lines_ext_b = n.lines.s_nom_extendable
-#     if lines_ext_b.any():
-#         # puh: ok, we need to iterate, since there is a relation
-#         # between s/p_nom and r, x for branches.
-#         msq_threshold = 0.01
-#         lines = pd.DataFrame(n.lines[['r', 'x', 'type', 'num_parallel']])
-#
-#         lines['s_nom'] = (
-#             np.sqrt(3) * n.lines['type'].map(n.line_types.i_nom) *
-#             n.lines.bus0.map(n.buses.v_nom)
-#         ).where(n.lines.type != '', n.lines['s_nom'])
-#
-#         lines_ext_typed_b = (n.lines.type != '') & lines_ext_b
-#         lines_ext_untyped_b = (n.lines.type == '') & lines_ext_b
-#
-#         def update_line_parameters(n, zero_lines_below=10, fix_zero_lines=False):
-#             if zero_lines_below > 0:
-#                 n.lines.loc[n.lines.s_nom_opt < zero_lines_below, 's_nom_opt'] = 0.
-#                 n.links.loc[(n.links.carrier=='DC') & (n.links.p_nom_opt < zero_lines_below), 'p_nom_opt'] = 0.
-#
-#             if lines_ext_untyped_b.any():
-#                 for attr in ('r', 'x'):
-#                     n.lines.loc[lines_ext_untyped_b, attr] = (
-#                         lines[attr].multiply(lines['s_nom']/n.lines['s_nom_opt'])
-#                     )
-#
-#             if lines_ext_typed_b.any():
-#                 n.lines.loc[lines_ext_typed_b, 'num_parallel'] = (
-#                     n.lines['s_nom_opt']/lines['s_nom']
-#                 )
-#                 logger.debug("lines.num_parallel={}".format(n.lines.loc[lines_ext_typed_b, 'num_parallel']))
-#
-#         iteration = 1
-#
-#         lines['s_nom_opt'] = lines['s_nom'] * n.lines['num_parallel'].where(n.lines.type != '', 1.)
-#         status, termination_condition = run_lopf(n, allow_warning_status=True)
-#
-#         def msq_diff(n):
-#             lines_err = np.sqrt(((n.lines['s_nom_opt'] - lines['s_nom_opt'])**2).mean())/lines['s_nom_opt'].mean()
-#             logger.info("Mean square difference after iteration {} is {}".format(iteration, lines_err))
-#             return lines_err
-#
-#         min_iterations = solve_opts.get('min_iterations', 2)
-#         max_iterations = solve_opts.get('max_iterations', 999)
-#
-#         while msq_diff(n) > msq_threshold or iteration < min_iterations:
-#             if iteration >= max_iterations:
-#                 logger.info("Iteration {} beyond max_iterations {}. Stopping ...".format(iteration, max_iterations))
-#                 break
-#
-#             update_line_parameters(n)
-#             lines['s_nom_opt'] = n.lines['s_nom_opt']
-#             iteration += 1
-#
-#             status, termination_condition = run_lopf(n, allow_warning_status=True)
-#
-#         update_line_parameters(n, zero_lines_below=100)
-#
-#         logger.info("Starting last run with fixed extendable lines")
-#
-#         # Not really needed, could also be taken out
-#         # if 'snakemake' in globals():
-#         #     fn = os.path.basename(snakemake.output[0])
-#         #     n.export_to_netcdf('/home/vres/data/jonas/playground/pypsa-eur/' + fn)
-#
-#     # status, termination_condition = run_lopf(n, allow_warning_status=True, fix_ext_lines=True)
-#     status, termination_condition = run_lopf(n, allow_warning_status=True, fix_ext_lines=False)
-#
-#     # Drop zero lines from network
-#     # zero_lines_i = n.lines.index[(n.lines.s_nom_opt == 0.) & n.lines.s_nom_extendable]
-#     # if len(zero_lines_i):
-#     #     n.mremove("Line", zero_lines_i)
-#     #     n.mremove("Line", zero_lines_i)
-#     # zero_links_i = n.links.index[(n.links.p_nom_opt == 0.) & n.links.p_nom_extendable]
-#     # if len(zero_links_i):
-#     #     n.mremove("Link", zero_links_i)
-#
-#
-# =======
+
     cf_solving = config['solving']['options']
     track_iterations = cf_solving.get('track_iterations', False)
     min_iterations = cf_solving.get('min_iterations', 4)
