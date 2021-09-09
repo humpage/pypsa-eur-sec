@@ -123,8 +123,10 @@ def add_ccl_constraints(n):
 
 def add_biofuel_constraint(n):
 
+    options = snakemake.wildcards.sector_opts.split('-')
+    print('options: ', options)
     liquid_biofuel_limit = 0
-    for o in n.opts:
+    for o in options:
         if "B" in o:
             liquid_biofuel_limit = o[o.find("B") + 1:o.find("B") + 4]
             liquid_biofuel_limit = float(liquid_biofuel_limit.replace("p", "."))
@@ -228,7 +230,9 @@ def extra_functionality(n, snapshots):
     print('adding extra constraints')
     add_battery_constraints(n)
 
-    for o in n.opts:
+    options = snakemake.wildcards.sector_opts.split('-')
+    print('options: ', options)
+    for o in options:
         if "B" in o:
             print('adding biofuel constraints')
             add_biofuel_constraint(n)
