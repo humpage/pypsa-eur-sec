@@ -12,11 +12,29 @@ from pypsa.linopf import network_lopf, ilopf, join_exprs
 
 from vresutils.benchmark import memory_logger
 
-from helper import override_component_attrs
+# from helper import override_component_attrs
 
 import logging
 logger = logging.getLogger(__name__)
 pypsa.pf.logger.setLevel(logging.WARNING)
+
+#First tell PyPSA that links can have multiple outputs by
+#overriding the component_attrs. This can be done for
+#as many buses as you need with format busi for i = 2,3,4,5,....
+#See https://pypsa.org/doc/components.html#link-with-multiple-outputs-or-inputs
+
+
+override_component_attrs = pypsa.descriptors.Dict({k : v.copy() for k,v in pypsa.components.component_attrs.items()})
+override_component_attrs["Link"].loc["bus2"] = ["string",np.nan,np.nan,"2nd bus","Input (optional)"]
+override_component_attrs["Link"].loc["bus3"] = ["string",np.nan,np.nan,"3rd bus","Input (optional)"]
+override_component_attrs["Link"].loc["bus4"] = ["string",np.nan,np.nan,"4th bus","Input (optional)"]
+override_component_attrs["Link"].loc["efficiency2"] = ["static or series","per unit",1.,"2nd bus efficiency","Input (optional)"]
+override_component_attrs["Link"].loc["efficiency3"] = ["static or series","per unit",1.,"3rd bus efficiency","Input (optional)"]
+override_component_attrs["Link"].loc["efficiency4"] = ["static or series","per unit",1.,"4th bus efficiency","Input (optional)"]
+override_component_attrs["Link"].loc["p2"] = ["series","MW",0.,"2nd bus output","Output"]
+override_component_attrs["Link"].loc["p3"] = ["series","MW",0.,"3rd bus output","Output"]
+override_component_attrs["Link"].loc["p4"] = ["series","MW",0.,"4th bus output","Output"]
+
 
 
 def add_land_use_constraint(n):
@@ -24,7 +42,9 @@ def add_land_use_constraint(n):
     #warning: this will miss existing offwind which is not classed AC-DC and has carrier 'offwind'
     for carrier in ['solar', 'onwind', 'offwind-ac', 'offwind-dc']:
         existing = n.generators.loc[n.generators.carrier == carrier, "p_nom"].groupby(n.generators.bus.map(n.buses.location)).sum()
+        print(existing)
         existing.index += " " + carrier + "-" + snakemake.wildcards.planning_horizons
+        print(existing.index)
         n.generators.loc[existing.index, "p_nom_max"] -= existing
 
     n.generators.p_nom_max.clip(lower=0, inplace=True)
@@ -66,8 +86,8 @@ def prepare_network(n, solve_opts=None):
         n.set_snapshots(n.snapshots[:nhours])
         n.snapshot_weightings[:] = 8760./nhours
 
-    if snakemake.config['foresight'] == 'myopic':
-        add_land_use_constraint(n)
+    # if snakemake.config['foresight'] == 'myopic':
+    #     add_land_use_constraint(n)
 
     return n
 
@@ -102,9 +122,6 @@ def add_ccl_constraints(n):
 
 
 def add_biofuel_constraint(n):
-
-    # opts = snakemake.wildcards.sector_opts.split('-')
-    # print('Options: ', opts)
 
     liquid_biofuel_limit = 0
     for o in n.opts:
@@ -206,21 +223,19 @@ def add_chp_constraints(n):
 
         define_constraints(n, lhs, "<=", 0, 'chplink', 'backpressure')
 
-    # opts = snakemake.wildcards.sector_opts.split('-')
-    for o in n.opts:
-        if "B" in o:
-            add_biofuel_constraint(n)
-
 
 def extra_functionality(n, snapshots):
     print('adding extra constraints')
     add_battery_constraints(n)
-    add_biofuel_constraint(n)
 
-    opts = snakemake.wildcards.sector_opts.split('-')
-    if 'CCL' in opts:# and n.generators.p_nom_extendable: #.any():
-        print('adding ccl constraints')
-        add_ccl_constraints(n)
+    for o in n.opts:
+        if "B" in o:
+            print('adding biofuel constraints')
+            add_biofuel_constraint(n)
+
+    # if 'CCL' in n.opts:# and n.generators.p_nom_extendable: #.any():
+    #     print('adding ccl constraints')
+    #     add_ccl_constraints(n)
 
 
 def solve_network(n, config, opts='', **kwargs):
@@ -272,7 +287,7 @@ if __name__ == "__main__":
     fn = getattr(snakemake.log, 'memory', None)
     with memory_logger(filename=fn, interval=30.) as mem:
 
-        overrides = override_component_attrs(snakemake.input.overrides)
+        overrides = override_component_attrs #(snakemake.input.overrides)
         n = pypsa.Network(snakemake.input.network, override_component_attrs=overrides)
 
         n = prepare_network(n, solve_opts)
