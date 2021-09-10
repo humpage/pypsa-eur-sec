@@ -9,11 +9,11 @@ base_dir="../data/biomass"
 def update_biomass_potentials():
 
     renameColsForest = {'Total supply (PJ)':'forest residues',
-                    '>300 km ':'500',
+                    '>300 km ':'400',
                     'Transport variable cost: Paved road (Euros/GJ* km)': 'TransC',
                     'ForestC (fixed cost, cost at the road and truck loading/uploading) (Euros/GJ)': 'FixC'}
     renameColsAgric = {'Total supply (PJ)':'straw',
-                    '>300 km ':'500',
+                    '>300 km ':'400',
                    'Transport variable cost: Paved road  (Euros/GJ* km)': 'TransC',
                    'AgriC (fixed cost, cost at the road and truck loading/uploading) (Euros/GJ)': 'FixC'}
 
@@ -22,24 +22,31 @@ def update_biomass_potentials():
     forest_residues = forest_residues[forest_residues.index.notnull()].sort_index()
     forest_residues.columns = forest_residues.columns.str.replace(r'<|>| km','',regex=True)
 
-    #Convert PJ to MWh
-    PJindex = ['forest residues','50','100','150','200','250','300','500']
-    forest_residues[PJindex] = (forest_residues[PJindex] / 3.6 * 1e6).astype(int)
-
-    #Convert EUR/GJ to EUR/MWh
-    Costindex = ['FixC','TransC']
-    forest_residues[Costindex] = (forest_residues[Costindex] * 3.6).round(4)
-    print(forest_residues.columns)
-
     agric_residues = pd.read_excel('{}/Residues cost supply.xls'.format(base_dir), sheet_name="Agri residues traveled distanc", skiprows=1,
                                    index_col=0,header=0,squeeze=True).drop('Unnamed: 1', axis=1).drop(index={'TR','LI'}).fillna(0).rename(index={'UK':'GB','EL ':'GR'}, columns=renameColsAgric)
     agric_residues = agric_residues[agric_residues.index.notnull()].sort_index()
     agric_residues.columns = agric_residues.columns.str.replace(r'<|>| km','',regex=True)
 
+    #Convert PJ to MWh
+    PJindex = ['forest residues','50','100','150','200','250','300','400']
+    forest_residues[PJindex] = (forest_residues[PJindex] / 3.6 * 1e6).astype(int)
+    PJindex = ['straw','50','100','150','200','250','300','400']
+    agric_residues[PJindex] = (agric_residues[PJindex] / 3.6 * 1e6).astype(int)
+
+    #Convert EUR/GJ to EUR/MWh
+    Costindex = ['FixC','TransC']
+    forest_residues[Costindex] = (forest_residues[Costindex] * 3.6).round(4)
+    agric_residues[Costindex] = (agric_residues[Costindex] * 3.6).round(4)
+    print(forest_residues.columns)
+
+
     biomass_potentials = pd.read_csv('../resources/biomass_potentials.csv', index_col=0)
 
     # update forest residues and straw with new values
-    biomass_potentials['forest residues'].update(forest_residues['forest residues'])
+    biomass_potentials['forest residues'].update(forest_residues['forest residues']+biomass_potentials['landscape care'])
+    biomass_potentials.drop('landscape care', inplace=True, axis=1)
+
+    print(biomass_potentials)
     biomass_potentials['straw'].update(agric_residues['straw'])
     biomass_potentials.to_csv('../resources/biomass_potentials.csv') #snakemake.output.biomass_potentials)
 
