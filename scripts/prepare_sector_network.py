@@ -1660,7 +1660,7 @@ def add_biomass(n, costs):
                bus2="co2 atmosphere",
                carrier="digestible biomass",
                efficiency=1.,
-               efficiency2=-costs.at['gas', 'CO2 intensity'] - costs.at["Anaerobic digestion", "CO2 stored"],
+               efficiency2=-costs.at['gas', 'CO2 intensity'] - costs.at["biogas", "CO2 stored"],
                # Adding the CO2 in the biogas mix
                p_nom_extendable=True)
 
@@ -1671,10 +1671,10 @@ def add_biomass(n, costs):
     #              bus1="EU gas",
     #              bus3="co2 atmosphere",
     #              carrier="digestible biomass to gas",
-    #              capital_cost=costs.at["Anaerobic digestion", "fixed"] + costs.at["biogas upgrading", "fixed"],  # Change to DEA values
+    #              capital_cost=costs.at["biogas", "fixed"] + costs.at["biogas upgrading", "fixed"],  # Change to DEA values
     #              marginal_cost=costs.at["biogas upgrading", "VOM"],  # Add DEA values for biogas process
     #              efficiency=1,
-    #              efficiency3=costs.at["Anaerobic digestion", "CO2 stored"],
+    #              efficiency3=costs.at["biogas", "CO2 stored"],
     #              p_nom_extendable=True)
 
     n.madd("Link",
@@ -1684,13 +1684,13 @@ def add_biomass(n, costs):
            bus2="co2 stored",
            bus3="co2 atmosphere",
            carrier="digestible biomass to gas",
-           capital_cost=costs.at["Anaerobic digestion", "fixed"] + costs.at["biogas upgrading", "fixed"],
+           capital_cost=costs.at["biogas", "fixed"] + costs.at["biogas upgrading", "fixed"],
            # Assuming that the CO2 from upgrading is pure, such as in amine scrubbing. I.e., with and without CC is equivalent.
            marginal_cost=costs.at["biogas upgrading", "VOM"],  # Add DEA values for biogas process
            efficiency=1,
-           efficiency2=costs.at["Anaerobic digestion", "CO2 stored"] * costs.at['Anaerobic digestion', 'capture rate'],
-           efficiency3=costs.at["Anaerobic digestion", "CO2 stored"] * (
-                       1 - costs.at['Anaerobic digestion', 'capture rate']),
+           efficiency2=costs.at["biogas", "CO2 stored"] * costs.at['biogas', 'capture rate'],
+           efficiency3=costs.at["biogas", "CO2 stored"] * (
+                       1 - costs.at['biogas', 'capture rate']),
            p_nom_extendable=True)
 
     n.madd("Link",
@@ -1703,10 +1703,10 @@ def add_biomass(n, costs):
            capital_cost=costs.at['BtL', 'fixed'] + costs.at["biogas upgrading", "fixed"],
            marginal_cost=costs.at["biogas upgrading", "VOM"],
            efficiency=0.45,
-           efficiency2=(costs.at['gas', 'CO2 intensity'] + costs.at["Anaerobic digestion", "CO2 stored"]) * costs.at[
-               'Anaerobic digestion', 'capture rate'],
-           efficiency3=(costs.at['gas', 'CO2 intensity'] + costs.at["Anaerobic digestion", "CO2 stored"]) * (
-                       1 - costs.at['Anaerobic digestion', 'capture rate']),
+           efficiency2=(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * costs.at[
+               'biogas', 'capture rate'],
+           efficiency3=(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * (
+                       1 - costs.at['biogas', 'capture rate']),
            p_nom_extendable=True)
 
     solid_biomass_types = ["forest residues", "industry wood residues"]
