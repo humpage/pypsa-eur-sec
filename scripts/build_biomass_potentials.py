@@ -32,10 +32,10 @@ def build_biomass_potentials():
 
     # solid biomass includes:
     # Primary agricultural residues (MINBIOAGRW1),
-    # Forestry energy residue (MINBIOFRSF1),
+    # Forestry energy residue (MINBIOFRSR1),
     # Secondary forestry residues (MINBIOWOOW1),
-    # Secondary Forestry residues – sawdust (MINBIOWOO1a)',
-    # Forestry residues from landscape care biomass (MINBIOFRSF1a),
+    # Secondary Forestry residues – sawdust (MINBIOWOOW1a)',
+    # Forestry residues from landscape care biomass (MINBIOFRSR1a),
     # Municipal waste (MINBIOMUN1)',
 
     # biogas includes:
@@ -60,9 +60,9 @@ if __name__ == "__main__":
 
     # This is a hack, to be replaced once snakemake is unicode-conform
 
-    solid_biomass = snakemake.config['biomass']['classes']['solid biomass']
-    if 'Secondary Forestry residues sawdust' in solid_biomass:
-        solid_biomass.remove('Secondary Forestry residues sawdust')
-        solid_biomass.append('Secondary Forestry residues – sawdust')
+    industry_wood_biomass = snakemake.config['biomass']['classes']['industry wood residues']
+    if 'Secondary Forestry residues sawdust' in industry_wood_biomass:
+        industry_wood_biomass.remove('Secondary Forestry residues sawdust')
+        industry_wood_biomass.append('Secondary Forestry residues – sawdust')
 
     build_biomass_potentials()
