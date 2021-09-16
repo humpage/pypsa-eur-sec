@@ -95,10 +95,13 @@ def prepare_network(n, solve_opts=None):
 def add_ccl_constraints(n):
 
     agg_p_nom_limits = n.config['existing_capacities'].get('agg_p_nom_limits')
+    agg_p_nom_limits_nuclear = n.config['existing_capacities'].get('agg_p_nom_limits_nuclear')
 
     # try:
     agg_p_nom_minmax = pd.read_csv(agg_p_nom_limits, index_col=list(range(2)))
     print(agg_p_nom_minmax)
+    agg_p_nom_minmax_nuclear = pd.read_csv(agg_p_nom_limits_nuclear, index_col=list(range(2)))
+    print(agg_p_nom_minmax_nuclear)
     # except IOError:
     #     logger.exception("Need to specify the path to a .csv file containing "
     #                      "aggregate capacity limits per country in "
@@ -106,6 +109,8 @@ def add_ccl_constraints(n):
     logger.info("Adding per carrier generation capacity constraints for individual countries")
     print('adding per carrier generation capacity constraints for individual countries')
     gen_country = n.generators.bus.map(n.buses.country)
+    link_country = n.links.bus1.map(n.buses.country)
+
     # cc means country and carrier
     p_nom_per_cc = (pd.DataFrame(
         {'p_nom': linexpr((1, get_var(n, 'Generator', 'p_nom'))),
@@ -113,12 +118,27 @@ def add_ccl_constraints(n):
                     .dropna(subset=['p_nom'])
                     .groupby(['country', 'carrier']).p_nom
                     .apply(join_exprs))
+
+    p_nom_per_cc_link = (pd.DataFrame(
+        {'p_nom': linexpr((1, get_var(n, 'Link', 'p_nom'))),
+         'country': link_country, 'carrier': n.links.carrier})
+                    .dropna(subset=['p_nom'])
+                    .groupby(['country', 'carrier']).p_nom
+                    .apply(join_exprs))
+
     minimum = agg_p_nom_minmax['min'].dropna()
+    minimum_conventional = agg_p_nom_minmax_nuclear['min'].dropna()
     if not minimum.empty:
         define_constraints(n, p_nom_per_cc[minimum.index], '>=', minimum, 'agg_p_nom', 'min')
+    if not minimum_conventional.empty:
+        define_constraints(n, p_nom_per_cc_link[minimum_conventional.index], '>=', minimum_conventional, 'agg_p_nom', 'min')
+
     maximum = agg_p_nom_minmax['max'].dropna()
+    maximum_conventional = agg_p_nom_minmax_nuclear['max'].dropna()
     if not maximum.empty:
         define_constraints(n, p_nom_per_cc[maximum.index], '<=', maximum, 'agg_p_nom', 'max')
+    if not maximum.empty:
+        define_constraints(n, p_nom_per_cc_link[maximum_conventional.index], '<=', maximum_conventional, 'agg_p_nom', 'max')
 
 
 def add_biofuel_constraint(n):
@@ -237,9 +257,9 @@ def extra_functionality(n, snapshots):
             print('adding biofuel constraints')
             add_biofuel_constraint(n)
 
-    # if 'CCL' in n.opts:# and n.generators.p_nom_extendable: #.any():
-    #     print('adding ccl constraints')
-    #     add_ccl_constraints(n)
+    if 'CCL' in options:# and n.generators.p_nom_extendable: #.any():
+        print('adding ccl constraints')
+        add_ccl_constraints(n)
 
 
 def solve_network(n, config, opts='', **kwargs):
