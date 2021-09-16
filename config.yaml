@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: test_overnight_nuc # use this to keep track of runs with different settings
+run: test_overnight_nuc3 # use this to keep track of runs with different settings
 foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
@@ -101,7 +101,7 @@ energy:
   emissions: CO2 # "CO2" or "All greenhouse gases - (CO2 equivalent)"
 
 biomass:
-  year: 2030
+  year: 2040
   scenario: Med
   classes:
     manureslurry:
@@ -141,7 +141,7 @@ solar_thermal:
 # only relevant for foresight = myopic or perfect
 existing_capacities:
   agg_p_nom_limits: data/agg_p_nom_minmax.csv
-  agg_p_nom_limits_nuclear: data/agg_p_nom_minmax_nuclear.csv
+  agg_p_nom_limits_conventional: data/agg_p_nom_minmax_conventional.csv
   grouping_years: [1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2019]
   threshold_capacity: 1
   conventional_carriers:
