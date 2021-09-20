@@ -22,6 +22,8 @@ from vresutils.costdata import annuity
 
 from prepare_sector_network import prepare_costs
 
+# from helper import override_component_attrs
+
 #First tell PyPSA that links can have multiple outputs by
 #overriding the component_attrs. This can be done for
 #as many buses as you need with format busi for i = 2,3,4,5,....
@@ -41,6 +43,21 @@ override_component_attrs["Generator"].loc["build_year"] = ["integer","year",np.n
 override_component_attrs["Generator"].loc["lifetime"] = ["float","years",np.nan,"build year","Input (optional)"]
 override_component_attrs["Store"].loc["build_year"] = ["integer","year",np.nan,"build year","Input (optional)"]
 override_component_attrs["Store"].loc["lifetime"] = ["float","years",np.nan,"build year","Input (optional)"]
+
+
+def remove_overage_capacities(n, year):
+
+    print("removing cap past their lifetime")
+
+    for c in n.iterate_components(["Link", "Generator", "Store"]):
+
+        # attr = "e" if c.name == "Store" else "p"
+
+        # remove assets whose build_year + lifetime < year
+        n.mremove(
+            c.name,
+            c.df.index[c.df.build_year + c.df.lifetime < year]
+        )
 
 
 def add_build_year_to_new_assets(n, baseyear):
@@ -195,11 +212,11 @@ def add_power_capacities_installed_before_baseyear(n, grouping_years, costs, bas
         capacity = capacity[~capacity.isna()]
         capacity = capacity[capacity > snakemake.config['existing_capacities']['threshold_capacity']]
 
+
         if generator in ['solar', 'onwind', 'offwind']:
-            if generator =='offwind':
-                p_max_pu=n.generators_t.p_max_pu[capacity.index + ' offwind-ac' + '-' + str(baseyear)]
-            else:
-                p_max_pu=n.generators_t.p_max_pu[capacity.index + ' ' + generator + '-' + str(baseyear)]
+
+            rename = {"offwind": "offwind-ac"}
+            p_max_pu = n.generators_t.p_max_pu[capacity.index + ' ' + rename.get(generator, generator) + '-' + str(baseyear)]
 
             n.madd("Generator",
                    capacity.index,
@@ -214,6 +231,11 @@ def add_power_capacities_installed_before_baseyear(n, grouping_years, costs, bas
                    build_year=grouping_year,
                    lifetime=costs.at[generator,'lifetime'])
         else:
+            if generator == 'nuclear':
+                p_max_pu = 0.8
+            else:
+                p_max_pu = 1
+
             n.madd("Link",
                    capacity.index,
                    suffix= " " + generator +"-" + str(grouping_year),
@@ -224,6 +246,7 @@ def add_power_capacities_installed_before_baseyear(n, grouping_years, costs, bas
                    marginal_cost=costs.at[generator,'efficiency']*costs.at[generator,'VOM'], #NB: VOM is per MWel
                    capital_cost=costs.at[generator,'efficiency']*costs.at[generator,'fixed'], #NB: fixed cost is per MWel
                    p_nom=capacity/costs.at[generator,'efficiency'],
+                   p_max_pu=p_max_pu,
                    efficiency=costs.at[generator,'efficiency'],
                    efficiency2=costs.at[carrier[generator],'CO2 intensity'],
                    build_year=grouping_year,
@@ -441,10 +464,11 @@ if __name__ == "__main__":
     options = snakemake.config["sector"]
     opts = snakemake.wildcards.sector_opts.split('-')
 
-    baseyear= snakemake.config['scenario']["planning_horizons"][0]
+    baseyear = snakemake.config['scenario']["planning_horizons"][0]
 
+    overrides = override_component_attrs #(snakemake.input.overrides)
     n = pypsa.Network(snakemake.input.network,
-                      override_component_attrs=override_component_attrs)
+                      override_component_attrs=overrides)
 
     add_build_year_to_new_assets(n, baseyear)
 
@@ -464,5 +488,8 @@ if __name__ == "__main__":
         gshp_cop = xr.open_dataarray(snakemake.input.cop_soil_total).T.to_pandas().reindex(index=n.snapshots)
         default_lifetime = snakemake.config['costs']['lifetime']
         add_heating_capacities_installed_before_baseyear(n, baseyear, grouping_years, ashp_cop, gshp_cop, time_dep_hp_cop, costs, default_lifetime)
+
+    year = int(snakemake.wildcards.planning_horizons)
+    remove_overage_capacities(n, year)
 
     n.export_to_netcdf(snakemake.output[0])

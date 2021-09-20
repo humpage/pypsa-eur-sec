@@ -476,7 +476,7 @@ if config["foresight"] == "myopic":
         resources: mem_mb=2000
         benchmark: RDIR + '/benchmarks/add_existing_baseyear/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}'
         script: "scripts/add_existing_baseyear.py"
-
+        
 
     def solved_previous_horizon(wildcards):
         planning_horizons = config["scenario"]["planning_horizons"]
@@ -484,7 +484,7 @@ if config["foresight"] == "myopic":
         planning_horizon_p = str(planning_horizons[i-1])
         return RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_" + planning_horizon_p + ".nc"
 
-
+            
     rule add_brownfield:
         input:
             overrides="data/override_component_attrs",
@@ -498,7 +498,6 @@ if config["foresight"] == "myopic":
         resources: mem_mb=10000
         benchmark: RDIR + '/benchmarks/add_brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}'
         script: "scripts/add_brownfield.py"
-
 
     ruleorder: add_existing_baseyear > add_brownfield
 

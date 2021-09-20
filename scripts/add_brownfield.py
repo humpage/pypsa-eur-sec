@@ -100,6 +100,11 @@ if __name__ == "__main__":
 
     n_p = pypsa.Network(snakemake.input.network_p, override_component_attrs=overrides)
 
-    add_brownfield(n, n_p, year)
+    if year == 2050:
+        print('Emulating year 2060 instead of 2050 for existing capacity end of lifetime decommissioning')
+        add_brownfield(n, n_p, 2060)
+    else:
+        add_brownfield(n, n_p, year)
+
 
     n.export_to_netcdf(snakemake.output[0])
