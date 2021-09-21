@@ -5,8 +5,8 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: test_overnight_nuc3 # use this to keep track of runs with different settings
-foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
+run: test_myopic_lowNuc_testSE18 # use this to keep track of runs with different settings
+foresight: myopic # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
 scenario:
@@ -20,7 +20,7 @@ scenario:
     - ''
   sector_opts: # this is where the main scenario settings are
     - 173H-T-H-B0p0-I-S600-CCL
-  #  - 301H-T-H-B0p0-I-S600-CCL
+  #  - 301H-T-H-B0p0-I-S600-CCL-convCCL
   #  - 301H-T-H-B0p4-I-S600-CCL
   #  - 301H-T-H-B0p0Im-I-S600-CCL
   #  - 301H-T-H-B0p4Im-I-S600-CCL
@@ -40,8 +40,9 @@ scenario:
   # planning_horizons), be:beta decay; ex:exponential decay
   # cb40ex0 distributes a carbon budget of 40 GtCO2 following an exponential
   # decay with initial growth rate 0
-  planning_horizons: # investment years for myopic and perfect; or costs year for overnight
+  planning_horizons: # investment years for myopic and perfect; or costs year for overnight    - 2020
     - 2040
+    - 2050
   # for example, set to [2020, 2030, 2040, 2050] for myopic foresight
 
 # CO2 budget as a fraction of 1990 emissions
@@ -272,7 +273,7 @@ sector:
     coal: coal
     oil: oil
     lignite: lignite
-    nuclear: uranium
+    nuclear_new: uranium
   biomass_transport: false
   hvdc: true
 
@@ -468,6 +469,7 @@ plotting:
     Nuclear: r
     Nuclear marginal: r
     nuclear: r
+    nuclear_new: gold
     uranium: r
     Coal: k
     coal: k
