@@ -234,31 +234,36 @@ def add_carrier_buses(n, carriers):
     if isinstance(carriers, str):
         carriers = [carriers]
 
+    print(n.carriers)
     for carrier in carriers:
-        n.add("Carrier", carrier)
+        if carrier not in n.carriers.index:
+            n.add("Carrier", carrier)
 
-        n.add("Bus",
-              "EU " + carrier,
-              location="EU",
-              carrier=carrier
-              )
+        if "EU " + carrier not in n.buses.index:
+            n.add("Bus",
+                  "EU " + carrier,
+                  location="EU",
+                  carrier=carrier
+                  )
 
-        # capital cost could be corrected to e.g. 0.2 EUR/kWh * annuity and O&M
-        n.add("Store",
-              "EU " + carrier + " Store",
-              bus="EU " + carrier,
-              e_nom_extendable=True,
-              e_cyclic=True,
-              carrier=carrier,
-              )
+        if "EU " + carrier + " Store" not in n.stores.index:
+            # capital cost could be corrected to e.g. 0.2 EUR/kWh * annuity and O&M
+            n.add("Store",
+                  "EU " + carrier + " Store",
+                  bus="EU " + carrier,
+                  e_nom_extendable=True,
+                  e_cyclic=True,
+                  carrier=carrier,
+                  )
 
-        n.add("Generator",
-              "EU " + carrier,
-              bus="EU " + carrier,
-              p_nom_extendable=True,
-              carrier=carrier,
-              marginal_cost=costs.at[carrier, 'fuel']
-              )
+        if "EU " + carrier not in n.generators.index:
+            n.add("Generator",
+                  "EU " + carrier,
+                  bus="EU " + carrier,
+                  p_nom_extendable=True,
+                  carrier=carrier,
+                  marginal_cost=costs.at[carrier, 'fuel']
+                  )
 
 
 # TODO: PyPSA-Eur merge issue
@@ -1871,7 +1876,7 @@ def add_biomass(n, costs):
                "BtL", "CO2 stored"],
            marginal_cost=costs.at['BtL', 'efficiency']*costs.loc["BtL", "VOM"]
            )
-    
+
     # TODO: Add real data for bioelectricity without CHP!
     n.madd("Link",
            nodes + " solid biomass to electricity",
