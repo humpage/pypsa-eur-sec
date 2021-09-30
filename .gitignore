@@ -54,3 +54,4 @@ analysis_jupyterTest.ipynb
 jupyterAnalysis.ipynb
 *.xls
 .bashrc
+*temp.*
