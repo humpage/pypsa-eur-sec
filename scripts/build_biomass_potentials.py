@@ -1,9 +1,22 @@
 import pandas as pd
+import pypsa
 
 rename = {"UK" : "GB", "BH" : "BA"}
 
 
 def build_biomass_potentials():
+
+    # opts = snakemake.wildcards.opts.split('-')
+    # print('Opts: ', opts)
+    #
+    # scenario = {}
+    # for o in opts:
+    #     if o[o.find("B") + 6:] == "Low":
+    #         scenario = 'Low'
+    #     elif o[o.find("B") + 6:] == "Med":
+    #         scenario = 'Med'
+    #     elif o[o.find("B") + 6:] == "High":
+    #         scenario = 'High'
 
     config = snakemake.config['biomass']
     year = config["year"]
