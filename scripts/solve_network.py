@@ -163,7 +163,7 @@ def add_biofuel_constraint(n):
     biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
     biofuel_vars_eta = n.links.query('carrier == "biomass to liquid"').efficiency
 
-    napkership = n.loads.p_set.filter(regex='naphtha for industry|kerosene for aviation|oil for shipping').sum() * len(n.snapshots)
+    napkership = n.loads.p_set.filter(regex='naphtha for industry|kerosene for aviation|shipping oil').sum() * len(n.snapshots)
     landtrans = n.loads_t.p_set.filter(regex='land transport oil$').sum().sum()
     total_oil_load = napkership+landtrans
     liqfuelloadlimit = liquid_biofuel_limit * total_oil_load
@@ -332,6 +332,10 @@ if __name__ == "__main__":
             n.line_volume_limit = n.global_constraints.at["lv_limit", "constant"]
             n.line_volume_limit_dual = n.global_constraints.at["lv_limit", "mu"]
 
+        print(n.constraints)
+        # print(n.cons["Link"]["pnl"]["liquid_biofuel_min"])
+        n.constraints.to_csv('results/testconstraints.csv')
+        # n.cons["Link"]["pnl"]["liquid_biofuel_min"].to_csv('results/testconstraint_biofuelmin.csv', mode='a', header=False)
         n.export_to_netcdf(snakemake.output[0])
 
     logger.info("Maximum memory usage: {}".format(mem.mem_usage))
