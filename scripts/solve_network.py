@@ -3,6 +3,7 @@
 import pypsa
 
 import numpy as np
+import pandas as pd
 
 import pandas as pd
 
@@ -252,9 +253,27 @@ def add_chp_constraints(n):
         define_constraints(n, lhs, "<=", 0, 'chplink', 'backpressure')
 
 
+def add_co2_sequestration_limit(n, sns):
+    
+    co2_stores = n.stores.loc[n.stores.carrier=='co2 stored'].index
+
+    if co2_stores.empty or ('Store', 'e') not in n.variables.index:
+        return
+    
+    vars_final_co2_stored = get_var(n, 'Store', 'e').loc[sns[-1], co2_stores]
+    
+    lhs = linexpr((1, vars_final_co2_stored)).sum()
+    rhs = n.config["sector"].get("co2_sequestration_potential", 200) * 1e6
+    
+    name = 'co2_sequestration_limit'
+    define_constraints(n, lhs, "<=", rhs, 'GlobalConstraint',
+                       'mu', axes=pd.Index([name]), spec=name)
+
+
 def extra_functionality(n, snapshots):
     print('adding extra constraints')
     add_battery_constraints(n)
+    add_co2_sequestration_limit(n, snapshots)
 
     options = snakemake.wildcards.sector_opts.split('-')
     print('options: ', options)
