@@ -1673,8 +1673,6 @@ def add_biomass(n, costs):
            efficiency3=costs.at["biogas", "CO2 stored"],
            p_nom_extendable=True)
 
-
-    #TODO: add CC costs (capital and marginal)
     n.madd("Link",
            nodes + " biogas CC",
            bus0=nodes + " digestible biomass",
