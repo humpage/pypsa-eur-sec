@@ -5,9 +5,21 @@ rename = {"UK" : "GB", "BH" : "BA"}
 
 def build_biomass_potentials():
 
+    opts = snakemake.wildcards.sector_opts.split('-')
+    print('Options: ', opts)
+
+    # scenario = "Med"
+    if "High" in opts:
+        scenario = "High"
+    if "Med" in opts:
+        scenario = "Med"
+    if "Low" in opts:
+        scenario = "Low"
+
+    print('Biomass scenario is ', scenario)
     config = snakemake.config['biomass']
     year = config["year"]
-    scenario = config["scenario"]
+    # scenario = config["scenario"]
 
     df = pd.read_excel(snakemake.input.jrc_potentials,
                     "Potentials (PJ)",
@@ -64,5 +76,8 @@ if __name__ == "__main__":
     if 'Secondary Forestry residues sawdust' in industry_wood_biomass:
         industry_wood_biomass.remove('Secondary Forestry residues sawdust')
         industry_wood_biomass.append('Secondary Forestry residues – sawdust')
+
+    opts = snakemake.wildcards.sector_opts.split('-')
+    print('Options: ', opts)
 
     build_biomass_potentials()
