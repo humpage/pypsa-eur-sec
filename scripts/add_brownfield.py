@@ -34,6 +34,13 @@ def add_brownfield(n, n_p, year):
             c.df.index[c.df.build_year + c.df.lifetime < year]
         )
 
+        # remove biomass to liquid
+        n_p.mremove(
+            c.name,
+            c.df.index[c.df.carrier == "biomass to liquid"]
+        )
+
+
         # remove assets if their optimized nominal capacity is lower than a threshold
         # since CHP heat Link is proportional to CHP electric Link, make sure threshold is compatible
         chp_heat = c.df.index[(
