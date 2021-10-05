@@ -1698,7 +1698,7 @@ def add_biomass(n, costs):
            bus2="co2 stored",
            bus3="co2 atmosphere",
            carrier="digestible biomass to hydrogen",
-           capital_cost=costs.at['digestible biomass to hydrogen', 'fixed'] + costs.at["biogas upgrading", "fixed"],
+           capital_cost=costs.at['digestible biomass to hydrogen', 'fixed'] + costs.at['biomass CHP capture', 'fixed'] + costs.at["biogas", "CO2 stored"],
            marginal_cost=costs.at["biogas upgrading", "VOM"],
            efficiency=costs.at['digestible biomass to hydrogen', 'efficiency'],
            efficiency2=(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * costs.at[
@@ -1883,9 +1883,8 @@ def add_biomass(n, costs):
            marginal_cost=costs.at['BioSNG', 'efficiency']*costs.loc["BioSNG", "VOM"]
            )
 
-    #TODO: get sources and add to technology data
     n.madd("Link",
-           nodes + " solid biomass to hydrogen",
+           nodes + " solid biomass to hydrogen CC",
            bus0=nodes + " solid biomass",
            bus1=nodes + " H2",
            bus2="co2 stored",
@@ -1895,7 +1894,7 @@ def add_biomass(n, costs):
            efficiency2=costs.at['solid biomass', 'CO2 intensity'] * costs.at['solid biomass to hydrogen', 'capture rate'],
            efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (1 - costs.at['solid biomass to hydrogen', 'capture rate']),
            p_nom_extendable=True,
-           capital_cost=costs.at['solid biomass to hydrogen', 'fixed'],  # CO2 separation included
+           capital_cost=costs.at['solid biomass to hydrogen', 'fixed'] + costs.at['biomass CHP capture', 'fixed'] + costs.at['solid biomass', 'CO2 intensity'],
            marginal_cost=0.,
            )
 
