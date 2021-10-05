@@ -172,11 +172,11 @@ rule build_biomass_potentials:
     input:
         jrc_potentials="data/biomass/JRC Biomass Potentials.xlsx"
     output:
-        biomass_potentials_all='resources/biomass_potentials_all.csv',
-        biomass_potentials='resources/biomass_potentials.csv'
+        biomass_potentials_all='resources/biomass_potentials_all_{sector_opts}.csv',
+        biomass_potentials='resources/biomass_potentials_{sector_opts}.csv'
     threads: 1
     resources: mem_mb=1000
-    benchmark: "benchmarks/build_biomass_potentials"
+    benchmark: "benchmarks/build_biomass_potentials_{sector_opts}"
     script: 'scripts/build_biomass_potentials.py'
 
 
@@ -323,7 +323,7 @@ rule prepare_sector_network:
         transport_name='resources/transport_data.csv',
         traffic_data_KFZ = "data/emobility/KFZ__count",
         traffic_data_Pkw = "data/emobility/Pkw__count",
-        biomass_potentials='resources/biomass_potentials.csv',
+        biomass_potentials='resources/biomass_potentials_{sector_opts}.csv',
         biomass_transport='data/biomass/biomass_transport_costs.csv',
         heat_profile="data/heat_load_profile_BDEW.csv",
         costs=CDIR + "costs_{planning_horizons}.csv",
