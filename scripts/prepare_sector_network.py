@@ -1691,8 +1691,6 @@ def add_biomass(n, costs):
                        1 - costs.at['biogas', 'capture rate']),
            p_nom_extendable=True)
 
-
-    #TODO: finalize costs!
     n.madd("Link",
            nodes + " digestible biomass to hydrogen CC",
            bus0=nodes + " digestible biomass",
@@ -1700,13 +1698,13 @@ def add_biomass(n, costs):
            bus2="co2 stored",
            bus3="co2 atmosphere",
            carrier="digestible biomass to hydrogen",
-           capital_cost=costs.at['BtL', 'fixed'] + costs.at["biogas upgrading", "fixed"],
+           capital_cost=costs.at['digestible biomass to hydrogen', 'fixed'] + costs.at["biogas upgrading", "fixed"],
            marginal_cost=costs.at["biogas upgrading", "VOM"],
-           efficiency=0.45, #This was from a DBFZ report, find and transfer to technology_data
+           efficiency=costs.at['digestible biomass to hydrogen', 'efficiency'],
            efficiency2=(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * costs.at[
-               'biogas', 'capture rate'],
+               'digestible biomass to hydrogen', 'capture rate'],
            efficiency3=(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * (
-                       1 - costs.at['biogas', 'capture rate']),
+                       1 - costs.at['digestible biomass to hydrogen', 'capture rate']),
            p_nom_extendable=True)
 
 
@@ -1784,7 +1782,7 @@ def add_biomass(n, costs):
                    bus="solid biomass import",
                    carrier="solid biomass import",
                    p_nom_extendable=True,
-                   marginal_cost=snakemake.config['biomass']['import_cost'] * 3.6)
+                   marginal_cost=snakemake.config['biomass']['import cost'] * 3.6)
 
             n.madd("Link",
                    nodes + " solid biomass import",
@@ -1893,13 +1891,12 @@ def add_biomass(n, costs):
            bus2="co2 stored",
            bus3="co2 atmosphere",
            carrier="solid biomass to hydrogen",
-           # lifetime=costs.at['BioSNG', 'lifetime'],
-           efficiency=0.5,  # costs.at['BioSNG', 'efficiency'],
-           efficiency2=costs.at['solid biomass', 'CO2 intensity'] * costs.at['BtL', 'capture rate'],
-           efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (1 - costs.at['BtL', 'capture rate']),
+           efficiency=costs.at['solid biomass to hydrogen', 'efficiency'],
+           efficiency2=costs.at['solid biomass', 'CO2 intensity'] * costs.at['solid biomass to hydrogen', 'capture rate'],
+           efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (1 - costs.at['solid biomass to hydrogen', 'capture rate']),
            p_nom_extendable=True,
-           capital_cost=costs.at['BtL', 'fixed'],  # CO2 separation included
-           marginal_cost=0.,  # costs.loc["BioSNG", "VOM"]
+           capital_cost=costs.at['solid biomass to hydrogen', 'fixed'],  # CO2 separation included
+           marginal_cost=0.,
            )
 
     n.madd("Link",
