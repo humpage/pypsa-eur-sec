@@ -1668,11 +1668,12 @@ def add_biomass(n, costs):
            bus3="co2 atmosphere",
            carrier="biogas",
            capital_cost=costs.at["biogas", "fixed"] + costs.at["biogas upgrading", "fixed"],
-           marginal_cost=costs.at["biogas upgrading", "VOM"],
-           efficiency=1,
+           marginal_cost=costs.at["biogas upgrading", "VOM"] * costs.at["biogas","efficiency"],
+           efficiency=costs.at["biogas","efficiency"],
            efficiency3=costs.at["biogas", "CO2 stored"],
            p_nom_extendable=True)
 
+    #TODO: biogas plants are usually small scale and spread out, so check viability of CC cost assumptions
     n.madd("Link",
            nodes + " biogas CC",
            bus0=nodes + " digestible biomass",
@@ -1680,13 +1681,14 @@ def add_biomass(n, costs):
            bus2="co2 stored",
            bus3="co2 atmosphere",
            carrier="biogas",
-           capital_cost=costs.at["biogas", "fixed"] + costs.at["biogas upgrading", "fixed"],
-           # Assuming that the CO2 from upgrading is pure, such as in amine scrubbing. I.e., with and without CC is equivalent.
-           marginal_cost=costs.at["biogas upgrading", "VOM"],
+           capital_cost=costs.at["biogas", "fixed"] + costs.at["biogas upgrading", "fixed"] + costs.at['biomass CHP capture', 'fixed'],
+           # Assuming that the CO2 from upgrading is pure, such as in amine scrubbing. I.e., with and without CC is
+           # equivalent. Adding biomass CHP capture because biogas is often small-scale and decentral so further
+           # from e.g. CO2 grid or buyers
+           marginal_cost=costs.at["biogas upgrading", "VOM"] * costs.at["biogas","efficiency"],
            efficiency=costs.at["biogas","efficiency"],
            efficiency2=costs.at["biogas", "CO2 stored"] * costs.at['biogas', 'capture rate'],
-           efficiency3=costs.at["biogas", "CO2 stored"] * (
-                       1 - costs.at['biogas', 'capture rate']),
+           efficiency3=costs.at["biogas", "CO2 stored"] * (1 - costs.at['biogas', 'capture rate']),
            p_nom_extendable=True)
 
     n.madd("Link",
@@ -1696,8 +1698,8 @@ def add_biomass(n, costs):
            bus2="co2 stored",
            bus3="co2 atmosphere",
            carrier="digestible biomass to hydrogen",
-           capital_cost=costs.at['digestible biomass to hydrogen', 'fixed'] + costs.at['biomass CHP capture', 'fixed'] + costs.at["biogas", "CO2 stored"],
-           marginal_cost=costs.at["biogas upgrading", "VOM"],
+           capital_cost=costs.at['digestible biomass to hydrogen', 'fixed'] + costs.at['biomass CHP capture', 'fixed'] * costs.at["biogas", "CO2 stored"],
+           marginal_cost=costs.at["biogas upgrading", "VOM"] * costs.at['digestible biomass to hydrogen', 'efficiency'],
            efficiency=costs.at['digestible biomass to hydrogen', 'efficiency'],
            efficiency2=(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * costs.at[
                'digestible biomass to hydrogen', 'capture rate'],
@@ -1924,7 +1926,7 @@ def add_biomass(n, costs):
            p_nom_extendable=True,
            capital_cost=costs.at['BtL', 'fixed'] + costs.at['biomass CHP capture', 'fixed'] * costs.at[
                "BtL", "CO2 stored"],
-           marginal_cost=costs.at['BtL', 'efficiency']*costs.loc["BtL", "VOM"]
+           marginal_cost=costs.at['BtL', 'efficiency'] * costs.loc["BtL", "VOM"]
            )
 
     # TODO: Add real data for bioelectricity without CHP!
@@ -2381,16 +2383,13 @@ def add_waste_heat(n):
         for o in opts:
             if "B" in o:
                 if options['use_biofuel_waste_heat']:
-                    n.links.loc[urban_central + " biomass to liquid", "bus4"] = urban_central + " urban central heat"
-                    n.links.loc[urban_central + " biomass to liquid", "efficiency4"] = 0.95 - n.links.loc[
-                        urban_central + " biomass to liquid", "efficiency"]
                     n.links.loc[urban_central + " solid biomass to gas", "bus4"] = urban_central + " urban central heat"
-                    n.links.loc[urban_central + " solid biomass to gas", "efficiency4"] = 0.95 - n.links.loc[
+                    n.links.loc[urban_central + " solid biomass to gas", "efficiency4"] = 0.8 - n.links.loc[
                         urban_central + " solid biomass to gas", "efficiency"]
 
         if options['use_fuel_cell_waste_heat']:
             n.links.loc[urban_central + " H2 Fuel Cell", "bus2"] = urban_central + " urban central heat"
-            n.links.loc[urban_central + " H2 Fuel Cell", "efficiency2"] = 0.95 - n.links.loc[
+            n.links.loc[urban_central + " H2 Fuel Cell", "efficiency2"] = 0.8 - n.links.loc[
                 urban_central + " H2 Fuel Cell", "efficiency"]
 
 
