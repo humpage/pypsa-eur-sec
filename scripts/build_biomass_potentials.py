@@ -16,7 +16,7 @@ def build_biomass_potentials():
     if "Low" in opts:
         scenario = "Low"
 
-    print('Biomass scenario is ', scenario)
+    print('Biomass scenario is: ', scenario)
     config = snakemake.config['biomass']
     year = config["year"]
     # scenario = config["scenario"]
