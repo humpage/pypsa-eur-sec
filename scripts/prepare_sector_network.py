@@ -875,8 +875,8 @@ def insert_gas_distribution_costs(n, costs):
     n.links.loc[biosng, "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
 
     # lowT steam methane
-    mchp = n.links.index[n.links.carrier.str.contains("methane for lowT industry")]
-    n.links.loc[mchp, "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
+    lowTmethane = n.links.index[n.links.carrier.str.contains("methane for lowT industry")]
+    n.links.loc[lowTmethane, "capital_cost"] += costs.loc['electricity distribution grid']["fixed"] * f_costs
 
 
 def add_electricity_grid_connection(n, costs):
@@ -1592,8 +1592,9 @@ def add_biomass(n, costs):
 
     biomass_costs = pd.read_csv('resources/biomass_country_costs.csv', index_col=0)
     biomass_costs_node = (biomass_costs.loc[pop_layout.ct].set_index(pop_layout.index))
-    # print(biomass_costs_node)
+    print(biomass_costs_node)
     print(biomass_pot_node)
+
 
     n.add("Carrier", "digestible biomass")
 
@@ -1624,9 +1625,11 @@ def add_biomass(n, costs):
     digestible_biomass_types = ["manureslurry", "municipal biowaste", "sewage sludge", "straw"]
 
     biomass_potential = {}
+    biomass_costs = {}
 
     for name in digestible_biomass_types:
         biomass_potential[name] = biomass_pot_node[name].values
+        biomass_costs[name] = biomass_costs_node[name].values
         n.add("Carrier", name + " digestible biomass")
 
         n.madd("Bus",
@@ -1647,7 +1650,7 @@ def add_biomass(n, costs):
                carrier=name + " digestible biomass",
                p_nom_extendable=True,
                p_nom_max=biomass_potential[name] / 8760,
-               marginal_cost=biomass_costs_node[name])
+               marginal_cost=biomass_costs[name])
 
         # NB: Assuming that the input substrates are given in the biogas potential and biogas cost!
         n.madd("Link",
@@ -1733,6 +1736,7 @@ def add_biomass(n, costs):
                carrier=name + " solid biomass")
 
         biomass_potential[name] = biomass_pot_node[name].values
+        biomass_costs[name] = biomass_costs_node[name].values
 
         n.madd("Store",
                nodes + " " + name + " solid biomass",
@@ -1747,7 +1751,7 @@ def add_biomass(n, costs):
                carrier=name + " solid biomass",
                p_nom_extendable=True,
                p_nom_max=biomass_potential[name] / 8760,
-               marginal_cost=biomass_costs_node[name])
+               marginal_cost=biomass_costs[name])
 
         n.madd("Link",
                nodes + " " + name + " solid biomass",
@@ -1760,8 +1764,8 @@ def add_biomass(n, costs):
                p_nom_extendable=True)
 
     for o in opts:
-        if o[o.find("B") + 4:] == "Im":
-            print("Adding biomass import")
+        if o[o.find("B") + 4:o.find("B") + 6] == "Im":
+            print("Adding biomass import with cost ", int(o[o.find("B") + 6:]), ' EUR/GJ')
 
             n.add("Carrier", "solid biomass import")
             import_potential = {}
@@ -1773,17 +1777,17 @@ def add_biomass(n, costs):
             step_size = 10  # EJ
             biomass_import_limit_low_level = 20e9  # EJ
 
-            for num in range(1, 4):
+            for num in range(1, 10):
                 import_name[num] = "import" + str(num)
                 if num == 1:
                     import_potential[num] = max(biomass_import_limit_low_level / 3.6 - tot_EU_biomass,
                                                 0)  # substract EU biomass from 20 EJ. If EU biomass > 20, return 0
-                    import_cost[num] = 15 * 3.6  # EUR/MWh
+                    import_cost[num] = int(o[o.find("B") + 6:]) * 3.6  # EUR/MWh
                     superfluous = min(biomass_import_limit_low_level / 3.6 - tot_EU_biomass,
                                       0)  # If EU biomass > 20, reduce the following group(s)
                 else:
                     import_potential[num] = max(step_size * 1e9 / 3.6 + superfluous, 0)  # EJ --> MWh
-                    import_cost[num] = (15 + step_size * 0.25 * (num - 1)) * 3.6  # EUR/MWh
+                    import_cost[num] = (int(o[o.find("B") + 6:]) + step_size * 0.25 * (num - 1)) * 3.6  # EUR/MWh
                     superfluous += min(-superfluous, step_size * 1e9 / 3.6)
 
                 n.madd("Bus",
@@ -2446,6 +2450,7 @@ def hvdc_transport_model(n):
     print("Changing AC lines to HVDC links")
     n.madd("Link",
            n.lines.index,
+           suffix=" HVDC",
            bus0=n.lines.bus0,
            bus1=n.lines.bus1,
            p_nom_extendable=True,
