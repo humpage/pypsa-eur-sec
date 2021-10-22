@@ -2007,9 +2007,11 @@ def add_industry(n, costs):
                    bus2="co2 atmosphere",
                    carrier="lowT process steam solid biomass",
                    p_nom_extendable=True,
-                   efficiency=costs.at['solid biomass to steam', 'efficiency'],
+                   p_min_pu=1,
+                   efficiency=costs.at['solid biomass boiler steam', 'efficiency'],
                    efficiency2=costs.at['solid biomass', 'CO2 intensity'],
-                   capital_cost=costs.at['solid biomass to steam', 'fixed'])
+                   capital_cost=costs.at['solid biomass boiler steam', 'fixed'],
+                   marginal_cost=costs.at['solid biomass boiler steam', 'VOM'])
 
 
             n.madd("Link",
@@ -2021,9 +2023,11 @@ def add_industry(n, costs):
                    bus3="co2 stored",
                    carrier="lowT process steam solid biomass",
                    p_nom_extendable=True,
-                   efficiency=0.9 * costs.at['solid biomass to steam', 'efficiency'],
-                   capital_cost=costs.at['solid biomass to steam', 'fixed'] + costs.at[
+                   p_min_pu=1,
+                   efficiency=costs.at['solid biomass boiler steam', 'efficiency'],
+                   capital_cost=costs.at['solid biomass boiler steam', 'fixed'] + costs.at[
                        "cement capture", "fixed"] * costs.at['solid biomass', 'CO2 intensity'],
+                   marginal_cost=costs.at['solid biomass boiler steam', 'VOM'],
                    efficiency2=costs.at['solid biomass', 'CO2 intensity'] * (
                            1 - costs.at["cement capture", "capture_rate"]),
                    efficiency3=costs.at['solid biomass', 'CO2 intensity'] * costs.at[
@@ -2038,8 +2042,10 @@ def add_industry(n, costs):
            bus2="co2 atmosphere",
            carrier="lowT process steam methane",
            p_nom_extendable=True,
-           efficiency=costs.at['gas to steam', 'efficiency'],
-           capital_cost=costs.at['gas to steam', 'fixed'],
+           p_min_pu=1,
+           efficiency=costs.at['gas boiler steam', 'efficiency'],
+           capital_cost=costs.at['gas boiler steam', 'fixed'],
+           marginal_cost=costs.at['gas boiler steam', 'VOM'],
            efficiency2=costs.at['gas', 'CO2 intensity'])
 
     n.madd("Link",
@@ -2051,23 +2057,41 @@ def add_industry(n, costs):
            bus3="co2 stored",
            carrier="lowT process steam methane",
            p_nom_extendable=True,
-           efficiency=0.9 * costs.at['gas to steam', 'efficiency'],
-           capital_cost=costs.at['gas to steam', 'fixed'] + costs.at["cement capture", "fixed"] * costs.at[
+           p_min_pu=1,
+           efficiency=0.9 * costs.at['gas boiler steam', 'efficiency'],
+           capital_cost=costs.at['gas boiler steam', 'fixed'] + costs.at["cement capture", "fixed"] * costs.at[
                'gas', 'CO2 intensity'],
+           marginal_cost=costs.at['gas boiler steam', 'VOM'],
            efficiency2=costs.at['gas', 'CO2 intensity'] * (1 - costs.at["cement capture", "capture_rate"]),
            efficiency3=costs.at['gas', 'CO2 intensity'] * costs.at["cement capture", "capture_rate"],
-           lifetime=costs.at['cement capture', 'lifetime'])
+           lifetime=costs.at['gas boiler steam', 'lifetime'])
 
-    # TODO: adapt this to real values for H2 to steam
+    if options["industrial_steam_heat_pumps"]:
+        n.madd("Link",
+               nodes,
+               suffix=" industrial heat pump steam for lowT industry",
+               bus0=nodes,
+               bus1=nodes + " lowT process steam",
+               carrier="lowT process steam heat pump",
+               p_nom_extendable=True,
+               p_min_pu=1,
+               efficiency=costs.at['industrial heat pump high temperature', 'efficiency'],
+               capital_cost=costs.at['industrial heat pump high temperature', 'fixed'],
+               marginal_cost=costs.at['industrial heat pump high temperature', 'VOM'],
+               lifetime=costs.at['industrial heat pump high temperature', 'lifetime'])
+
     n.madd("Link",
            nodes,
-           suffix=" H2 for lowT industry",
-           bus0=nodes + " H2",
+           suffix=" electricity for lowT industry",
+           bus0=nodes,
            bus1=nodes + " lowT process steam",
-           carrier="lowT process steam H2",
+           carrier="lowT process steam electricity",
            p_nom_extendable=True,
-           efficiency=costs.at['gas to steam', 'efficiency'],
-           capital_cost=costs.at['gas to steam', 'fixed'])
+           p_min_pu=1,
+           efficiency=costs.at['electric boiler steam', 'efficiency'],
+           capital_cost=costs.at['electric boiler steam', 'fixed'],
+           marginal_cost=costs.at['electric boiler steam', 'VOM'],
+           lifetime=costs.at['electric boiler steam', 'lifetime'])
 
     n.madd("Bus",
            ["gas for industry"],
