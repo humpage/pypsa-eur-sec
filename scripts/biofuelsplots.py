@@ -4,8 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
-sdir = '../results/test_myopic_73h_basescenarios3_numericFocus/csvs/costs.csv'
-output = '../results/test4.pdf'
+sdir = '../results/test_myopic_73h_biolowcost/csvs/costs.csv'
+output = '../results/test5.pdf'
 
 #consolidate and rename
 def rename_techs(label):
@@ -106,7 +106,10 @@ def rename_techs(label):
         'SMR': 'other',
         'methanation': 'other',
         'nuclear': 'power',
-        'nuclear_new': 'power'
+        'nuclear_new': 'power',
+        'lowT process steam heat pump': 'industry',
+        'solid biomass for highT industry': 'other biomass usage',
+        'gas for highT industry': 'industry'
     }
 
     simplify_more = {
