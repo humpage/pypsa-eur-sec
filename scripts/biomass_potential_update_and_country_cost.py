@@ -63,6 +63,7 @@ def update_biomass_potentials():
 
     biomass_country_costs = pd.DataFrame({'forest residues': forest_residue_cost, 'straw': agric_residue_cost})
     print(biomass_country_costs)
+
 ######## Read in data from ENSPRESO and add to biomass costs
     excel_out = pd.read_excel('{}/ENSPRESO_BIOMASS.xlsx'.format(base_dir), sheet_name="COST - NUTS0 EnergyCom",
                               index_col=[0, 1, 3, 2], header=0, squeeze=True).fillna(0).drop(columns={'Metada', 'Unnamed: 7', 'Units'})  # the summary sheet
@@ -80,8 +81,8 @@ def update_biomass_potentials():
                                         'MINBIOGAS1': 'manureslurry',
                                         'MINBIOSLU1': 'sewage sludge'}).sort_index()
 
-    year = 2010
-    scenario = 'ENS_Low'
+    year = 2050
+    scenario = 'ENS_High'
 
     cropsToAdd = ['manureslurry', 'municipal biowaste', 'sewage sludge', 'industry wood residues', 'landscape care', 'forest residues', 'straw']
     for crop in cropsToAdd:
