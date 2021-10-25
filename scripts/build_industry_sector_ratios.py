@@ -617,9 +617,11 @@ def nonmetalic_mineral_products():
     assert s_fec.index[0] == subsector
     assert s_ued.index[0] == subsector
 
-    df.loc["biomass", sector] += s_fec["Biomass"]
+    #TODO: here biomass can compete with methane (solids and methane have decreased while biomass has increased)
+    # Add biomass as an option beside methane
+    # df.loc["biomass", sector] += s_fec["Cement: Clinker production (kilns)"]#s_fec["Biomass"]
     df.loc["methane", sector] += (
-        s_fec["Cement: Clinker production (kilns)"] - s_fec["Biomass"]
+        s_fec["Cement: Clinker production (kilns)"]# - s_fec["Biomass"]
     )
     df.loc["elec", sector] += s_fec["Cement: Grinding, packaging"]
 
@@ -797,8 +799,8 @@ def pulp_paper_printing():
     df.loc["elec", sector] += s_fec[sel].sum()
 
     # Efficiency changes due to biomass
-    eff_bio = s_ued["Biomass"] / s_fec["Biomass"]
-    df.loc["biomass", sector] += s_ued["Pulp: Pulping thermal"] / eff_bio
+    #eff_bio = s_ued["Biomass"] / s_fec["Biomass"]
+    df.loc["biomass", sector] += s_ued["Pulp: Pulping thermal"]# / eff_bio
 
     s_out = idees["out"][8:9]
     assert sector in str(s_out.index)
@@ -852,8 +854,8 @@ def pulp_paper_printing():
     assert s_ued.index[0] == "Paper: Paper machine - Steam use"
 
     # Efficiency changes due to biomass
-    eff_bio = s_ued["Biomass"] / s_fec["Biomass"]
-    df.loc["biomass", sector] += s_ued["Paper: Paper machine - Steam use"] / eff_bio
+    # eff_bio = s_ued["Biomass"] / s_fec["Biomass"]
+    df.loc["biomass", sector] += s_ued["Paper: Paper machine - Steam use"]# / eff_bio
 
     s_fec = idees["fec"][66:77]
     s_ued = idees["ued"][66:77]
@@ -861,8 +863,8 @@ def pulp_paper_printing():
     assert s_ued.index[0] == "Paper: Product finishing - Steam use"
 
     # Efficiency changes due to biomass
-    eff_bio = s_ued["Biomass"] / s_fec["Biomass"]
-    df.loc["biomass", sector] += s_ued["Paper: Product finishing - Steam use"] / eff_bio
+    # eff_bio = s_ued["Biomass"] / s_fec["Biomass"]
+    df.loc["biomass", sector] += s_ued["Paper: Product finishing - Steam use"]# / eff_bio
 
     s_out = idees["out"][9:10]
     assert sector in str(s_out.index)
@@ -1205,8 +1207,8 @@ def transport_equipment():
     df.loc["elec", sector] += s_fec["Trans. Eq.: Product finishing"]
 
     # Steam processing is supplied with biomass
-    eff_biomass = s_ued["Biomass"] / s_fec["Biomass"]
-    df.loc["biomass", sector] += s_ued["Trans. Eq.: Steam processing"] / eff_biomass
+    # eff_biomass = s_ued["Biomass"] / s_fec["Biomass"]
+    df.loc["biomass", sector] += s_ued["Trans. Eq.: Steam processing"]# / eff_biomass
 
     s_out = idees["out"][3:4]
     assert "Physical output" in str(s_out.index)
@@ -1258,8 +1260,8 @@ def machinery_equipment():
     df.loc["elec", sector] += s_fec["Mach. Eq.: Product finishing"]
 
     # Steam processing is supplied with biomass
-    eff_biomass = s_ued["Biomass"] / s_fec["Biomass"]
-    df.loc["biomass", sector] += s_ued["Mach. Eq.: Steam processing"] / eff_biomass
+    # eff_biomass = s_ued["Biomass"] / s_fec["Biomass"]
+    df.loc["biomass", sector] += s_ued["Mach. Eq.: Steam processing"]# / eff_biomass
 
     s_out = idees["out"][3:4]
     assert "Physical output" in str(s_out.index)
@@ -1302,12 +1304,12 @@ def textiles_and_leather():
     df.loc["elec", sector] += s_fec["Textiles: Finishing Electric"]
 
     # Steam processing is supplied with biomass
-    eff_biomass = s_ued[15:26]["Biomass"] / s_fec[15:26]["Biomass"]
+    # eff_biomass = s_ued[15:26]["Biomass"] / s_fec[15:26]["Biomass"]
     df.loc["biomass", sector] += (
-        s_ued["Textiles: Pretreatment with steam"] / eff_biomass
+        s_ued["Textiles: Pretreatment with steam"]# / eff_biomass
     )
     df.loc["biomass", sector] += (
-        s_ued["Textiles: Wet processing with steam"] / eff_biomass
+        s_ued["Textiles: Wet processing with steam"]# / eff_biomass
     )
 
     s_out = idees["out"][3:4]
@@ -1351,9 +1353,9 @@ def wood_and_wood_products():
     df.loc["elec", sector] += s_fec["Wood: Finishing Electric"]
 
     # Steam processing is supplied with biomass
-    eff_biomass = s_ued[15:25]["Biomass"] / s_fec[15:25]["Biomass"]
+    # eff_biomass = s_ued[15:25]["Biomass"] / s_fec[15:25]["Biomass"]
     df.loc["biomass", sector] += (
-        s_ued["Wood: Specific processes with steam"] / eff_biomass
+        s_ued["Wood: Specific processes with steam"]# / eff_biomass
     )
 
     s_out = idees["out"][3:4]
@@ -1412,9 +1414,9 @@ def other_industrial_sectors():
     df.loc["elec", sector] += s_fec[key]
 
     # Steam processing is supplied with biomass
-    eff_biomass = s_ued[15:25]["Biomass"] / s_fec[15:25]["Biomass"]
+    # eff_biomass = s_ued[15:25]["Biomass"] / s_fec[15:25]["Biomass"]
     df.loc["biomass", sector] += (
-        s_ued["Other Industrial sectors: Steam processing"] / eff_biomass
+        s_ued["Other Industrial sectors: Steam processing"]# / eff_biomass
     )
 
     s_out = idees["out"][3:4]
