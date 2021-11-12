@@ -4,8 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
-sdir = '../results/test_myopic_73h_biolowcost/csvs/costs.csv'
-output = '../results/test5.pdf'
+sdir = '../results/37h_full_fixedIndustry_noIndustrialHP_2040/csvs/costs.csv'
+output = '../results/37h_fixedIndustryNoHP2040.pdf'
 
 #consolidate and rename
 def rename_techs(label):
@@ -88,6 +88,8 @@ def rename_techs(label):
         "industry wood residues solid biomass": 'solid biomass',
         "solid biomass import": 'solid biomass',
         "straw digestible biomass": 'digestible biomass',
+        "municipal biowaste digestible biomass": 'digestible biomass',
+        "manureslurry digestible biomass": 'digestible biomass',
         "biogas": 'other biomass usage',
         "solid biomass to electricity": 'other biomass usage',
         "BioSNG": 'other biomass usage',
@@ -99,16 +101,18 @@ def rename_techs(label):
         'coal': 'fossils',
         'oil': 'fossils',
         'gas': 'fossils',
+        'lignite': 'fossils',
         'uranium': 'power',
         'process emissions': 'industry',
         'gas for industry': 'industry',
         'lowT process steam H2': 'industry',
         'SMR': 'other',
+        'CC': 'other',
         'methanation': 'other',
         'nuclear': 'power',
         'nuclear_new': 'power',
         'lowT process steam heat pump': 'industry',
-        'solid biomass for highT industry': 'other biomass usage',
+        'solid biomass for mediumT industry': 'other biomass usage',
         'gas for highT industry': 'industry'
     }
 
@@ -245,8 +249,17 @@ def place_subplot(df,ax,ylabel,legend=False):
     new_columns = df.sum().sort_values().index
 
     # number_of_techs = 8
-    colormap = plt.cm.jet
-    colors = [colormap(i) for i in np.linspace(0, 1, len(new_index))]
+    colors = {'power excl. fossils': 'blue',
+              'fossils': 'black',
+              'other': 'cyan',
+              'biomass': 'green',
+              'other biomass usage': 'orange',
+              'biofuel': 'red',
+              'electrofuel': 'darkred',
+              'DAC': 'pink'}
+
+    # colormap = plt.cm.jet
+    # colors = [colormap(i) for i in np.linspace(0, 1, len(new_index))]
     # colors = sns.color_palette("hls", len(new_index))
 
 
@@ -262,11 +275,11 @@ def place_subplot(df,ax,ylabel,legend=False):
     handles.reverse()
     labels.reverse()
 
-    ax.set_ylim([0,650])#snakemake.config['plotting']['costs_max']])
+    ax.set_ylim([0,1000])#snakemake.config['plotting']['costs_max']])
 
     ax.set_ylabel(ylabel)#"System Cost [EUR billion per year]")
 
-    ax.set_xlabel("")
+    ax.set_xlabel("Biofuel mandate")
 
     ax.grid(axis='x')
 
@@ -279,9 +292,9 @@ def rename_cols(df):
     for num in np.arange(0, 9):
         # print(df.filter(regex='0p{}'.format(str(num))).columns)
         if num == 0:
-            df.columns = df.columns.str.replace('.*B0p{}.*'.format(str(num)), '{}%'.format(num))
+            df.columns = df.columns.str.replace('.*B0p{}.*'.format(str(num)), 'Opt')
         else:
-            df.columns = df.columns.str.replace('.*B0p{}.*'.format(str(num)), '{}0%'.format(num))
+            df.columns = df.columns.str.replace('.*B0p{}.*'.format(str(num)), '>{}0%'.format(num))
         df.columns = df.columns.str.replace('.*B1p0.*', '100%')
 
     # df.columns = df.columns.str.replace('.*-H-.*'.format(str(num)), 'NoBio')
@@ -312,9 +325,9 @@ print(df.loc[to_drop])
 df = df.drop(to_drop)
 
 print(df)
-df2 = df.filter(regex='High.*S500')
+df2 = df.filter(regex='High.*S400')
 df3 = df.filter(regex='High.*S1500')
-df4 = df.filter(regex='Med.*S500')
+df4 = df.filter(regex='Med.*S400')
 df5 = df.filter(regex='Med.*S1500')
 
 rename_cols(df2)
