@@ -37,8 +37,10 @@ def build_biomass_potentials():
 
     df.drop(index='MS', level=0, inplace=True)
 
+    df.round(4)
+
     # convert from PJ to MWh
-    df = df / 3.6 * 1e6
+    df = ((df / 3.6).round(4) * 1e6).astype(int)
 
     df.to_csv(snakemake.output.biomass_potentials_all)
 
