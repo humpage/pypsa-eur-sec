@@ -1631,7 +1631,8 @@ def add_biomass(n, costs, beccs):
 
     for name in digestible_biomass_types:
         biomass_potential[name] = biomass_pot_node[name].values
-        biomass_costs[name] = biomass_costs_node[name].values
+        biomass_costs[name] = biomass_costs_node[name].values.mean()#.round(2)
+        print(name,' cost: ',biomass_costs[name])
         n.add("Carrier", name + " digestible biomass")
 
         n.madd("Bus",
@@ -1739,7 +1740,8 @@ def add_biomass(n, costs, beccs):
                carrier=name + " solid biomass")
 
         biomass_potential[name] = biomass_pot_node[name].values
-        biomass_costs[name] = biomass_costs_node[name].values
+        biomass_costs[name] = biomass_costs_node[name].values.mean()#.round(2)
+        print(name, ' cost: ', biomass_costs[name])
 
         n.madd("Store",
                nodes + " " + name + " solid biomass",
