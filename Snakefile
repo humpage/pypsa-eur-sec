@@ -1,5 +1,5 @@
 
-configfile: "config.yaml"
+configfile: "config.sensitivity.yaml"
 
 
 wildcard_constraints:
@@ -8,7 +8,13 @@ wildcard_constraints:
     clusters="[0-9]+m?",
     sectors="[+a-zA-Z0-9]+",
     opts="[-+a-zA-Z0-9]*",
-    sector_opts="[-+a-zA-Z0-9\.\s]*"
+    sector_opts="[-+a-zA-Z0-9\.\s]*",
+    biofuel_sensitivity="[B(0|1|2)]+",
+    electrofuel_sensitivity="Ef(0|1|2)+",
+    electrolysis_sensitivity="[E(0|1|2)]+",
+    cc_sensitivity="[C(0|1|2)]+",
+    oil_sensitivity="[O(0|1|2)]+",
+    biomass_import_sensitivity="[I(0|1|2)]+"
 
 
 SDIR = config['summary_dir'] + '/' + config['run']
@@ -25,16 +31,15 @@ subworkflow pypsaeur:
 rule all:
     input: SDIR + '/graphs/costs.pdf'
 
-
 rule solve_all_networks:
     input:
-        expand(RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
+        expand(RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc",
                **config['scenario'])
 
 
 rule prepare_sector_networks:
     input:
-        expand(RDIR + "/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
+        expand(RDIR + "/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc",
                **config['scenario'])
 
 
@@ -354,23 +359,23 @@ rule prepare_sector_network:
         solar_thermal_urban="resources/solar_thermal_urban_elec_s{simpl}_{clusters}.nc",
         solar_thermal_rural="resources/solar_thermal_rural_elec_s{simpl}_{clusters}.nc",
 	    **build_retro_cost_output
-    output: RDIR + '/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc'
+    output: RDIR + '/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc'
     threads: 1
     resources: mem_mb=2000
-    benchmark: RDIR + "/benchmarks/prepare_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}"
+    benchmark: RDIR + "/benchmarks/prepare_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}"
     script: "scripts/prepare_sector_network.py"
 
 
 rule plot_network:
     input:
         overrides="data/override_component_attrs",
-        network=RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc"
+        network=RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc"
     output:
-        map=RDIR + "/maps/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}.pdf",
-        today=RDIR + "/maps/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}-today.pdf"
+        map=RDIR + "/maps/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.pdf",
+        today=RDIR + "/maps/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}-today.pdf"
     threads: 2
     resources: mem_mb=10000
-    benchmark: RDIR + "/benchmarks/plot_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}"
+    benchmark: RDIR + "/benchmarks/plot_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}"
     script: "scripts/plot_network.py"
 
 
@@ -386,12 +391,12 @@ rule make_summary:
     input:
         overrides="data/override_component_attrs",
         networks=expand(
-            RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
+            RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc",
             **config['scenario']
         ),
         costs=CDIR + "costs_{}.csv".format(config['scenario']['planning_horizons'][0]),
         plots=expand(
-            RDIR + "/maps/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}.pdf",
+            RDIR + "/maps/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.pdf",
             **config['scenario']
         )
     output:
@@ -436,18 +441,18 @@ if config["foresight"] == "overnight":
     rule solve_network:
         input:
             overrides="data/override_component_attrs",
-            network=RDIR + "/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
+            network=RDIR + "/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc",
             costs=CDIR + "costs_{planning_horizons}.csv",
             config=SDIR + '/configs/config.yaml'
-        output: RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc"
+        output: RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc"
         shadow: "shallow"
         log:
-            solver=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_solver.log",
-            python=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_python.log",
-            memory=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_memory.log"
+            solver=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}_solver.log",
+            python=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}_python.log",
+            memory=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}_memory.log"
         threads: 4
         resources: mem_mb=config['solving']['mem']
-        benchmark: RDIR + "/benchmarks/solve_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}"
+        benchmark: RDIR + "/benchmarks/solve_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}"
         script: "scripts/solve_network.py"
 
 
@@ -456,7 +461,7 @@ if config["foresight"] == "myopic":
     rule add_existing_baseyear:
         input:
             overrides="data/override_component_attrs",
-            network=RDIR + '/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc',
+            network=RDIR + '/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc',
             powerplants=pypsaeur('resources/powerplants.csv'),
             busmap_s=pypsaeur("resources/busmap_elec_s{simpl}.csv"),
             busmap=pypsaeur("resources/busmap_elec_s{simpl}_{clusters}.csv"),
@@ -469,12 +474,12 @@ if config["foresight"] == "myopic":
             existing_solar='data/existing_infrastructure/solar_capacity_IRENA.csv',
             existing_onwind='data/existing_infrastructure/onwind_capacity_IRENA.csv',
             existing_offwind='data/existing_infrastructure/offwind_capacity_IRENA.csv',
-        output: RDIR + '/prenetworks-brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc'
+        output: RDIR + '/prenetworks-brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc'
         wildcard_constraints:
             planning_horizons=config['scenario']['planning_horizons'][0] #only applies to baseyear
         threads: 1
         resources: mem_mb=2000
-        benchmark: RDIR + '/benchmarks/add_existing_baseyear/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}'
+        benchmark: RDIR + '/benchmarks/add_existing_baseyear/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}'
         script: "scripts/add_existing_baseyear.py"
         
 
@@ -482,21 +487,21 @@ if config["foresight"] == "myopic":
         planning_horizons = config["scenario"]["planning_horizons"]
         i = planning_horizons.index(int(wildcards.planning_horizons))
         planning_horizon_p = str(planning_horizons[i-1])
-        return RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_" + planning_horizon_p + ".nc"
+        return RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_" + planning_horizon_p + "_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc"
 
             
     rule add_brownfield:
         input:
             overrides="data/override_component_attrs",
-            network=RDIR + '/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc',
+            network=RDIR + '/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc',
             network_p=solved_previous_horizon, #solved network at previous time step
             costs=CDIR + "costs_{planning_horizons}.csv",
             cop_soil_total="resources/cop_soil_total_elec_s{simpl}_{clusters}.nc",
             cop_air_total="resources/cop_air_total_elec_s{simpl}_{clusters}.nc"
-        output: RDIR + "/prenetworks-brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc"
+        output: RDIR + "/prenetworks-brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc"
         threads: 4
         resources: mem_mb=10000
-        benchmark: RDIR + '/benchmarks/add_brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}'
+        benchmark: RDIR + '/benchmarks/add_brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}'
         script: "scripts/add_brownfield.py"
 
     ruleorder: add_existing_baseyear > add_brownfield
@@ -505,16 +510,16 @@ if config["foresight"] == "myopic":
     rule solve_network_myopic:
         input:
             overrides="data/override_component_attrs",
-            network=RDIR + "/prenetworks-brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
+            network=RDIR + "/prenetworks-brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc",
             costs=CDIR + "costs_{planning_horizons}.csv",
             config=SDIR + '/configs/config.yaml'
-        output: RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc"
+        output: RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc"
         shadow: "shallow"
         log:
-            solver=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_solver.log",
-            python=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_python.log",
-            memory=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_memory.log"
+            solver=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}_solver.log",
+            python=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}_python.log",
+            memory=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}_memory.log"
         threads: 4
         resources: mem_mb=config['solving']['mem']
-        benchmark: RDIR + "/benchmarks/solve_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}"
+        benchmark: RDIR + "/benchmarks/solve_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}"
         script: "scripts/solve_network.py"

@@ -671,6 +671,77 @@ def prepare_costs(cost_file, USD_to_EUR, discount_rate, Nyears, lifetime):
 
     return costs
 
+def sensitivity_costs(costs, biomass_import_price):
+    print('Adapting costs for sensitivity analysis')
+    print('Biofuel sensitivity string: ', snakemake.wildcards.biofuel_sensitivity)
+    print('Electrofuel sensitivity string: ', snakemake.wildcards.electrofuel_sensitivity)
+    print('Electrolysis sensitivity string: ', snakemake.wildcards.electrolysis_sensitivity)
+    print('CC sensitivity string: ', snakemake.wildcards.cc_sensitivity)
+    print('Oil sensitivity string: ', snakemake.wildcards.oil_sensitivity)
+    print('Biomass import sensitivity string: ', snakemake.wildcards.biomass_import_sensitivity)
+
+    if 'B0' in snakemake.wildcards.biofuel_sensitivity:
+        costs.at['BtL', 'efficiency'] = 0.5
+        costs.at['BtL', 'investment'] = 1500000
+    elif 'B2' in snakemake.wildcards.biofuel_sensitivity:
+        costs.at['BtL', 'efficiency'] = 0.35
+        costs.at['BtL', 'investment'] = 2500000
+    elif 'B1' in snakemake.wildcards.biofuel_sensitivity:
+        pass
+
+    if 'Ef0' in snakemake.wildcards.electrofuel_sensitivity:
+        costs.at['Fischer-Tropsch', 'efficiency'] = 0.9
+        costs.at['Fischer-Tropsch', 'investment'] = 675000
+    elif 'Ef2' in snakemake.wildcards.electrofuel_sensitivity:
+        costs.at['Fischer-Tropsch', 'efficiency'] = 0.6
+        costs.at['Fischer-Tropsch', 'investment'] = 1125000
+    elif 'Ef1' in snakemake.wildcards.electrofuel_sensitivity:
+        pass
+
+    if 'E0' in snakemake.wildcards.electrolysis_sensitivity:
+        costs.at['electrolysis', 'efficiency'] = 0.8
+        costs.at['electrolysis', 'investment'] = 150000
+    elif 'E2' in snakemake.wildcards.electrolysis_sensitivity:
+        costs.at['electrolysis', 'efficiency'] = 0.7
+        costs.at['electrolysis', 'investment'] = 400000
+    elif 'E1' in snakemake.wildcards.electrolysis_sensitivity:
+        pass
+
+    if 'C0' in snakemake.wildcards.cc_sensitivity:
+        costs.at['biomass CHP capture', 'investment'] = 1600000
+        costs.at['cement capture', 'investment'] = 1400000
+        costs.at['DAC', 'investment'] = 3000000
+    elif 'C2' in snakemake.wildcards.cc_sensitivity:
+        costs.at['biomass CHP capture', 'investment'] = 2800000
+        costs.at['cement capture', 'investment'] = 2400000
+        costs.at['DAC', 'investment'] = 7000000
+    elif 'C1' in snakemake.wildcards.cc_sensitivity:
+        pass
+
+    if 'O0' in snakemake.wildcards.oil_sensitivity:
+        costs.at["oil", 'fuel'] = 40
+    if 'O2' in snakemake.wildcards.oil_sensitivity:
+        costs.at["oil", 'fuel'] = 80
+    if 'O1' in snakemake.wildcards.oil_sensitivity:
+        pass
+
+    if 'I0' in snakemake.wildcards.biomass_import_sensitivity:
+        biomass_import_price = 10 * 3.6
+    if 'I2' in snakemake.wildcards.biomass_import_sensitivity:
+        biomass_import_price = 20 * 3.6
+    if 'I1' in snakemake.wildcards.biomass_import_sensitivity:
+        pass
+
+    #Update fixed costs
+    annuity_factor = lambda v: annuity(v["lifetime"], v["discount rate"]) + v["FOM"] / 100
+    costs["fixed"] = [annuity_factor(v) * v["investment"] * Nyears for i, v in costs.iterrows()]
+
+    print('BtL investment: ', costs.at['BtL', 'investment'])
+    print('Electrofuel investment: ', costs.at['Fischer-Tropsch', 'investment'])
+    print('Biomass import price: ', biomass_import_price)
+
+    return costs, biomass_import_price
+
 
 def add_generation(n, costs):
     print("adding electricity generation")
@@ -1575,7 +1646,7 @@ def create_nodes_for_heat_sector():
     return nodes
 
 
-def add_biomass(n, costs, beccs):
+def add_biomass(n, costs, beccs, biomass_import_price):
     print("adding biomass")
 
     nodes = pop_layout.index
@@ -1770,7 +1841,7 @@ def add_biomass(n, costs, beccs):
 
     for o in opts:
         if o[o.find("B") + 4:o.find("B") + 6] == "Im":
-            print("Adding biomass import with cost ", int(o[o.find("B") + 6:]), ' EUR/GJ')
+            print("Adding biomass import with cost ", biomass_import_price, ' EUR/GJ')
 
             n.add("Carrier", "solid biomass import")
             import_potential = {}
@@ -1787,12 +1858,12 @@ def add_biomass(n, costs, beccs):
                 if num == 1:
                     import_potential[num] = max(biomass_import_limit_low_level / 3.6 - tot_EU_biomass,
                                                 0)  # substract EU biomass from 20 EJ. If EU biomass > 20, return 0
-                    import_cost[num] = int(o[o.find("B") + 6:]) * 3.6  # EUR/MWh
+                    import_cost[num] = biomass_import_price  # EUR/MWh
                     superfluous = min(biomass_import_limit_low_level / 3.6 - tot_EU_biomass,
                                       0)  # If EU biomass > 20, reduce the following group(s)
                 else:
                     import_potential[num] = max(step_size * 1e9 / 3.6 + superfluous, 0)  # EJ --> MWh
-                    import_cost[num] = (int(o[o.find("B") + 6:]) + step_size * 0.25 * (num - 1)) * 3.6  # EUR/MWh
+                    import_cost[num] = biomass_import_price + (step_size * 0.25 * (num - 1)) * 3.6  # EUR/MWh
                     superfluous += min(-superfluous, step_size * 1e9 / 3.6)
 
                 n.madd("Bus",
@@ -2631,6 +2702,9 @@ if __name__ == "__main__":
                           Nyears,
                           snakemake.config['costs']['lifetime'])
 
+    biomass_import_price = snakemake.config['biomass']['import price'] * 3.6  # EUR/MWh
+    sensitivity_costs(costs, biomass_import_price)
+
     patch_electricity_network(n)
 
     if snakemake.config["foresight"] == 'myopic':
@@ -2673,7 +2747,7 @@ if __name__ == "__main__":
     for o in opts:
         if "B" in o:
             beccs = snakemake.config['biomass']['beccs']
-            add_biomass(n, costs,beccs)
+            add_biomass(n, costs, beccs, biomass_import_price)
             if options["biomass_transport"]:
                 add_biomass_transport(n)
 

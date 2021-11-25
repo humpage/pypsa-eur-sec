@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: threadtest # use this to keep track of runs with different settings
+run: 73h_sensitivity_test # use this to keep track of runs with different settings
 foresight: myopic # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
@@ -51,6 +51,22 @@ scenario:
     - 2050
   # for example, set to [2020, 2030, 2040, 2050] for myopic foresight
 
+  biofuel_sensitivity:
+    - B0 #optimistic
+    - B2 #pessimistc
+  electrofuel_sensitivity:
+    - Ef0
+    - Ef2
+  electrolysis_sensitivity:
+    - E0
+    - E2
+  cc_sensitivity:
+    - C0
+  oil_sensitivity:
+    - O0
+  biomass_import_sensitivity:
+    - I1
+    
 # CO2 budget as a fraction of 1990 emissions
 # this is over-ridden if CO2Lx is set in sector_opts
 # this is also over-ridden if cb is set in sector_opts
