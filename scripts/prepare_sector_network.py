@@ -731,8 +731,10 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
 
     if 'O0' in snakemake.wildcards.oil_sensitivity:
         costs.at["oil", 'fuel'] = 40
+        costs.at["gas", 'fuel'] = 15
     elif 'O2' in snakemake.wildcards.oil_sensitivity:
         costs.at["oil", 'fuel'] = 80
+        costs.at["gas", 'fuel'] = 35
     elif 'O1' in snakemake.wildcards.oil_sensitivity:
         pass
 
