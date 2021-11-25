@@ -528,7 +528,7 @@ def make_summaries(networks_dict):
 
     columns = pd.MultiIndex.from_tuples(
         networks_dict.keys(),
-        names=["cluster", "lv", "opt", "planning_horizon", "biofuel_sensitivity", "electrofuel_sensitivity", "electrolysis_sensitivity", "cc_sensitivity", "oil_sensitivity", "biomass_import_sensitivity"]
+        names=["cluster", "lv", "opt", "planning_horizon", "biofuel_sensitivity", "electrofuel_sensitivity", "electrolysis_sensitivity", "cc_sensitivity", "cs_sensitivity", "oil_sensitivity", "biomass_import_sensitivity"]
     )
 
     df = {}
@@ -562,8 +562,8 @@ if __name__ == "__main__":
         snakemake = mock_snakemake('make_summary')
     
     networks_dict = {
-        (cluster, lv, opt+sector_opt, planning_horizon, biofuel_sensitivity, electrofuel_sensitivity, electrolysis_sensitivity, cc_sensitivity, oil_sensitivity, biomass_import_sensitivity) :
-        snakemake.config['results_dir'] + snakemake.config['run'] + f'/postnetworks/elec_s{simpl}_{cluster}_lv{lv}_{opt}_{sector_opt}_{planning_horizon}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc' \
+        (cluster, lv, opt+sector_opt, planning_horizon, biofuel_sensitivity, electrofuel_sensitivity, electrolysis_sensitivity, cc_sensitivity, cs_sensitivity, oil_sensitivity, biomass_import_sensitivity) :
+        snakemake.config['results_dir'] + snakemake.config['run'] + f'/postnetworks/elec_s{simpl}_{cluster}_lv{lv}_{opt}_{sector_opt}_{planning_horizon}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{cs_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc' \
         for simpl in snakemake.config['scenario']['simpl'] \
         for cluster in snakemake.config['scenario']['clusters'] \
         for opt in snakemake.config['scenario']['opts'] \
@@ -574,6 +574,7 @@ if __name__ == "__main__":
         for electrofuel_sensitivity in snakemake.config['scenario']['electrofuel_sensitivity'] \
         for electrolysis_sensitivity in snakemake.config['scenario']['electrolysis_sensitivity'] \
         for cc_sensitivity in snakemake.config['scenario']['cc_sensitivity'] \
+        for cs_sensitivity in snakemake.config['scenario']['cs_sensitivity'] \
         for oil_sensitivity in snakemake.config['scenario']['oil_sensitivity'] \
         for biomass_import_sensitivity in snakemake.config['scenario']['biomass_import_sensitivity'] \
     }

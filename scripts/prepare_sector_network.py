@@ -300,7 +300,7 @@ def patch_electricity_network(n):
     n.buses["location"] = n.buses.index
 
 
-def add_co2_tracking(n, options):
+def add_co2_tracking(n, options, carbon_sequestration_cost):
     # minus sign because opposite to how fossil fuels used:
     # CH4 burning puts CH4 down, atmosphere up
     n.add("Carrier", "co2",
@@ -335,11 +335,12 @@ def add_co2_tracking(n, options):
             co2_sequestration_potential = float(o[o.find("S") + 1:])
 
     print('CO2 sequestration potential: ', co2_sequestration_potential)
+    print('CO2 sequestration cost: ', carbon_sequestration_cost)
 
     n.add("Store", ["co2 stored"],
           e_nom_extendable=True,
           e_nom_max=co2_sequestration_potential * 1e6,  # options['co2_sequestration_potential']*1e6,
-          capital_cost=options['co2_sequestration_cost'],
+          capital_cost=carbon_sequestration_cost,#options['co2_sequestration_cost'],
           carrier="co2 stored",
           bus="co2 stored")
 
@@ -671,12 +672,15 @@ def prepare_costs(cost_file, USD_to_EUR, discount_rate, Nyears, lifetime):
 
     return costs
 
-def sensitivity_costs(costs, biomass_import_price):
+
+def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
+
     print('Adapting costs for sensitivity analysis')
     print('Biofuel sensitivity string: ', snakemake.wildcards.biofuel_sensitivity)
     print('Electrofuel sensitivity string: ', snakemake.wildcards.electrofuel_sensitivity)
     print('Electrolysis sensitivity string: ', snakemake.wildcards.electrolysis_sensitivity)
     print('CC sensitivity string: ', snakemake.wildcards.cc_sensitivity)
+    print('CS sensitivity string: ', snakemake.wildcards.cs_sensitivity)
     print('Oil sensitivity string: ', snakemake.wildcards.oil_sensitivity)
     print('Biomass import sensitivity string: ', snakemake.wildcards.biomass_import_sensitivity)
 
@@ -718,18 +722,25 @@ def sensitivity_costs(costs, biomass_import_price):
     elif 'C1' in snakemake.wildcards.cc_sensitivity:
         pass
 
+    if 'C0' in snakemake.wildcards.cs_sensitivity:
+        carbon_sequestration_cost = 10
+    elif 'C2' in snakemake.wildcards.cs_sensitivity:
+        carbon_sequestration_cost = 50
+    elif 'C1' in snakemake.wildcards.cc_sensitivity:
+        pass
+
     if 'O0' in snakemake.wildcards.oil_sensitivity:
         costs.at["oil", 'fuel'] = 40
-    if 'O2' in snakemake.wildcards.oil_sensitivity:
+    elif 'O2' in snakemake.wildcards.oil_sensitivity:
         costs.at["oil", 'fuel'] = 80
-    if 'O1' in snakemake.wildcards.oil_sensitivity:
+    elif 'O1' in snakemake.wildcards.oil_sensitivity:
         pass
 
     if 'I0' in snakemake.wildcards.biomass_import_sensitivity:
         biomass_import_price = 10 * 3.6
-    if 'I2' in snakemake.wildcards.biomass_import_sensitivity:
+    elif 'I2' in snakemake.wildcards.biomass_import_sensitivity:
         biomass_import_price = 20 * 3.6
-    if 'I1' in snakemake.wildcards.biomass_import_sensitivity:
+    elif 'I1' in snakemake.wildcards.biomass_import_sensitivity:
         pass
 
     #Update fixed costs
@@ -740,7 +751,7 @@ def sensitivity_costs(costs, biomass_import_price):
     print('Electrofuel investment: ', costs.at['Fischer-Tropsch', 'investment'])
     print('Biomass import price: ', biomass_import_price)
 
-    return costs, biomass_import_price
+    return costs, biomass_import_price, carbon_sequestration_cost
 
 
 def add_generation(n, costs):
@@ -2703,7 +2714,8 @@ if __name__ == "__main__":
                           snakemake.config['costs']['lifetime'])
 
     biomass_import_price = snakemake.config['biomass']['import price'] * 3.6  # EUR/MWh
-    sensitivity_costs(costs, biomass_import_price)
+    carbon_sequestration_cost = options["co2_sequestration_cost"]
+    sensitivity_costs(costs, biomass_import_price,carbon_sequestration_cost)
 
     patch_electricity_network(n)
 
@@ -2713,7 +2725,7 @@ if __name__ == "__main__":
         conventional = snakemake.config['existing_capacities']['conventional_carriers']
         add_carrier_buses(n, conventional)
 
-    add_co2_tracking(n, options)
+    add_co2_tracking(n, options, carbon_sequestration_cost)
 
     add_generation(n, costs)
 
