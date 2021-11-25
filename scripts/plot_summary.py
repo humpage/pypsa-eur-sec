@@ -123,6 +123,63 @@ def plot_costs():
     )
 
     df = cost_df.groupby(cost_df.index.get_level_values(2)).sum()
+    print(df)
+    #convert to billions
+    df = df / 1e9
+
+    df = df.groupby(df.index.map(rename_techs)).sum()
+
+    to_drop = df.index[df.max(axis=1) < snakemake.config['plotting']['costs_threshold']]
+
+    print("dropping")
+
+    print(df.loc[to_drop])
+
+    df = df.drop(to_drop)
+
+    print(df.sum())
+
+    new_index = preferred_order.intersection(df.index).append(df.index.difference(preferred_order))
+
+    new_columns = df.sum().sort_values().index
+
+    fig, ax = plt.subplots(figsize=(12,8))
+
+    df.loc[new_index,new_columns].T.plot(
+        kind="bar",
+        ax=ax,
+        stacked=True,
+        color=[snakemake.config['plotting']['tech_colors'][i] for i in new_index]
+    )
+
+    handles,labels = ax.get_legend_handles_labels()
+
+    handles.reverse()
+    labels.reverse()
+
+    ax.set_ylim([0,snakemake.config['plotting']['costs_max']])
+
+    ax.set_ylabel("System Cost [EUR billion per year]")
+
+    ax.set_xlabel("")
+
+    ax.grid(axis='x')
+
+    ax.legend(handles, labels, ncol=1, loc="upper left", bbox_to_anchor=[1,1], frameon=False)
+
+    fig.savefig(snakemake.output.costs, bbox_inches='tight')
+
+
+
+def plot_costs_subplots():
+
+    cost_df = pd.read_csv(
+        snakemake.input.costs,
+        index_col=list(range(3)),
+        header=list(range(n_header))
+    )
+
+    df = cost_df.groupby(cost_df.index.get_level_values(2)).sum()
 
     #convert to billions
     df = df / 1e9
@@ -168,6 +225,8 @@ def plot_costs():
     ax.legend(handles, labels, ncol=1, loc="upper left", bbox_to_anchor=[1,1], frameon=False)
 
     fig.savefig(snakemake.output.costs, bbox_inches='tight')
+
+
 
 
 def plot_energy():
@@ -437,9 +496,11 @@ if __name__ == "__main__":
         from helper import mock_snakemake
         snakemake = mock_snakemake('plot_summary')
         
-    n_header = 4
+    n_header = 10
 
     plot_costs()
+
+    plot_costs_subplots()
 
     plot_energy()
 

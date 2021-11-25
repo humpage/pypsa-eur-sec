@@ -528,7 +528,7 @@ def make_summaries(networks_dict):
 
     columns = pd.MultiIndex.from_tuples(
         networks_dict.keys(),
-        names=["cluster", "lv", "opt", "planning_horizon"]
+        names=["cluster", "lv", "opt", "planning_horizon", "biofuel_sensitivity", "electrofuel_sensitivity", "electrolysis_sensitivity", "cc_sensitivity", "oil_sensitivity", "biomass_import_sensitivity"]
     )
 
     df = {}
@@ -562,14 +562,20 @@ if __name__ == "__main__":
         snakemake = mock_snakemake('make_summary')
     
     networks_dict = {
-        (cluster, lv, opt+sector_opt, planning_horizon) :
-        snakemake.config['results_dir'] + snakemake.config['run'] + f'/postnetworks/elec_s{simpl}_{cluster}_lv{lv}_{opt}_{sector_opt}_{planning_horizon}.nc' \
+        (cluster, lv, opt+sector_opt, planning_horizon, biofuel_sensitivity, electrofuel_sensitivity, electrolysis_sensitivity, cc_sensitivity, oil_sensitivity, biomass_import_sensitivity) :
+        snakemake.config['results_dir'] + snakemake.config['run'] + f'/postnetworks/elec_s{simpl}_{cluster}_lv{lv}_{opt}_{sector_opt}_{planning_horizon}_{biofuel_sensitivity}{electrofuel_sensitivity}{electrolysis_sensitivity}{cc_sensitivity}{oil_sensitivity}{biomass_import_sensitivity}.nc' \
         for simpl in snakemake.config['scenario']['simpl'] \
         for cluster in snakemake.config['scenario']['clusters'] \
         for opt in snakemake.config['scenario']['opts'] \
         for sector_opt in snakemake.config['scenario']['sector_opts'] \
         for lv in snakemake.config['scenario']['lv'] \
-        for planning_horizon in snakemake.config['scenario']['planning_horizons']
+        for planning_horizon in snakemake.config['scenario']['planning_horizons'] \
+        for biofuel_sensitivity in snakemake.config['scenario']['biofuel_sensitivity'] \
+        for electrofuel_sensitivity in snakemake.config['scenario']['electrofuel_sensitivity'] \
+        for electrolysis_sensitivity in snakemake.config['scenario']['electrolysis_sensitivity'] \
+        for cc_sensitivity in snakemake.config['scenario']['cc_sensitivity'] \
+        for oil_sensitivity in snakemake.config['scenario']['oil_sensitivity'] \
+        for biomass_import_sensitivity in snakemake.config['scenario']['biomass_import_sensitivity'] \
     }
 
     print(networks_dict)
@@ -590,8 +596,8 @@ if __name__ == "__main__":
 
     to_csv(df)
 
-    if snakemake.config["foresight"]=='myopic':
-        cumulative_cost=calculate_cumulative_cost()
-        cumulative_cost.to_csv(snakemake.config['summary_dir'] + '/' + snakemake.config['run'] + '/csvs/cumulative_cost.csv')
+    # if snakemake.config["foresight"]=='myopic':
+    #     cumulative_cost=calculate_cumulative_cost()
+    #     cumulative_cost.to_csv(snakemake.config['summary_dir'] + '/' + snakemake.config['run'] + '/csvs/cumulative_cost.csv')
 
 
