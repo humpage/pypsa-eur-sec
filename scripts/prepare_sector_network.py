@@ -1715,8 +1715,11 @@ def add_biomass(n, costs, beccs, biomass_import_price):
 
     for name in digestible_biomass_types:
         biomass_potential[name] = biomass_pot_node[name].values
-        biomass_costs[name] = biomass_costs_node[name].values.mean()#.round(2)
+
+        biomass_costs[name] = ((biomass_costs_node[name].values * biomass_pot_node[name].values).sum() / biomass_pot_node[name].values.sum()).round(3)
         print(name,' cost: ',biomass_costs[name])
+        print(name, ' comp. avg. cost: ', biomass_costs_node[name].values.mean())
+
         n.add("Carrier", name + " digestible biomass")
 
         n.madd("Bus",
@@ -1824,8 +1827,9 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                carrier=name + " solid biomass")
 
         biomass_potential[name] = biomass_pot_node[name].values
-        biomass_costs[name] = biomass_costs_node[name].values.mean()#.round(2)
+        biomass_costs[name] = ((biomass_costs_node[name].values * biomass_pot_node[name].values).sum() / biomass_pot_node[name].values.sum()).round(3)
         print(name, ' cost: ', biomass_costs[name])
+        print(name, ' comp. avg. cost: ', biomass_costs_node[name].values.mean())
 
         n.madd("Store",
                nodes + " " + name + " solid biomass",
@@ -1854,7 +1858,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
 
     for o in opts:
         if o[o.find("B") + 4:o.find("B") + 6] == "Im":
-            print("Adding biomass import with cost ", biomass_import_price, ' EUR/GJ')
+            print("Adding biomass import with cost ", biomass_import_price, ' EUR/MWh')
 
             n.add("Carrier", "solid biomass import")
             import_potential = {}
