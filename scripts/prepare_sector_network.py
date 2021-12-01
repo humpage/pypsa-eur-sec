@@ -684,23 +684,23 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
     print('Oil sensitivity string: ', snakemake.wildcards.oil_sensitivity)
     print('Biomass import sensitivity string: ', snakemake.wildcards.biomass_import_sensitivity)
 
-    if 'B0' in snakemake.wildcards.biofuel_sensitivity:
+    if 'FT0' in snakemake.wildcards.biofuel_sensitivity:
         costs.at['BtL', 'efficiency'] = 0.5
         costs.at['BtL', 'investment'] = 1500000
-    elif 'B2' in snakemake.wildcards.biofuel_sensitivity:
-        costs.at['BtL', 'efficiency'] = 0.35
-        costs.at['BtL', 'investment'] = 2500000
-    elif 'B1' in snakemake.wildcards.biofuel_sensitivity:
-        pass
-
-    if 'Ef0' in snakemake.wildcards.electrofuel_sensitivity:
         costs.at['Fischer-Tropsch', 'efficiency'] = 0.9
         costs.at['Fischer-Tropsch', 'investment'] = 675000
-    elif 'Ef2' in snakemake.wildcards.electrofuel_sensitivity:
+    elif 'FT2' in snakemake.wildcards.biofuel_sensitivity:
+        costs.at['BtL', 'efficiency'] = 0.35
+        costs.at['BtL', 'investment'] = 2500000
         costs.at['Fischer-Tropsch', 'efficiency'] = 0.6
         costs.at['Fischer-Tropsch', 'investment'] = 1125000
-    elif 'Ef1' in snakemake.wildcards.electrofuel_sensitivity:
+    elif 'FT1' in snakemake.wildcards.biofuel_sensitivity:
         pass
+
+    # if 'Ef0' in snakemake.wildcards.electrofuel_sensitivity:
+    # elif 'Ef2' in snakemake.wildcards.electrofuel_sensitivity:
+    # elif 'Ef1' in snakemake.wildcards.electrofuel_sensitivity:
+    #     pass
 
     if 'E0' in snakemake.wildcards.electrolysis_sensitivity:
         costs.at['electrolysis', 'efficiency'] = 0.8

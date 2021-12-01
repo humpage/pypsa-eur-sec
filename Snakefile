@@ -9,10 +9,10 @@ wildcard_constraints:
     sectors="[+a-zA-Z0-9]+",
     opts="[-+a-zA-Z0-9]*",
     sector_opts="[-+a-zA-Z0-9\.\s]*",
-    biofuel_sensitivity="[B(0|1|2)]+",
+    biofuel_sensitivity="[FT(0|1|2)]+",
     electrofuel_sensitivity="Ef(0|1|2)+",
     electrolysis_sensitivity="E(0|1|2)+",
-    cc_sensitivity="C(0|1|2)+",
+    cc_sensitivity="CC(0|1|2)+",
     cs_sensitivity="CS(0|1|2)+",
     oil_sensitivity="[O(0|1|2)]+",
     biomass_import_sensitivity="[I(0|1|2)]+"
