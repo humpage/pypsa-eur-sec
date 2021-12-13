@@ -4,9 +4,11 @@ import pypsa
 
 import numpy as np
 
+import os
+
 import pandas as pd
 
-from pypsa.linopt import get_var, linexpr, define_constraints
+from pypsa.linopt import get_var, linexpr, define_constraints, get_dual
 
 from pypsa.linopf import network_lopf, ilopf, join_exprs
 
@@ -161,10 +163,14 @@ def add_biofuel_constraint(n):
 
     biofuel_i = n.links.query('carrier == "biomass to liquid"').index
     biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
+    print('Biofuel p', biofuel_vars)
     biofuel_vars_eta = n.links.query('carrier == "biomass to liquid"').efficiency
-
+    print('Eta', biofuel_vars_eta)
+    print('biofuel vars*eta', biofuel_vars*biofuel_vars_eta)
     napkership = n.loads.p_set.filter(regex='naphtha for industry|kerosene for aviation|shipping oil$').sum() * len(n.snapshots)
+    print(napkership)
     landtrans = n.loads_t.p_set.filter(regex='land transport oil$').sum().sum()
+    print(landtrans)
     total_oil_load = napkership+landtrans
     liqfuelloadlimit = liquid_biofuel_limit * total_oil_load
 
@@ -254,7 +260,6 @@ def add_chp_constraints(n):
 
 def extra_functionality(n, snapshots):
     print('adding extra constraints')
-    add_battery_constraints(n)
 
     options = snakemake.wildcards.sector_opts.split('-')
     print('options: ', options)
@@ -268,6 +273,8 @@ def extra_functionality(n, snapshots):
         if 'convCCL' in o:
             print('adding conventional ccl constraints')
             add_ccl_constraints_conventional(n)
+
+    add_battery_constraints(n)
 
 
 def solve_network(n, config, opts='', **kwargs):
@@ -285,13 +292,19 @@ def solve_network(n, config, opts='', **kwargs):
 
     if cf_solving.get('skip_iterations', False):
         network_lopf(n, solver_name=solver_name, solver_options=solver_options,
-                     extra_functionality=extra_functionality, **kwargs)
+                     extra_functionality=extra_functionality,
+                     keep_shadowprices = True,
+                     keep_references = True,
+                     keep_files = True, **kwargs)
     else:
         ilopf(n, solver_name=solver_name, solver_options=solver_options,
               track_iterations=track_iterations,
               min_iterations=min_iterations,
               max_iterations=max_iterations,
-              extra_functionality=extra_functionality, **kwargs)
+              extra_functionality=extra_functionality,
+              keep_shadowprices = True,
+              keep_references = True,
+              keep_files = True, **kwargs)
     return n
 
 
@@ -332,10 +345,46 @@ if __name__ == "__main__":
             n.line_volume_limit = n.global_constraints.at["lv_limit", "constant"]
             n.line_volume_limit_dual = n.global_constraints.at["lv_limit", "mu"]
 
-        print(n.constraints)
-        # print(n.cons["Link"]["pnl"]["liquid_biofuel_min"])
-        n.constraints.to_csv('results/testconstraints.csv')
-        # n.cons["Link"]["pnl"]["liquid_biofuel_min"].to_csv('results/testconstraint_biofuelmin.csv', mode='a', header=False)
+        # print(n.constraints)
+        # biofuel_constraint_dual = get_dual(n, 'Link', 'liquid_biofuel_min')
+        # print(biofuel_constraint_dual)
+        # print('Duals: ', n.duals)
+        # n.duals.to_csv('results/testconstraints.csv','A')
+        # print('Dual values: ', n.dualvalues)
+        # n.constraints.to_csv('results/testconstraints.csv','A')
+        # n.dualvalues.to_csv('results/testdualvalues.csv','A')
+        # get_dual(n, 'Link', 'liquid_biofuel_min')
+        # print(n.cons["Link"]["pnl"]["mu_upper"])
+        # print(n.cons["Link"])#["liquid_biofuel_min"])
+
+        cluster = snakemake.config['scenario']['clusters'][0]
+        sector_opt = snakemake.config['scenario']['sector_opts'][0]
+        lv = snakemake.config['scenario']['lv'][0]
+        planning_horizon = snakemake.config['scenario']['planning_horizons'][0]
+        biofuel_sensitivity = snakemake.config['scenario']['biofuel_sensitivity'][0]
+        electrofuel_sensitivity = snakemake.config['scenario']['electrofuel_sensitivity'][0]
+        electrolysis_sensitivity = snakemake.config['scenario']['electrolysis_sensitivity'][0]
+        cc_sensitivity = snakemake.config['scenario']['cc_sensitivity'][0]
+        cs_sensitivity = snakemake.config['scenario']['cs_sensitivity'][0]
+        oil_sensitivity = snakemake.config['scenario']['oil_sensitivity'][0]
+        biomass_import_sensitivity = snakemake.config['scenario']['biomass_import_sensitivity'][0]
+        headerBiofuelConstraint = '{}_lv{}_{}_{}_{}{}{}{}{}{}{}'.format(cluster,lv,sector_opt,
+                                                                          planning_horizon,biofuel_sensitivity,
+                                                                          electrofuel_sensitivity,
+                                                                          electrolysis_sensitivity,
+                                                                          cc_sensitivity,cs_sensitivity,
+                                                                          oil_sensitivity,biomass_import_sensitivity)
+        print(n.cons["Link"]["df"]["liquid_biofuel_min"])
+
+        biofuelConstraintFile = snakemake.config['results_dir'] + snakemake.config['run'] + '/biofuelminConstraint.csv' #results/biofuelminConstraint.csv'
+        if os.path.isfile(biofuelConstraintFile):
+            df = pd.read_csv(biofuelConstraintFile, index_col=0)
+        else:
+            df = pd.DataFrame()
+
+        df[headerBiofuelConstraint] = n.cons["Link"]["df"]["liquid_biofuel_min"].values
+        df.to_csv(biofuelConstraintFile, index='False')
+
         n.export_to_netcdf(snakemake.output[0])
 
     logger.info("Maximum memory usage: {}".format(mem.mem_usage))
