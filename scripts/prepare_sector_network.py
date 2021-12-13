@@ -2360,9 +2360,12 @@ def add_industry(n, costs):
            )
 
     if shipping_hydrogen_share < 1:
-        shipping_oil_share = 1 - shipping_hydrogen_share
+        if options["shipping_oil_demand"]:
+            shipping_oil_share = 1 - shipping_hydrogen_share
+        elif not options["shipping_oil_demand"]:
+            shipping_oil_share = 0
 
-        p_set = shipping_oil_share * nodal_energy_totals.loc[nodes, all_navigation].sum(axis=1) * 1e6 / 8760.
+        p_set = shipping_oil_share * get(options["shipping_demand"], investment_year) * nodal_energy_totals.loc[nodes, all_navigation].sum(axis=1) * 1e6 / 8760.
 
         n.madd("Load",
                nodes,
@@ -2447,7 +2450,7 @@ def add_industry(n, costs):
           "naphtha for industry",
           bus="EU oil",
           carrier="naphtha for industry",
-          p_set=industrial_demand.loc[nodes, "naphtha"].sum() / 8760
+          p_set=get(options["naphtha_demand"], investment_year) * industrial_demand.loc[nodes, "naphtha"].sum() / 8760
           )
 
     all_aviation = ["total international aviation", "total domestic aviation"]
