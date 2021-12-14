@@ -357,18 +357,19 @@ if __name__ == "__main__":
         # print(n.cons["Link"]["pnl"]["mu_upper"])
         # print(n.cons["Link"])#["liquid_biofuel_min"])
 
-        cluster = snakemake.config['scenario']['clusters'][0]
-        sector_opt = snakemake.config['scenario']['sector_opts'][0]
-        lv = snakemake.config['scenario']['lv'][0]
-        planning_horizon = snakemake.config['scenario']['planning_horizons'][0]
-        biofuel_sensitivity = snakemake.config['scenario']['biofuel_sensitivity'][0]
-        electrofuel_sensitivity = snakemake.config['scenario']['electrofuel_sensitivity'][0]
-        electrolysis_sensitivity = snakemake.config['scenario']['electrolysis_sensitivity'][0]
-        cc_sensitivity = snakemake.config['scenario']['cc_sensitivity'][0]
-        cs_sensitivity = snakemake.config['scenario']['cs_sensitivity'][0]
-        oil_sensitivity = snakemake.config['scenario']['oil_sensitivity'][0]
-        biomass_import_sensitivity = snakemake.config['scenario']['biomass_import_sensitivity'][0]
-        headerBiofuelConstraint = '{}_lv{}_{}_{}_{}{}{}{}{}{}{}'.format(cluster,lv,sector_opt,
+        cluster = snakemake.wildcards.clusters
+        lv = snakemake.wildcards.lv
+
+        sector_opts = snakemake.wildcards.sector_opts
+        biofuel_sensitivity = snakemake.wildcards.biofuel_sensitivity
+        electrofuel_sensitivity = snakemake.wildcards.electrofuel_sensitivity
+        electrolysis_sensitivity = snakemake.wildcards.electrolysis_sensitivity
+        cc_sensitivity = snakemake.wildcards.cc_sensitivity
+        cs_sensitivity = snakemake.wildcards.cs_sensitivity
+        oil_sensitivity = snakemake.wildcards.oil_sensitivity
+        biomass_import_sensitivity = snakemake.wildcards.biomass_import_sensitivity
+        planning_horizon = snakemake.wildcards.planning_horizons[-4:]
+        headerBiofuelConstraint = '{}_lv{}_{}_{}_{}{}{}{}{}{}{}'.format(cluster,lv,sector_opts,
                                                                           planning_horizon,biofuel_sensitivity,
                                                                           electrofuel_sensitivity,
                                                                           electrolysis_sensitivity,
@@ -376,14 +377,20 @@ if __name__ == "__main__":
                                                                           oil_sensitivity,biomass_import_sensitivity)
         print(n.cons["Link"]["df"]["liquid_biofuel_min"])
 
-        biofuelConstraintFile = snakemake.config['results_dir'] + snakemake.config['run'] + '/biofuelminConstraint.csv' #results/biofuelminConstraint.csv'
-        if os.path.isfile(biofuelConstraintFile):
-            df = pd.read_csv(biofuelConstraintFile, index_col=0)
-        else:
-            df = pd.DataFrame()
+        biofuelConstraintFile = snakemake.config['results_dir'] + snakemake.config['run'] + '/biofuelminConstraint.csv'
+        # print(biofuelConstraintFile)
+        # if os.path.isfile(biofuelConstraintFile):
+        #     print('File already exists')
+        #     df = pd.read_csv(biofuelConstraintFile, index_col=0)
+        # else:
+        #     print('File does not exist')
+        df = pd.DataFrame()
+        print(n.cons["Link"]["df"]["liquid_biofuel_min"][0])
+        data = pd.DataFrame({f'{headerBiofuelConstraint}':n.cons["Link"]["df"]["liquid_biofuel_min"].values}).T
+        # df[cluster][lv][sector_opts][planning_horizon][biofuel_sensitivity][electrofuel_sensitivity][electrolysis_sensitivity][cc_sensitivity][cs_sensitivity][oil_sensitivity][biomass_import_sensitivity] = n.cons["Link"]["df"]["liquid_biofuel_min"].values
+        # df[headerBiofuelConstraint] = n.cons["Link"]["df"]["liquid_biofuel_min"]
 
-        df[headerBiofuelConstraint] = n.cons["Link"]["df"]["liquid_biofuel_min"].values
-        df.to_csv(biofuelConstraintFile, index='False')
+        data.to_csv(biofuelConstraintFile, mode='a', header=False)#index='False')
 
         n.export_to_netcdf(snakemake.output[0])
 
