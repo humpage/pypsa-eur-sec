@@ -154,10 +154,14 @@ def add_biofuel_constraint(n):
     options = snakemake.wildcards.sector_opts.split('-')
     print('options: ', options)
     liquid_biofuel_limit = 0
+    biofuel_constraint_type = 'Lt'
     for o in options:
         if "B" in o:
             liquid_biofuel_limit = o[o.find("B") + 1:o.find("B") + 4]
             liquid_biofuel_limit = float(liquid_biofuel_limit.replace("p", "."))
+            print('Length of o: ', len(o))
+            if len(o) > 7:
+                biofuel_constraint_type = o[o.find("B") + 6:o.find("B") + 8]
 
     print('Liq biofuel minimum constraint: ', liquid_biofuel_limit, ' ', type(liquid_biofuel_limit))
 
@@ -177,7 +181,13 @@ def add_biofuel_constraint(n):
     liqfuelloadlimit = liquid_biofuel_limit * total_oil_load
 
     lhs = linexpr((biofuel_vars_eta, biofuel_vars)).sum().sum()
-    define_constraints(n, lhs, "==", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
+
+    print('Constraint type: ', biofuel_constraint_type)
+
+    if biofuel_constraint_type == 'Eq':
+        define_constraints(n, lhs, "==", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
+    elif biofuel_constraint_type == 'Lt':
+        define_constraints(n, lhs, ">=", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
 
 
 def add_battery_constraints(n):
