@@ -177,7 +177,7 @@ def add_biofuel_constraint(n):
     liqfuelloadlimit = liquid_biofuel_limit * total_oil_load
 
     lhs = linexpr((biofuel_vars_eta, biofuel_vars)).sum().sum()
-    define_constraints(n, lhs, ">=", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
+    define_constraints(n, lhs, "==", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
 
 
 def add_battery_constraints(n):
