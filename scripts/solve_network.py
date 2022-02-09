@@ -387,7 +387,7 @@ if __name__ == "__main__":
                                                                           electrolysis_sensitivity,
                                                                           cc_sensitivity,cs_sensitivity,
                                                                           oil_sensitivity,biomass_import_sensitivity)
-        print(n.cons["Link"]["df"]["liquid_biofuel_min"])
+        # print(n.cons["Link"]["df"]["liquid_biofuel_min"])
 
         biofuelConstraintFile = snakemake.config['results_dir'] + snakemake.config['run'] + '/biofuelminConstraint.csv'
         # print(biofuelConstraintFile)
@@ -397,8 +397,10 @@ if __name__ == "__main__":
         # else:
         #     print('File does not exist')
         df = pd.DataFrame()
-        print(n.cons["Link"]["df"]["liquid_biofuel_min"][0])
-        data = pd.DataFrame({f'{headerBiofuelConstraint}':n.cons["Link"]["df"]["liquid_biofuel_min"].values}).T
+        #print(n.cons["Link"]["df"]["liquid_biofuel_min"][0])
+        print(n.duals["Link"]["df"]["liquid_biofuel_min"])
+        # data = pd.DataFrame({f'{headerBiofuelConstraint}':n.cons["Link"]["df"]["liquid_biofuel_min"].values}).T
+        data = pd.DataFrame({f'{headerBiofuelConstraint}':n.duals["Link"]["df"]["liquid_biofuel_min"].values}).T
         # df[cluster][lv][sector_opts][planning_horizon][biofuel_sensitivity][electrofuel_sensitivity][electrolysis_sensitivity][cc_sensitivity][cs_sensitivity][oil_sensitivity][biomass_import_sensitivity] = n.cons["Link"]["df"]["liquid_biofuel_min"].values
         # df[headerBiofuelConstraint] = n.cons["Link"]["df"]["liquid_biofuel_min"]
 
