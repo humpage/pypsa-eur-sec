@@ -167,10 +167,12 @@ def add_biofuel_constraint(n):
     biofuel_vars_eta = n.links.query('carrier == "biomass to liquid"').efficiency
     print('Eta', biofuel_vars_eta)
     print('biofuel vars*eta', biofuel_vars*biofuel_vars_eta)
+
     napkership = n.loads.p_set.filter(regex='naphtha for industry|kerosene for aviation|shipping oil$').sum() * len(n.snapshots)
     print(napkership)
     landtrans = n.loads_t.p_set.filter(regex='land transport oil$').sum().sum()
     print(landtrans)
+
     total_oil_load = napkership+landtrans
     liqfuelloadlimit = liquid_biofuel_limit * total_oil_load
 
