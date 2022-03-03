@@ -519,7 +519,7 @@ def calculate_H2_share_of_AC_revenue(n, label, H2_share_of_AC_revenue):
     ocgt = -n.links_t.p1.filter(regex='ocgt')  # .sum(axis=1)
     runofriver = n.generators_t.p.filter(regex='ror')  # .sum(axis=1)
     hydroelec = n.storage_units_t.p.filter(regex='hydro')  # .sum(axis=1)
-    hydrogen = -n.links_t.p0.filter(regex='Electrolysis')#.sum(axis=1)
+    hydrogen = n.links_t.p0.filter(regex='Electrolysis')#.sum(axis=1)
     # bev = -n.links_t.p0.filter(regex='BEV charger')#.sum(axis=1)
     # heatpump = -n.links_t.p0.filter(regex='heat pump')#.sum(axis=1)
 
@@ -532,7 +532,9 @@ def calculate_H2_share_of_AC_revenue(n, label, H2_share_of_AC_revenue):
     buspricesAC = n.buses_t.marginal_price[n.buses.index[n.buses.carrier == 'AC']]
     H2totPrice = hydrogen * buspricesAC
     ACtotPrice = totGeneration * buspricesAC
-    H2_share_of_AC_revenue["H2_share_of_AC_revenue", label] = H2totPrice.sum().sum() / ACtotPrice.sum().sum()
+    share = H2totPrice.sum().sum() / ACtotPrice.sum().sum()
+    print(share)
+    H2_share_of_AC_revenue.at["H2_share_of_AC_revenue", label] = share
 
     return H2_share_of_AC_revenue
 
