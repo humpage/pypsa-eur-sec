@@ -385,7 +385,7 @@ def calculate_weighted_prices(n, label, weighted_prices):
         "H2"
     ]))
 
-    link_loads = {"electricity":  ["heat pump", "resistive heater", "battery charger", "H2 Electrolysis"],
+    link_loads = {"electricity":  ["heat pump", "resistive heater", "battery charger", "H2 Electrolysis", "industrial heat pump steam for lowT industry", "electricity for lowT industry"],
                   "heat": ["water tanks charger"],
                   "urban heat": ["water tanks charger"],
                   "space heat": [],
@@ -402,7 +402,8 @@ def calculate_weighted_prices(n, label, weighted_prices):
         else:
             suffix =  " " + carrier
 
-        buses = n.buses.index[n.buses.index.str[2:] == suffix]
+        buses = n.buses.index[n.buses.index.str[5:] == suffix]
+        print('BUSES: ', buses, ' CARRIER: ', carrier)
 
         if buses.empty:
             continue
@@ -417,6 +418,7 @@ def calculate_weighted_prices(n, label, weighted_prices):
         for tech in link_loads[carrier]:
 
             names = n.links.index[n.links.index.to_series().str[-len(tech):] == tech]
+            print('LINKTECH: ', names, ' CARRIER: ', carrier)
 
             if names.empty:
                 continue
@@ -428,7 +430,8 @@ def calculate_weighted_prices(n, label, weighted_prices):
         #    stores = n.stores_t.p[buses+ " Store"].groupby(n.stores.loc[buses+ " Store", "bus"],axis=1).sum(axis=1)
         #    stores[stores > 0.] = 0.
         #    load += -stores
-
+            if carrier == "electricity":
+                print('ELEC LOAD: ', load)
         weighted_prices.loc[carrier,label] = (load * n.buses_t.marginal_price[buses]).sum().sum() / load.sum().sum()
 
         if carrier[:5] == "space":
@@ -505,6 +508,34 @@ def calculate_price_statistics(n, label, price_statistics):
 
     return price_statistics
 
+def calculate_H2_share_of_AC_revenue(n, label, H2_share_of_AC_revenue):
+
+    wind = n.generators_t.p.filter(regex='wind')  # .sum(axis=1)
+    solar = n.generators_t.p.filter(regex='solar')  # .sum(axis=1)
+    nuclear = -n.links_t.p1.filter(regex='nuclear')  # .sum(axis=1)
+    coal = -n.links_t.p1.filter(regex='coal')  # .sum(axis=1)
+    lignite = -n.links_t.p1.filter(regex='lignite')  # .sum(axis=1)
+    chp = -n.links_t.p1.filter(regex='CHP')  # .sum(axis=1)
+    ocgt = -n.links_t.p1.filter(regex='ocgt')  # .sum(axis=1)
+    runofriver = n.generators_t.p.filter(regex='ror')  # .sum(axis=1)
+    hydroelec = n.storage_units_t.p.filter(regex='hydro')  # .sum(axis=1)
+    hydrogen = -n.links_t.p0.filter(regex='Electrolysis')#.sum(axis=1)
+    # bev = -n.links_t.p0.filter(regex='BEV charger')#.sum(axis=1)
+    # heatpump = -n.links_t.p0.filter(regex='heat pump')#.sum(axis=1)
+
+    for x in [solar, nuclear, coal, runofriver, hydroelec, lignite, chp]:
+        wind = wind.join(x)
+    wind.columns = [i[0:5] for i in wind.columns]
+    totGeneration = wind.groupby(level=0, axis=1).sum()
+
+    hydrogen.columns = [i[0:5] for i in hydrogen.columns]
+    buspricesAC = n.buses_t.marginal_price[n.buses.index[n.buses.carrier == 'AC']]
+    H2totPrice = hydrogen * buspricesAC
+    ACtotPrice = totGeneration * buspricesAC
+    H2_share_of_AC_revenue["H2_share_of_AC_revenue", label] = H2totPrice.sum().sum() / ACtotPrice.sum().sum()
+
+    return H2_share_of_AC_revenue
+
 
 def make_summaries(networks_dict):
 
@@ -524,6 +555,7 @@ def make_summaries(networks_dict):
         "price_statistics",
         "market_values",
         "metrics",
+        "H2_share_of_AC_revenue",
     ]
 
     columns = pd.MultiIndex.from_tuples(
