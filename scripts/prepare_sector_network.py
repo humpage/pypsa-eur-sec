@@ -711,22 +711,22 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
     elif 'E1' in snakemake.wildcards.electrolysis_sensitivity:
         pass
 
-    if 'C0' in snakemake.wildcards.cc_sensitivity:
+    if 'CC0' in snakemake.wildcards.cc_sensitivity:
         costs.at['biomass CHP capture', 'investment'] = 1600000
         costs.at['cement capture', 'investment'] = 1400000
         costs.at['DAC', 'investment'] = 3000000
-    elif 'C2' in snakemake.wildcards.cc_sensitivity:
+    elif 'CC2' in snakemake.wildcards.cc_sensitivity:
         costs.at['biomass CHP capture', 'investment'] = 2800000
         costs.at['cement capture', 'investment'] = 2400000
         costs.at['DAC', 'investment'] = 7000000
-    elif 'C1' in snakemake.wildcards.cc_sensitivity:
+    elif 'CC1' in snakemake.wildcards.cc_sensitivity:
         pass
 
-    if 'C0' in snakemake.wildcards.cs_sensitivity:
+    if 'CS0' in snakemake.wildcards.cs_sensitivity:
         carbon_sequestration_cost = 10
-    elif 'C2' in snakemake.wildcards.cs_sensitivity:
+    elif 'CS2' in snakemake.wildcards.cs_sensitivity:
         carbon_sequestration_cost = 50
-    elif 'C1' in snakemake.wildcards.cc_sensitivity:
+    elif 'CS1' in snakemake.wildcards.cc_sensitivity:
         pass
 
     if 'O0' in snakemake.wildcards.oil_sensitivity:
@@ -2726,7 +2726,9 @@ if __name__ == "__main__":
 
     biomass_import_price = snakemake.config['biomass']['import price'] * 3.6  # EUR/MWh
     carbon_sequestration_cost = options["co2_sequestration_cost"]
-    sensitivity_costs(costs, biomass_import_price,carbon_sequestration_cost)
+    costs, biomass_import_price, carbon_sequestration_cost = sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost)
+    print('Updated biomass import price: ', biomass_import_price)
+    print('Updated CO2 sequestration cost: ', carbon_sequestration_cost)
 
     patch_electricity_network(n)
 
