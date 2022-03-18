@@ -382,21 +382,41 @@ def add_dac(n, costs):
            )
 
 
-def add_co2limit(n, Nyears=1., limit=0.):
+def add_co2limit(n, Nyears=1., limit=0., deduction=0.):
     print("Adding CO2 budget limit as per unit of 1990 levels of", limit)
 
     countries = n.buses.country.dropna().unique()
 
     sectors = emission_sectors_from_opts(opts)
+    print(sectors)
+
+    if deduction > 0:
+        # sectors.remove("rail non-elec", "road non-elec", "domestic aviation", "international aviation",
+        #             "domestic navigation", "international navigation")
+        to_remove = ["rail non-elec", "road non-elec", "domestic aviation", "international aviation",
+                    "domestic navigation", "international navigation"]
+        sectors = [elem for elem in sectors if elem not in to_remove]
+        print(sectors)
+            # "industrial non-elec",
+            # "industrial processes",
 
     # convert Mt to tCO2
     co2_totals = 1e6 * pd.read_csv(snakemake.input.co2_totals_name, index_col=0)
 
     co2_limit = co2_totals.loc[countries, sectors].sum().sum()
 
+    co2_limit -= deduction
+
     co2_limit *= limit * Nyears
 
     print('CO2 limit: ', co2_limit/1e6, ' MtCO2')
+
+    # print('Reducing CO2 limit by ', deduction/1e6, ' MtCO2')
+    # co2_limit -= deduction
+
+    # print('CO2 limit: ', co2_limit/1e6, ' MtCO2')
+
+    # input('Press ENTER to continue')
 
     n.add("GlobalConstraint",
           "CO2Limit",
@@ -617,6 +637,8 @@ def prepare_data(n):
 
     # Add transport demand factor depending on the year
     transport = transport * get(options["land_transport_demand"], investment_year)
+
+    print('Transport: ', transport)
 
     ## derive plugged-in availability for PKW's (cars)
 
@@ -1268,7 +1290,7 @@ def add_land_transport(n, costs):
                p_set=fuel_cell_share / options['transport_fuel_cell_efficiency'] * transport[nodes]
                )
 
-    if ice_share > 0:
+    if ice_share > 0: # and not options['liquid fuel exclusion']:
 
         if "EU oil" not in n.buses.index:
             n.add("Bus",
@@ -1290,6 +1312,11 @@ def add_land_transport(n, costs):
         # TODO: make hourly for each node? - the method now is inexact when running coarse resolution (e.g. > 1h)
         #co2 = ice_share / ice_efficiency * transport[nodes].sum().sum() / 8760 * costs.at["oil", 'CO2 intensity']
         #Hourly version:
+
+        # fuel_cell_share = get(options["land_transport_fuel_cell_share"], investment_year)
+        # electric_share = get(options["land_transport_electric_share"], investment_year)
+        # ice_share = 1 - fuel_cell_share - electric_share
+        # ice_efficiency = options['transport_internal_combustion_efficiency']
 
         co2 = ice_share / ice_efficiency * transport[nodes].sum(axis=1) * costs.at["oil", 'CO2 intensity']
         print(co2)
@@ -2100,6 +2127,7 @@ def add_industry(n, costs):
            location=nodes,
            carrier="mediumT industry")
 
+    #TODO: Set real shares of medium and high T industry
     n.madd("Load",
            nodes,
            suffix=" mediumT industry",
@@ -2365,6 +2393,7 @@ def add_industry(n, costs):
         # elif not options["shipping_oil_demand"]:
         #     shipping_oil_share = 0
 
+        # if not options['liquid fuel exclusion']:
         p_set = shipping_oil_share * get(options["shipping_demand"], investment_year) * nodal_energy_totals.loc[nodes, all_navigation].sum(axis=1) * 1e6 / 8760.
 
         n.madd("Load",
@@ -2376,7 +2405,7 @@ def add_industry(n, costs):
                )
 
         co2 = shipping_oil_share * get(options["shipping_demand"], investment_year) * nodal_energy_totals.loc[
-            nodes, all_navigation].sum().sum() * 1e6 / 8760 * costs.at["oil", "CO2 intensity"]
+                nodes, all_navigation].sum().sum() * 1e6 / 8760 * costs.at["oil", "CO2 intensity"]
 
         n.add("Load",
               "shipping oil emissions",
@@ -2446,8 +2475,11 @@ def add_industry(n, costs):
            p_nom_extendable=True,
            lifetime=costs.at['Fischer-Tropsch', 'lifetime'])
 
-    # p_set = get(options["naphtha_demand"], investment_year) * industrial_demand.loc[nodes, "naphtha"].sum() / 8760
-    p_set = industrial_demand.loc[nodes, "naphtha"].sum() / 8760
+
+    # if not options['liquid fuel exclusion']:
+    p_set = get(options["naphtha_demand"], investment_year) * industrial_demand.loc[nodes, "naphtha"].sum() / 8760
+
+    # p_set = industrial_demand.loc[nodes, "naphtha"].sum() / 8760
     n.add("Load",
           "naphtha for industry",
           bus="EU oil",
@@ -2457,7 +2489,7 @@ def add_industry(n, costs):
 
     all_aviation = ["total international aviation", "total domestic aviation"]
     p_set = get(options["aviation_demand"], investment_year) * nodal_energy_totals.loc[nodes, all_aviation].sum(
-        axis=1).sum() * 1e6 / 8760
+             axis=1).sum() * 1e6 / 8760
 
     n.add("Load",
           "kerosene for aviation",
@@ -2472,7 +2504,7 @@ def add_industry(n, costs):
 
     co2_release = ["naphtha for industry", "kerosene for aviation"]
     co2 = n.loads.loc[co2_release, "p_set"].sum() * costs.at["oil", 'CO2 intensity'] - industrial_demand.loc[
-        nodes, "process emission from feedstock"].sum() / 8760
+           nodes, "process emission from feedstock"].sum() / 8760
 
     n.add("Load",
           "oil emissions",
@@ -2688,6 +2720,93 @@ def hvdc_transport_model(n):
         n.links.carrier == 'DC', 'length'] / 1000
 
 
+def remove_liquid_fuels(n):
+    print('Removing liquid hydrocarbon fuel demand and emissions')
+    nodes = pop_layout.index
+
+    n.mremove("Load",
+           nodes + " shipping oil",
+           # bus="EU oil",
+           # carrier="shipping oil",
+           # p_set=p_set
+           )
+
+    n.remove("Load",
+          "shipping oil emissions",
+          # bus="co2 atmosphere",
+          # carrier="shipping oil emissions",
+          # p_set=-co2
+          )
+
+    n.remove("Load",
+          "naphtha for industry",
+          # bus="EU oil",
+          # carrier="naphtha for industry",
+          # p_set= p_set
+          )
+
+    n.remove("Load",
+          "kerosene for aviation",
+          # bus="EU oil",
+          # carrier="kerosene for aviation",
+          # p_set=p_set
+          )
+
+    n.remove("Load",
+          "oil emissions",
+          # bus="co2 atmosphere",
+          # carrier="oil emissions",
+          # p_set=-co2
+          )
+
+    n.mremove("Load",
+           nodes + " land transport oil",
+           # bus="EU oil",
+           # carrier="land transport oil",
+           # p_set=ice_share / ice_efficiency * transport[nodes]
+           )
+
+    n.mremove("Load",
+           ["land transport oil emissions"],
+           # bus="co2 atmosphere",
+           # carrier="land transport oil emissions",
+           # p_set=-co2
+           )
+
+    all_aviation = ["total international aviation", "total domestic aviation"]
+    aviationDemand = get(options["aviation_demand"], investment_year) * nodal_energy_totals.loc[nodes, all_aviation].sum(
+        axis=1).sum() * 1e6
+    print('aviation demand: ', aviationDemand/1e6)
+
+    all_navigation = ["total international navigation", "total domestic navigation"]
+    shipping_hydrogen_share = get(options['shipping_hydrogen_share'], investment_year)
+    shipping_oil_share = 1 - shipping_hydrogen_share
+    navigationDemand = shipping_oil_share * get(options["shipping_demand"], investment_year) * nodal_energy_totals.loc[
+        nodes, all_navigation].sum().sum() * 1e6
+
+    print('navigation demand: ', navigationDemand/1e6)
+
+    fuel_cell_share = get(options["land_transport_fuel_cell_share"], investment_year)
+    electric_share = get(options["land_transport_electric_share"], investment_year)
+    ice_share = 1 - fuel_cell_share - electric_share
+    ice_efficiency = options['transport_internal_combustion_efficiency']
+    landTransportDemand = ice_share / ice_efficiency * transport[nodes].sum().sum()
+    print('Land transport demand: ', landTransportDemand/1e6)
+
+    industrial_demand = pd.read_csv(snakemake.input.industrial_demand, index_col=0) * 1e6
+    naphthaDemand = industrial_demand.loc[nodes, "naphtha"].sum()
+    print('Naphtha demand: ', naphthaDemand / 1e6)
+
+    TotLiqFuelDemand = landTransportDemand + aviationDemand + navigationDemand + naphthaDemand
+    print('Tot Liq fuel demand: ', TotLiqFuelDemand/1e6)
+
+    liquidFuelEmissionsTot = TotLiqFuelDemand * costs.at["oil", "CO2 intensity"] #MWh * tCO2/MWh = tCO2
+    # - industrial_demand.loc[nodes, "process emission from feedstock"].sum() / 8760
+    deduction = naphthaDemand * costs.at["oil", "CO2 intensity"] #liquidFuelEmissionsTot
+
+    return n, deduction
+
+
 # %%
 if __name__ == "__main__":
     if 'snakemake' not in globals():
@@ -2814,8 +2933,14 @@ if __name__ == "__main__":
         limit = o[o.find("Co2L") + 4:]
         limit = float(limit.replace("p", ".").replace("m", "-"))
         break
+
+    deduction = 0
+    if 'LiqFuExcl' in opts:
+        n, deduction = remove_liquid_fuels(n)
+        print('Emission reduction by: ', deduction)
+
     print("add CO2 limit from", limit_type)
-    add_co2limit(n, Nyears, limit)
+    add_co2limit(n, Nyears, limit, deduction)
 
     for o in opts:
         if not o[:10] == 'linemaxext': continue
