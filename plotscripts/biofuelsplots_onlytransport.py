@@ -4,10 +4,11 @@ import numpy as np
 import pandas as pd
 
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 
 plt.style.use('ggplot')
 
-year = 2040
+year = 2060
 scenario = 'serverResults/mainScenarios{}'.format(year)
 sdir = '../results/{}/csvs/costs.csv'.format(scenario)
 output = '../results/fuelSupply{}'.format(year)
@@ -303,7 +304,6 @@ def rename_techs(label):
 
     return label
 
-
 def rename_techs_again(label):
     simplify_more = {
         'digestible biomass': 'biomass',
@@ -318,7 +318,6 @@ def rename_techs_again(label):
         # 'co2': 'other',
         # 'co2 vent': 'other',
         'helmeth': 'other',
-        # 'fossil liquid fuel': 'fossil fuel + CCS'
     }
 
     for old, new in simplify_more.items():
@@ -327,19 +326,17 @@ def rename_techs_again(label):
 
     return label
 
+def rename_fossil_fuels(label):
+    # if year == 2040:
+    #     simplify_more = {'fossil liquid fuel': 'fossil liquid fuel w/o CCS'}
+    # elif year == 2060:
+    #     simplify_more = {'fossil liquid fuel': 'fossil liquid fuel + CCS'}
 
-# def rename_techs_transportOnly(label):
-#     simplify_more = {
-#         'electrofuel': 'electrofuel + CC',
-#         'fossil liquid fuel': 'fossil fuel + CCS'
-#     }
-#
-#     for old, new in simplify_more.items():
-#         if old == label:
-#             label = new
-#
-#     return label
+    # for old, new in simplify_more.items():
+    #     if old == label:
+    #         label = new
 
+    return label
 
 def rename_techs_balances(label):
     prefix_to_remove = [
@@ -406,7 +403,6 @@ def rename_techs_balances(label):
             label = new
     return label
 
-
 preferred_order = pd.Index([
     "transmission lines",
     "hydroelectricity",
@@ -457,8 +453,11 @@ preferred_order2 = pd.Index([
     'other biomass usage',
     'biofuel',
     'electrofuel',
+    'fossil liquid fuel + CCS',
+    'fossil liquid fuel w/o CCS',
     'fossil liquid fuel',
-    'opportunity cost'
+    'fossil liquid fuel emission cost',
+    'opportunity cost',
 ])
 
 
@@ -497,74 +496,131 @@ def axes_handling_right(ax, legend=False):
     if legend == False:
         ax.get_legend().remove()
 
-
-def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, legend=False):
-    new_index = preferred_order2.intersection(df.index).append(df.index.difference(preferred_order2))
-    new_columns = df.sum().index#.sort_values().index
-
-    colors = {'power excl. fossil fuels': 'darkblue',
-              'fossil fuels': 'black',
-              'fossil liquid fuel': 'grey',
+colors = {'power excl. fossil fuels': '#6495ED', #'#235ebc',
+              'fossil fuels': '#C0C0C0',
+              'fossil liquid fuel': '#C0C0C0',#'#708090',
               'fossil fuel + CCS': 'grey',
+              'fossil liquid fuel + CCS': '#708090',
+              'fossil liquid fuel w/o CCS': '#708090',
               'fossil gas': 'darkgrey',
-              'other': 'blue',
+              'other': 'lightblue',
               'biomass': 'green',
-              'other biomass usage': 'red',
-              'biofuel': 'orange',
-              'electrofuel': 'lightgreen',
+              'other biomass usage': '#FFE5B4',
+              'biofuel': '#32CD32',#'#ADFF2F',#'#00FF00',#'#32CD33',#'#C2B280',
+              'electrofuel': 'gold',
               'electrofuel + CC': 'lightgreen',
               'DAC': 'pink',
               'carbon storage': 'darkgreen',
-              'opportunity cost total': 'yellow',
-              'opportunity cost': 'red',
-              'fuel delta': 'green'}
+              'opportunity cost total': 'blue',
+              'opportunity cost': '#C04000',
+              'fuel delta': 'green',
+              'biomass domestic': '#40AA00',
+              'biomass import': '#48CC22',
+              'biofuel process': 'lightgreen',
+              'electrofuel process': '#E30B5C',
+              'fossil liquid fuel emission cost': '#E5E4B7'
+              # 'electrofuel + CC': '#832473',  # 'lightgreen',
+              # 'carbon storage': 'darkgreen'
+              }
 
-    # colormap = plt.cm.jet
-    # colors = [colormap(i) for i in np.linspace(0, 1, len(new_index))]
-    # colors = sns.color_palette("hls", len(new_index))
+def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, plottype, twolegend=False, legend=False):
+
+    new_index = preferred_order2.intersection(df.index).append(df.index.difference(preferred_order2))
+    new_columns = df.sum().index#.sort_values().index
 
     to_plot = df.loc[new_index,new_columns].T
     to_plot.plot(
-        kind="bar",
+        kind=plottype,
         ax=ax,
         stacked=True,
-        #color=colors,  # [snakemake.config['plotting']['tech_colors'][i] for i in new_index]
+        color=colors,  # [snakemake.config['plotting']['tech_colors'][i] for i in new_index]
     )
+    # list_values[i] = (to_plot.astype(int).values.flatten('F'))
+    # i+=1
 
-    list_values = (to_plot.astype(int).values.flatten('F'))
-    print('ax patches: ', ax.patches)
-    print(zip(ax.patches, list_values))
-    print(list(itertools.zip_longest(ax.patches,list_values)))
+    list_values = to_plot.astype(int).values.flatten('F')
+    # print(list_values)
+    # print('ax patches: ', ax.patches[0:8])
+    # print(list(zip(ax.patches, list_values)))
+    # print(list(itertools.zip_longest(ax.patches,list_values)))
 
-    for rect, value in itertools.zip_longest(ax.patches,list_values, fillvalue=0): #zip(ax.patches, list_values):
-
-        if ndf == 1:
-            rect.set_x(rect.get_x())
-        elif ndf ==2:
-            rect.set_width(1 / 5)
-            matrix = [-rect.get_width()*2.5, 2.5*rect.get_width()]
-            rect.set_x(rect.get_x() + matrix[position] / 2)
-
-        if value >= 6:
-            h = rect.get_height() / 2.
-            w = rect.get_width() / 2.
-            x, y = rect.get_xy()
-            ax.text(x + w, y + h, value, horizontalalignment='center', verticalalignment='center', fontsize='xx-small')
-
+    #     h,l = axe.get_legend_handles_labels() # get the handles we want to modify
+    #     for i in range(0, n_df * n_col, n_col): # len(h) = n_col * n_df
+    #         for j, pa in enumerate(h[i:i+n_col]):
+    #             for rect in pa.patches: # for each index
+    #                 rect.set_x(rect.get_x() + 1 / float(n_df + 1) * i / float(n_col))
+    #                 # rect.set_hatch(H * int(i / n_col)) #edited part
+    #                 rect.set_width(1 / float(n_df + 1))
 
     totals = to_plot.sum(axis=1)
-    # print(totals.values)
+    totals2 = to_plot[to_plot>0].sum(axis=1)
+    print('totals: ', totals)
+    print('totals2: ', totals2)
 
-    # i = 0
-    for rect, total in zip(ax.patches, totals):
-        # print(total)
-        # if i == 0:
-        ax.text(rect.get_x() + rect.get_width() / 2, total + 20, int(total), ha='center', weight='bold')
-        # if i > 0:
-        #     increase = int(round((total / totals[0]-1) * 100))
-        #     print(increase)
-        #     ax.text(rect.get_x()+rect.get_width()/2, total+70, '+{}%'.format(increase), ha='center', fontsize='x-small')
-        # i += 1
+    for rect, total in itertools.zip_longest(ax.patches, totals, fillvalue=0):  # zip(ax.patches, list_values):# #
+
+        if ndf == 1:
+            pass
+        elif ndf == 2:
+            rect.set_width(1 / 4)
+            matrix = [-rect.get_width() / 4, 1.5 * rect.get_width()]
+            rect.set_x(rect.get_x() + matrix[position])  # / 2)
+
+    if position == ndf - 2:
+        for rect, total in itertools.zip_longest(ax.patches, totals, fillvalue=0):  # zip(ax.patches, list_values):# #
+
+            if abs(rect.get_height()) >= 20:
+                h = rect.get_height() / 2.
+                w = rect.get_width() / 2.
+                x, y = rect.get_xy()
+                ax.text(x + w, y + h, int(rect.get_height()), horizontalalignment='center', verticalalignment='center', fontsize='xx-small')
+
+    for rect, total, total2 in itertools.zip_longest(ax.patches, totals, totals2, fillvalue=0):#zip(ax.patches, totals):#
+
+        increase = round((total / totals[1]-1) * 100, 1)
+        if abs(increase) >= 1:
+            increase = int(increase)
+        # print('increase: ', increase)
+
+        if ndf == 2:
+            if total > 0:
+                if position == 0:
+                    ax.text(rect.get_x() - rect.get_width(), total + 20, int(total), ha='center', weight='bold', fontsize='small')
+                    ax.text(rect.get_x() - rect.get_width()*0.9, -40, 'Total', ha='center', va='top', fontsize='small', rotation=90, color='gray')
+                # if i > 0:
+                    if increase > 0:
+                        insert = '+{}%'.format(increase)
+                    elif increase < 0:
+                        insert = '-{}%'.format(increase)
+                    elif increase == 0:
+                        insert = ''
+                    ax.text(rect.get_x() - rect.get_width(), total2+60, insert, ha='center', fontsize='x-small')
+            # i += 1
+
+                if position == 1:
+                    ax.text(rect.get_x() + rect.get_width() / 4, total2 + 20, int(total), ha='center', weight='bold', fontsize='small')
+                    ax.text(rect.get_x() + rect.get_width() / 3, -40, 'Fuel', ha='center', va='top', fontsize='small', rotation=90, color='gray')
+                # if i > 0:
+                    if increase > 0:
+                        insert = '+{}%'.format(increase)
+                    elif increase < 0:
+                        insert = '-{}%'.format(increase)
+                    elif increase == 0:
+                        insert = ''
+                    ax.text(rect.get_x() + rect.get_width() / 4, total2 + 60, insert, ha='center',
+                            fontsize='x-small')
+        elif ndf == 1:
+            if total > 0:
+                ax.text(rect.get_x() + rect.get_width()/2, total2 + 20, int(total), ha='center', weight='bold',
+                    fontsize='small')
+                if increase > 0:
+                    insert = '+{}%'.format(increase)
+                elif increase < 0:
+                    insert = '-{}%'.format(increase)
+                elif increase == 0:
+                    insert = ''
+                # ax.text(rect.get_x() - rect.get_width(), total2 + 60, insert, ha='center', fontsize='x-small')
+
 
     handles, labels = ax.get_legend_handles_labels()
 
@@ -574,10 +630,10 @@ def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, legend=False):
 
     if year == 2060:
         ymin = -30
-        ymax = 400
+        ymax = 1000
     elif year == 2040:
         ymin = -30
-        ymax = 1100
+        ymax = 1000
 
     # if transportOnly:
     ax.set_ylim([ymin, ymax])  # snakemake.config['plotting']['costs_max']])
@@ -592,6 +648,13 @@ def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, legend=False):
     ax.grid(axis='x')
 
     ax.legend(handles, labels, ncol=1, loc="upper left", bbox_to_anchor=[1, 1], frameon=False)
+
+    if twolegend == True:
+        legend1 = ax.legend(handles[0:-5], labels[0:-5], ncol=1, loc="upper left", bbox_to_anchor=[1, 1], frameon=False)
+        legend2 = ax.legend(handles[-5:], labels[-5:], ncol=1, loc="lower left", bbox_to_anchor=[1, -0.2], frameon=False)
+        ax.add_artist(legend2)
+        ax.add_artist(legend1)
+
     if legend == False:
         ax.get_legend().remove()
 
@@ -610,49 +673,166 @@ def rename_cols(df,order):
     # print(df)
     return df
 
-# def plot_clustered_stacked(dfall, labels=None, title="multiple stacked bar plot",  H="/", **kwargs):
-#     """Given a list of dataframes, with identical columns and index, create a clustered stacked bar plot.
-# labels is a list of the names of the dataframe, used for the legend
-# title is a string for the title of the plot
-# H is the hatch used for identification of the different dataframe"""
-#
-#     n_df = len(dfall)
-#     n_col = len(dfall[1].columns)
-#     n_ind = len(dfall[1].index)
-#     axe = plt.subplot(111)
-#
-#     for df in dfall : # for each data frame
-#         axe = df.plot(kind="bar",
-#                       linewidth=0,
-#                       stacked=True,
-#                       ax=axe,
-#                       legend=False,
-#                       grid=False,
-#                       **kwargs)  # make bar plots
-#
-#     h,l = axe.get_legend_handles_labels() # get the handles we want to modify
-#     for i in range(0, n_df * n_col, n_col): # len(h) = n_col * n_df
-#         for j, pa in enumerate(h[i:i+n_col]):
-#             for rect in pa.patches: # for each index
-#                 rect.set_x(rect.get_x() + 1 / float(n_df + 1) * i / float(n_col))
-#                 # rect.set_hatch(H * int(i / n_col)) #edited part
-#                 rect.set_width(1 / float(n_df + 1))
-#
-#     axe.set_xticks((np.arange(0, 2 * n_ind, 2) + 1 / float(n_df + 1)) / 2.)
-#     axe.set_xticklabels(df.index, rotation = 0)
-#     axe.set_title(title)
-#
-#     # Add invisible data to add another legend
-#     n=[]
-#     for i in range(n_df):
-#         n.append(axe.bar(0, 0, color="gray", hatch=H * i))
-#
-#     l1 = axe.legend(h[:n_col], l[:n_col], loc=[1.01, 0.5])
-#     if labels is not None:
-#         l2 = plt.legend(n, labels, loc=[1.01, 0.1])
-#     axe.add_artist(l1)
-#     return axe
 
+def rename_techsAll(label):
+
+    prefix_to_remove = [
+        "residential ",
+        "services ",
+        "urban ",
+        "rural ",
+        "central ",
+        "decentral "
+    ]
+
+    rename_if_contains = [
+        "CHP",
+        "gas boiler",
+        "biogas",
+        "solar thermal",
+        "air heat pump",
+        "ground heat pump",
+        "resistive heater",
+        "Fischer-Tropsch"
+    ]
+
+    rename_if_contains_dict = {
+        "water tanks": "hot water storage",
+        "retrofitting": "building retrofitting",
+        "H2 Electrolysis": "hydrogen storage",
+        "H2 Fuel Cell": "hydrogen storage",
+        "H2 pipeline": "hydrogen storage",
+        "battery": "battery storage",
+        "CC": "CC"
+    }
+
+    rename = {
+        "solar": "solar PV",
+        "Sabatier": "methanation",
+        "offwind": "offshore wind",
+        "offwind-ac": "offshore wind (AC)",
+        "offwind-dc": "offshore wind (DC)",
+        "onwind": "onshore wind",
+        "ror": "hydroelectricity",
+        "hydro": "hydroelectricity",
+        "PHS": "hydroelectricity",
+        "co2 Store": "DAC",
+        "co2 stored": "CO2 sequestration",
+        "AC": "transmission lines",
+        "DC": "transmission lines",
+        "B2B": "transmission lines"
+    }
+
+    simplify = {
+        "transmission lines": 'power',
+        "hydroelectricity": 'power',
+        "hydro reservoir": 'power',
+        "run of river": 'power',
+        "pumped hydro storage": 'power',
+        "onshore wind": 'power',
+        "offshore wind": 'power',
+        "offshore wind (AC)": 'power',
+        "offshore wind (DC)": 'power',
+        "solar PV": 'power',
+        "solar thermal": 'heat',
+        "building retrofitting": 'heat',
+        "ground heat pump": 'heat',
+        "air heat pump": 'heat',
+        "heat pump": 'heat',
+        "resistive heater": 'heat',
+        "power-to-heat": 'heat',
+        "gas-to-power/heat": 'heat',
+        "CHP": 'CHP',
+        "OCGT": 'CHP',
+        "gas boiler": 'heat',
+        "hydrogen storage": 'hydrogen derivatives',
+        "power-to-gas": 'hydrogen derivatives',
+        "H2": 'hydrogen derivatives',
+        "H2 liquefaction": 'hydrogen derivatives',
+        "landscape care solid biomass": 'solid biomass',
+        "forest residues solid biomass": 'solid biomass',
+        "industry wood residues solid biomass": 'solid biomass',
+        "solid biomass import": 'biomass import',
+        "straw digestible biomass": 'digestible biomass',
+        "municipal biowaste digestible biomass": 'digestible biomass',
+        "manureslurry digestible biomass": 'digestible biomass',
+        "biogas": 'other biomass usage',
+        "solid biomass to electricity": 'other biomass usage',
+        "BioSNG": 'other biomass usage',
+        "digestible biomass to hydrogen": 'other biomass usage',
+        "lowT process steam solid biomass": 'other biomass usage',
+        "lowT process steam methane": 'industry',
+        "battery storage": 'power',
+        "hot water storage": 'heat',
+        'coal': 'fossil fuels',
+        'oil': 'fossil fuels',
+        'gas': 'fossil fuels',
+        'lignite': 'fossil fuels',
+        'uranium': 'power',
+        'process emissions': 'industry',
+        'gas for industry': 'industry',
+        'lowT process steam H2': 'industry',
+        'lowT process steam electricity': 'industry',
+        'SMR': 'other',
+        'CC': 'other',
+        'methanation': 'other',
+        'nuclear': 'power',
+        'nuclear_new': 'power',
+        'lowT process steam heat pump': 'industry',
+        'solid biomass for mediumT industry': 'other biomass usage',
+        'gas for highT industry': 'industry',
+        'V2G': 'power',
+        'BEV charger': 'other',
+        'Li ion': 'power',
+        'co2': 'other',
+        'co2 vent': 'other',
+        'gas for mediumT industry': 'industry',
+        'helmeth': 'other',
+        'sewage sludge digestible biomass': 'digestible biomass',
+        'solid biomass to hydrogen': 'other biomass usage',
+        'oil boiler': 'heat'
+    }
+
+    simplify_more = {
+        'heat': 'other',
+        'industry': 'other',
+        'CHP': 'other',
+        'power': 'power excl. fossil fuels',
+        'hydrogen derivatives': 'other',
+        'digestible biomass': 'biomass domestic',
+        'solid biomass': 'biomass domestic',
+        'biomass to liquid': 'biofuel process',
+        'electrofuel': 'electrofuel process',
+        'DAC': 'DAC',
+        'CO2 sequestration': 'other',
+        # "power-to-liquid": 'hydrogen derivatives',
+    }
+
+    for ptr in prefix_to_remove:
+        if label[:len(ptr)] == ptr:
+            label = label[len(ptr):]
+
+    for rif in rename_if_contains:
+        if rif in label:
+            label = rif
+
+    for old,new in rename_if_contains_dict.items():
+        if old in label:
+            label = new
+
+    for old,new in rename.items():
+        if old == label:
+            label = new
+
+    for old,new in simplify.items():
+        if old == label:
+            label = new
+
+    for old,new in simplify_more.items():
+        if old == label:
+            label = new
+
+    return label
 
 def gen_transport_df_for_plots(transportOnly, mode='cost'):
 
@@ -674,8 +854,9 @@ def gen_transport_df_for_plots(transportOnly, mode='cost'):
 
     # convert to billions
     costs = costs / 1e9
-    costs = costs.groupby(costs.index.map(rename_techs)).sum()
     costsAll = costs
+    costs = costs.groupby(costs.index.map(rename_techs)).sum()
+    costsAll = costsAll.groupby(costsAll.index.map(rename_techsAll)).sum()
 
     biomass = ['High', 'Med']
     if year == 2060:
@@ -692,37 +873,37 @@ def gen_transport_df_for_plots(transportOnly, mode='cost'):
         sampleRef.columns = sample.columns
         diff = sample.sum() - sampleRef.sum()
         diff.columns = sample.columns
+        print('Sample cols: ', sample.columns)
         costs.loc['opportunity cost total', sample.columns] = diff[0]
 
-    temp = costs.loc['electrofuel']
-    print('Electrofuel: ', costs.loc['electrofuel'])
-
     if mode == 'cost':
-        print('efueladdition', H2toEfuelShare * (costs.loc['H2 Electrolysis'] + costs.loc['H2 pipeline']))
         costs.loc['electrofuel'] += H2toEfuelShare * (costs.loc['H2 Electrolysis'] + costs.loc['H2 pipeline'])
         costs.loc['H2 Electrolysis'] -= H2toEfuelShare * costs.loc['H2 Electrolysis']
         costs.loc['H2 pipeline'] -= H2toEfuelShare * costs.loc['H2 pipeline']
 
-        temp2 = costs.loc['electrofuel'] - temp
-
-        # print('Electrofuel: ', costs.loc['electrofuel']-temp)
-
         if transportOnly:
-            co2price = co2_shadowPrice#abs(prices.loc['co2'])
+            co2price = abs(prices.loc['co2'])
             print('co2 price', co2price)
             costs.loc['electrofuel'] += ElectrofuelAmount * 0.25714 * co2price / 1e3
-            costs.loc['fossil liquid fuel'] += FossilLiquidFuelsAmount * 0.25714 * co2price / 1e3 #[TWh * MtCO2/TWh * MEUR/MtCO2 / 1000 = Billion EUR]
-            costs.loc['other'] -= ElectrofuelAmount * 0.25714 * co2price / 1e3 - FossilLiquidFuelsAmount * 0.25714 * co2price / 1e3
+
+            # if year == 2040:
+            #     fossilAddition = 0 #Assumed unabated
+            # elif year == 2060:
+            fossilAddition = FossilLiquidFuelsAmount * 0.25714 * co2price / 1e3 #[TWh * MtCO2/TWh * MEUR/MtCO2 / 1000 = Billion EUR]
+
+            fossilAddition.name = 'fossil liquid fuel emission cost'
+
+            costs = costs.append(fossilAddition)
+            # costs.loc['fossil liquid fuel'] += fossilAddition
+            costs.loc['other'] -= ElectrofuelAmount * 0.25714 * co2price / 1e3 - fossilAddition
 
             # Todo: Change to power incl. fossils for power production! Add CHP?
             costs.loc['electrofuel'] += H2shareofACrevenue * H2toEfuelShare * costs.loc['power excl. fossil fuels']
 
-            print('Electrofuel: ', costs.loc['electrofuel'] - temp2)
-
             costs.loc['power excl. fossil fuels'] -= H2shareofACrevenue * H2toEfuelShare * costs.loc['power excl. fossil fuels']
 
-            costs.loc['biofuel'] += SolidBiomasstoBtLshare * solid_biomass_cost#(costs.loc['solid biomass'])
-            costs.loc['solid biomass'] -= SolidBiomasstoBtLshare * solid_biomass_cost#(costs.loc['solid biomass'])
+            costs.loc['biofuel'] += SolidBiomasstoBtLshare * solid_biomass_cost #(costs.loc['solid biomass'])
+            costs.loc['solid biomass'] -= SolidBiomasstoBtLshare * solid_biomass_cost #(costs.loc['solid biomass'])
 
     elif mode == 'price':
 
@@ -737,12 +918,16 @@ def gen_transport_df_for_plots(transportOnly, mode='cost'):
         costs.loc['fossil liquid fuel'] += FossilLiquidFuelsAmount * 0.25714 * abs(prices.loc['co2']) / 1e3
 
     costs = costs.groupby(costs.index.map(rename_techs_again)).sum()
-    costsAll = costsAll.groupby(costsAll.index.map(rename_techs_again)).sum()
+
+    costs = costs.groupby(costs.index.map(rename_fossil_fuels)).sum()
+
+    # costsAll = costsAll.groupby(costsAll.index.map(rename_techs_again)).sum()
 
     to_drop = costs.index[costs.max(axis=1) < 0.5]  # snakemake.config['plotting']['costs_threshold']]
     costs = costs.drop(to_drop)
 
-    costsAll = costsAll.drop(costsAll.index[costsAll.max(axis=1) < 0.5])
+    costsAll = costsAll.drop(costsAll.index[abs(costsAll.max(axis=1)) < 0.5])
+    # costsAll = costsAll.drop(['opportunity cost total'])
 
     if transportOnly:
         print('dropping non-transport')
@@ -771,7 +956,6 @@ def gen_transport_df_for_plots(transportOnly, mode='cost'):
         costs = costs.drop(['opportunity cost total', 'fuel delta'], axis=0)
 
     return costs, costsAll
-
 
 def df_for_subplots(costs):
     if year == 2060:
@@ -805,12 +989,31 @@ def plot_scenarios(costs, costAll, output, mode='cost'):
     # place_subplot(df4, ax4, 'Låg biomassa, låg CO2-lagring', transportOnly)
     # place_subplot(df5, ax5, 'Hög biomassa, hög CO2-lagring', transportOnly)
 
-    place_subplot(df6, ax2, 2, 1, 'Fuel cost [Billion EUR]', '', 'High bio, low CS')
-    place_subplot(df2, ax2, 2, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS')
+    # place_subplot(df2, ax2, 2, 1, 'Fuel cost [Billion EUR]', '', 'High bio, low CS')
+    # place_subplot(df6, ax2, 2, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS')
 
-    place_subplot(df3, ax3, 1, 0, '', '', 'High bio, high CS', legend=True)
-    place_subplot(df4, ax4, 1, 0, 'Fuel cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS')
-    place_subplot(df5, ax5, 1, 0, '', 'Biofuel share', 'High bio, high CS')
+    ax2.plot(df6.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
+    place_subplot(df2, ax2, 1, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS', 'bar')
+    # place_subplot(df6.sum(), ax2, 1, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS', 'scatter')
+
+    ax3.plot(df7.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
+    place_subplot(df3, ax3, 1, 0, '', '', 'High bio, high CS', 'bar', legend=True)
+
+    place_subplot(df4, ax4, 1, 0, 'Fuel cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS', 'bar')
+    ax4.plot(df8.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black')
+
+    place_subplot(df5, ax5, 1, 0, '', 'Biofuel share', 'Low bio, high CS', 'bar')
+    ax5.plot(df9.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black')
+
+    # place_subplot(df3, ax3, 2, 1, '', '', 'High bio, high CS', 'bar')
+    # place_subplot(df7, ax3, 2, 0, '', '', 'High bio, high CS', 'bar', twolegend=True, legend=True)
+    #
+    # place_subplot(df4, ax4, 2, 1, 'Cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS', 'bar')
+    # place_subplot(df8, ax4, 2, 0, 'Cost [Billion EUR]', '', 'Low bio, low CS', 'bar')
+    #
+    # place_subplot(df5, ax5, 2, 1, '', 'Biofuel share', 'Low bio, high CS', 'bar')
+    # place_subplot(df9, ax5, 2, 0, '', '', 'Low bio, high CS', 'bar')
+
 
     fig.tight_layout(pad=1)
 

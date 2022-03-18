@@ -2,15 +2,17 @@ import pandas as pd
 import plotly
 import chart_studio.plotly as py
 import numpy as np
+from plotly.subplots import make_subplots
 import plotly.graph_objs as go
 
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 plotly.io.kaleido.scope.mathjax = None
 
-
-scenario = 'serverResults/mainScenarios2060' #'serverResults/test'
+year = '2060'
+scenario = 'serverResults/mainScenarios{}'.format(year) #'serverResults/test'
 sdir = '../results/{}/csvs/costs.csv'.format(scenario)
-output = '../results/1h_2060_allSankeyTest'
+output = '../results/1h_{}_fuelSankey'.format(year)
 balances = '../results/{}/csvs/supply_energy.csv'.format(scenario)
 
 
@@ -29,7 +31,7 @@ def plot_balances(balances,columnin):
 
     dfTot = pd.DataFrame(columns=['lvl1', 'lvl2', 'lvl3', 'count'])
     # v = [['solid biomass'], ['digestible biomass']]#, ['AC'], ['gas'], ['H2']]['oil'],['gas']
-    v = [['solid biomass'], ['digestible biomass'],['oil']]#, ['AC'], ['gas'], ['H2']]['oil'],['gas']
+    v = [['solid biomass'], ['oil']]#['digestible biomass'],['oil']]#, ['AC'], ['gas'], ['H2']]['oil'],['gas']
 
     # v = balances_df.index.levels[0].drop(co2_carriers)
     # v = v.drop(['uranium'])
@@ -45,6 +47,7 @@ def plot_balances(balances,columnin):
         df.index = [i[:-1] if ((i != "co2") and (i[-1:] in ["0", "1", "2", "3", "4"])) else i for i in df.index]
         df = df.groupby(df.index.map(rename_techs_balances)).sum()
         df = df[df.columns[columnin]]
+        # print(df)
 
         lvl1 = 'lvl1'
         lvl2 = 'lvl2'
@@ -53,13 +56,27 @@ def plot_balances(balances,columnin):
         if k in [['solid biomass'], ['digestible biomass'], ['gas']]:
             df = df.loc[~df.index.isin(k)]
 
-        dfTemp = pd.DataFrame(columns=['lvl1', 'lvl2', 'lvl3', 'count'])
+        dfTemp = pd.DataFrame(columns=['lvl1', 'lvl2', 'lvl3', 'count', 'color'])
+
+        colors = {'fossil fuel': 'rgba(192, 192, 192, 0.4)',
+                  'oil': 'rgba(0, 0, 0, 0.5)',
+                  'solid biomass': '#40AA00',
+                  'other biomass usage': '#FFE5B4',
+                  'biofuel': 'rgba(50,205,50,1)',#'rgba(194,178,128, 1)',
+                  'electrofuel': 'rgba(255,215,0, 0.7)',#'pink',#'#832473',
+                  'CHP': 'rgba(192,64,0, 0.5)',
+                  'BioSNG': 'rgba(255,215,0, 0.2)',
+                  'industry heat': 'rgba(144,238,144, 0.2)'#'lightgreen'
+        }
 
         values = df.values
         dfTemp['count'] = values
         dfTemp[lvl1] = df.index
         dfTemp[lvl3] = df.index
         dfTemp[lvl2] = k * len(dfTemp)
+        dfTemp['color'] = [colors.get(x, '#D3D3D3') for x in df.index]
+        # print(dfTemp['color'])
+        # print(mcolors.to_rgba(dfTemp['color'], alpha=0.7))
 
         for i in range(len(dfTemp)):
             if dfTemp.at[i,'count'] > 0:
@@ -180,8 +197,9 @@ def rename_techs_balances(label):
             label = new
     return label
 
-def genSankey(df, domainx, domainy, cat_cols=[], value_cols='', title='Sankey Diagram'):
+def genSankey(df, domainx, domainy, cat_cols=[], value_cols='', color='', title='Sankey Diagram'):
     # maximum of 6 value cols -> 6 colors
+
     colorPalette = ['blue', 'blue', 'blue', 'blue', 'blue', 'blue']#'#4B8BBE', '#306998', '#FFE873', '#FFD43B', '#646464', 'gold']
     labelList = []
     colorNumList = []
@@ -189,8 +207,8 @@ def genSankey(df, domainx, domainy, cat_cols=[], value_cols='', title='Sankey Di
         labelListTemp = list(set(df[catCol].values))
         colorNumList.append(len(labelListTemp))
         labelList = labelList + labelListTemp
+    print(labelList)
 
-    # remove duplicates from labelList
     labelList = list(dict.fromkeys(labelList))
 
     # define colors based on number of levels
@@ -201,24 +219,26 @@ def genSankey(df, domainx, domainy, cat_cols=[], value_cols='', title='Sankey Di
     # transform df into a source-target pair
     for i in range(len(cat_cols) - 1):
         if i == 0:
-            sourceTargetDf = df[[cat_cols[i], cat_cols[i + 1], value_cols]]
-            sourceTargetDf.columns = ['source', 'target', 'count']
+            sourceTargetDf = df[[cat_cols[i], cat_cols[i + 1], value_cols, color]]
+            sourceTargetDf.columns = ['source', 'target', 'count', 'color']
         else:
-            tempDf = df[[cat_cols[i], cat_cols[i + 1], value_cols]]
-            tempDf.columns = ['source', 'target', 'count']
+            tempDf = df[[cat_cols[i], cat_cols[i + 1], value_cols, color]]
+            tempDf.columns = ['source', 'target', 'count', 'color']
             sourceTargetDf = pd.concat([sourceTargetDf, tempDf])
-        sourceTargetDf = sourceTargetDf.groupby(['source', 'target']).agg({'count': 'sum'}).reset_index()
+        sourceTargetDf = sourceTargetDf.groupby(['source', 'target', 'color']).agg({'count': 'sum'}).reset_index()
 
     # add index for source-target pair
     sourceTargetDf['sourceID'] = sourceTargetDf['source'].apply(lambda x: labelList.index(x))
     sourceTargetDf['targetID'] = sourceTargetDf['target'].apply(lambda x: labelList.index(x))
+
     # sourceTargetDf.to_csv('../sourcetarget.csv')
     # creating the sankey diagram
+    print(sourceTargetDf)
     data = dict(
         type='sankey',
         node=dict(
             pad=5,
-            thickness=5,
+            thickness=1,
             line=dict(
                 color="black",
                 width=0
@@ -229,7 +249,8 @@ def genSankey(df, domainx, domainy, cat_cols=[], value_cols='', title='Sankey Di
         link=dict(
             source=sourceTargetDf['sourceID'],
             target=sourceTargetDf['targetID'],
-            value=sourceTargetDf['count']
+            value=sourceTargetDf['count'],
+            color=sourceTargetDf['color']
         ),
     domain={
         'x': domainx,
@@ -244,15 +265,32 @@ def genSankey(df, domainx, domainy, cat_cols=[], value_cols='', title='Sankey Di
 
 n_range = 11
 
-df = plot_balances(balances,columnin=0)
-df2 = plot_balances(balances,columnin=1)
-df3 = plot_balances(balances,columnin=8)
-df4 = plot_balances(balances,columnin=9)
+if year == '2040':
+    df1col = 0
+    df2col = 1
+    df3col = 12
+    df4col = 13
+elif year == '2060':
+    df1col = 1
+    df2col = 2
+    df3col = 3
+    df4col = 4
 
-data = genSankey(df, domainx = [0, 0.45], domainy = [0.55, 1], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count',title='Energy sankey')
-data2 = genSankey(df2, domainx = [0.55, 1.0], domainy = [0.55, 1], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count',title='Energy sankey')
-data3 = genSankey(df3, domainx = [0, 0.45], domainy = [0, 0.45], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count',title='Energy sankey')
-data4 = genSankey(df4, domainx = [0.55, 1.0], domainy = [0, 0.45], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count',title='Energy sankey')
+df = plot_balances(balances,columnin=df1col)
+df2 = plot_balances(balances,columnin=df2col)
+df3 = plot_balances(balances,columnin=df3col)
+df4 = plot_balances(balances,columnin=df4col)
+
+if year == '2060':
+    data = genSankey(df, domainx = [0, 0.48], domainy = [0.52, 1], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
+    data2 = genSankey(df2, domainx = [0.52, 1.0], domainy = [0.57, 0.95], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
+    data3 = genSankey(df3, domainx = [0, 0.48], domainy = [0.05, 0.43], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
+    data4 = genSankey(df4, domainx = [0.52, 1.0], domainy = [0.07, 0.41], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
+elif year == '2040':
+    data = genSankey(df, domainx = [0, 0.48], domainy = [0.52, 1], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
+    data2 = genSankey(df2, domainx = [0.52, 1.0], domainy = [0.52, 1], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
+    data3 = genSankey(df3, domainx = [0, 0.48], domainy = [0.02, 0.46], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
+    data4 = genSankey(df4, domainx = [0.52, 1.0], domainy = [0.02, 0.46], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
 
 layout = dict(
     # title=title,
@@ -262,7 +300,51 @@ layout = dict(
 )
 
 fig = dict(data=[data, data2, data3, data4], layout=layout)
-fig2 = go.Figure(fig, shared_xaxes='all')
+fig2 = go.Figure(fig)
+fig2.add_annotation(x=0.23, y=1,
+            text='(a)', #'"High biomass, low CS",
+            showarrow=False,
+            yshift=10,
+            align='center')
+
+
+fig2.add_annotation(x=0.78, y=1,
+            text='(b)',#'"High biomass, high CS",
+            showarrow=False,
+            yshift=10,
+            align='center')
+
+
+fig2.add_annotation(x=0.23, y=0.45,
+            text='(c)',#'"Low biomass, low CS",
+            showarrow=False,
+            yshift=10,
+            align='center')
+
+
+fig2.add_annotation(x=0.78, y=0.45,
+            text='(d)',#'"Low biomass, high CS",
+            showarrow=False,
+            yshift=10,
+            align='center')
+fig2.show()
+
+# fig = make_subplots(
+#     rows=2, cols=2, subplot_titles=('High biomass, low CS', 'High biomass, high CS', 'Low biomass, low CS','Low biomass, high CS'),
+#     specs=[[{"type": "domain"}, {"type": "domain"}],
+#            [{"type": "domain"}, {"type": "domain"}]],
+#     shared_xaxes=True,
+#     shared_yaxes=True
+# )
+
+# fig.add_trace(go.Sankey(data),
+#               row=1, col=1)
+# fig.add_trace(go.Sankey(data2),
+#               row=1, col=2)
+# fig.add_trace(go.Sankey(data3),
+#               row=2, col=1)
+# fig.add_trace(go.Sankey(data4),
+#               row=2, col=2)
 
 fig2.write_image(output + '.pdf')
-plotly.offline.plot(fig, validate=False)
+# plotly.offline.plot(fig, validate=False)
