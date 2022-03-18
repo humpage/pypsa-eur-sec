@@ -706,16 +706,30 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
     print('Oil sensitivity string: ', snakemake.wildcards.oil_sensitivity)
     print('Biomass import sensitivity string: ', snakemake.wildcards.biomass_import_sensitivity)
 
+    c_in_char = 0.03
+    input_CO2_intensity = costs.at[('solid biomass', 'CO2 intensity'), 'value']
+
     if 'FT0' in snakemake.wildcards.biofuel_sensitivity:
         costs.at['BtL', 'efficiency'] = 0.5
         costs.at['BtL', 'investment'] = 1500000
         costs.at['Fischer-Tropsch', 'efficiency'] = 0.9
         costs.at['Fischer-Tropsch', 'investment'] = 675000
+
+        costs.at['BtL', 'C in fuel'] = costs.at['BtL', 'efficiency'] * costs.at['oil', 'CO2 intensity'] / input_CO2_intensity
+        costs.at['BtL', 'C stored'] = 1 - costs.at['BtL', 'C in fuel'] - c_in_char
+        costs.at['BtL', 'CO2 stored'] = input_CO2_intensity * costs.at[tech, 'C stored']
+
     elif 'FT2' in snakemake.wildcards.biofuel_sensitivity:
         costs.at['BtL', 'efficiency'] = 0.35
         costs.at['BtL', 'investment'] = 2500000
         costs.at['Fischer-Tropsch', 'efficiency'] = 0.6
         costs.at['Fischer-Tropsch', 'investment'] = 1125000
+
+        costs.at['BtL', 'C in fuel'] = costs.at['BtL', 'efficiency'] * costs.at[
+            'oil', 'CO2 intensity'] / input_CO2_intensity
+        costs.at['BtL', 'C stored'] = 1 - costs.at['BtL', 'C in fuel'] - c_in_char
+        costs.at['BtL', 'CO2 stored'] = input_CO2_intensity * costs.at[tech, 'C stored']
+
     elif 'FT1' in snakemake.wildcards.biofuel_sensitivity:
         pass
 
