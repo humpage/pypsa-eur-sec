@@ -2493,7 +2493,8 @@ def add_industry(n, costs):
 
 
     # if not options['liquid fuel exclusion']:
-    p_set = get(options["naphtha_demand"], investment_year) * industrial_demand.loc[nodes, "naphtha"].sum() / 8760
+    # p_set = get(options["naphtha_demand"], investment_year) * industrial_demand.loc[nodes, "naphtha"].sum() / 8760
+    p_set = industrial_demand.loc[nodes, "naphtha"].sum() / 8760
 
     # p_set = industrial_demand.loc[nodes, "naphtha"].sum() / 8760
     n.add("Load",
