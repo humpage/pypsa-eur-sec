@@ -734,7 +734,7 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
         pass
 
     print('BtL CO2 stored: ', costs.at['BtL', 'CO2 stored'])
-    input('Press ENTER to continue')
+    # input('Press ENTER to continue')
     # if 'Ef0' in snakemake.wildcards.electrofuel_sensitivity:
     # elif 'Ef2' in snakemake.wildcards.electrofuel_sensitivity:
     # elif 'Ef1' in snakemake.wildcards.electrofuel_sensitivity:
