@@ -5,12 +5,13 @@ import matplotlib.pyplot as plt
 
 plt.style.use('ggplot')
 
-scenario = 'serverResults/sensitivities2060_new_update'
-sdir = '../results/{}/csvs/costs.csv'.format(scenario)
+scenario2060 = 'serverResults/sensitivities2060_new_update'
+scenario2040 = 'serverResults/sensitivities2040'
+sdir = '../results/{}/csvs/costs.csv'.format(scenario2060)
 output = '../results/sensitivities2060_violin'
-balances = '../results/{}/csvs/supply_energy.csv'.format(scenario)
-metrics2040 = '../results/{}/csvs/metrics.csv'.format(scenario)
-metrics2060 = '../results/{}/csvs/metrics.csv'.format(scenario)
+balances = '../results/{}/csvs/supply_energy.csv'.format(scenario2060)
+metrics2040 = '../results/{}/csvs/metrics.csv'.format(scenario2040)
+metrics2060 = '../results/{}/csvs/metrics.csv'.format(scenario2060)
 
 scenarioMain = 'serverResults/mainScenarios'
 sdir2060 = '../results/serverResults/mainScenarios2060/csvs/costs.csv'
@@ -247,7 +248,6 @@ def rename_techs(label):
 
 def rename_cols(df,order):
     for num in np.arange(0, 9):
-        # print(df.filter(regex='0p{}'.format(str(num))).columns)
         if num == 0:
             df.columns = df.columns.str.replace('.*B0p{}Im-.*'.format(str(num)), 'Opt')
             df.columns = df.columns.str.replace('.*B0p{}ImEq-.*'.format(str(num)), '0%')
@@ -355,10 +355,10 @@ def plot_balancesMain(balances):
 
         # convert MWh to TWh
         df = df / 1e6
-        print(df)
+        # print(df)
         # remove trailing link ports
         df.index = [i[:-1] if ((i != "co2") and (i[-1:] in ["0", "1", "2", "3", "4"])) else i for i in df.index]
-        print(df)
+        # print(df)
         df = df.groupby(df.index.map(rename_techs_balances)).sum()
 
         # print('Dataframe: ', k, df[df < 0].dropna())#.sum())
@@ -446,7 +446,7 @@ def set_axis_style(ax, labels, ylabels=False):
         # ax.set_yticklabels([])
     ax.set_ylim(0.25, len(labels) + 0.75)
 #     ax.set_xlabel('Cost difference')
-    ax.set_xlim([-1, 50])
+    ax.set_xlim([-1, 65])
 
 
 def set_axis_style_sorted(ax, labels, ylabels=False):
@@ -463,13 +463,18 @@ def set_axis_style_sorted(ax, labels, ylabels=False):
     ax.set_ylabel('Total cost increase' '\n' 'relative to base scenario [%]')
     # ax.set_xlim([0, 25])
 
-def sample_gen(metrics):
+def sample_gen(metrics,year):
     metrics_df = get_metrics(metrics)
 
-    vars = ['FT0', 'FT2', 'E0', 'E2', 'CC0', 'CC2', 'CS0', 'CS2', 'O0', 'O2', 'I0', 'I2']
-    mandate = ['B0p0', 'B0p2', 'B0p5']
+    # vars = ['FT0', 'FT2', 'E0', 'E2', 'CC0', 'CC2', 'CS0', 'CS2', 'O0', 'O2', 'I0', 'I2']
+    # mandate = ['B0p0', 'B0p2', 'B0p5']
     biomass = ['High', 'Med']
-    carbonstorage = ['S400', 'S1500']
+
+    if year == 2060:
+        carbonstorage = ['S400', 'S1500']
+    elif year == 2040:
+        carbonstorage = ['S0', 'S1500']
+
     mandate = ['B0p0Im', 'B0p0ImEq', 'B0p2Im', 'B0p5Im', 'B1p0Im']
 
     sampledict = {}
@@ -485,11 +490,11 @@ def sample_gen(metrics):
 # sample_df = pd.DataFrame.from_dict(sampledict)
 
     for man, bm, cs in [(man, bm, cs) for man in mandate for bm in biomass for cs in carbonstorage]:
-    # sample = costs.filter(regex='{}-.*{}.*{}'.format(man, bm, cs))
-    # sampleRef = costs.filter(regex='B0p0Im-.*{}.*{}'.format(bm, cs))
-        sample = metrics_df.xs('37H-T-H-{}-{}-I-{}-CCL-solar+p3'.format(man,bm,cs), level='opt', axis=1)
+        if (man == 'B1p0Im' and cs == 'S400'):
+            sample = metrics_df.xs('37H-T-H-{}-{}-I-S420-CCL-solar+p3'.format(man,bm), level='opt', axis=1)
+        else:
+            sample = metrics_df.xs('37H-T-H-{}-{}-I-{}-CCL-solar+p3'.format(man,bm,cs), level='opt', axis=1)
         sampleRef = metrics_df.xs('37H-T-H-B0p0Im-{}-I-{}-CCL-solar+p3'.format(bm,cs), level='opt', axis=1)
-    # sampledict[bm,cs] = sample.loc['total costs'] / 1e9 #(sample.loc['total costs'] - sampleRef.loc['total costs']) / 1e9 # / sampleRef.loc['total costs']) * 100
         samplesAll[man,bm,cs] = sample.loc['total costs'] / 1e9
         sampledictDiff[man,bm,cs] = (sample.loc['total costs'] - sampleRef.loc['total costs']) / 1e9 # / sampleRef.loc['total costs']) * 100
 
@@ -510,25 +515,32 @@ def datagrouping(man, biomass,cs, sample_df):
     return data
 
 
-def plot_sensitivityVars(sample_df, ax1, ax2, ax3, ax4):
+def plot_sensitivityVars(sample_df, ax1, ax2, ax3, ax4, year):
 
-    data1 = datagrouping('B0p0Im', 'High','S400', sample_df)
-    data2 = datagrouping('B0p0Im', 'Med','S400', sample_df)
+    if year == 2060:
+        s_low = 'S400'
+        s_low2 = 'S400'
+    elif year == 2040:
+        s_low = 'S0'
+        s_low2 = 'S0'
+
+    data1 = datagrouping('B0p0Im', 'High',s_low, sample_df)
+    data2 = datagrouping('B0p0Im', 'Med',s_low, sample_df)
     data3 = datagrouping('B0p0Im', 'High','S1500', sample_df)
     data4 = datagrouping('B0p0Im', 'Med','S1500', sample_df)
 
-    data5 = datagrouping('B0p2Im', 'High','S400', sample_df)
-    data6 = datagrouping('B0p2Im', 'Med','S400', sample_df)
+    data5 = datagrouping('B0p2Im', 'High',s_low, sample_df)
+    data6 = datagrouping('B0p2Im', 'Med',s_low, sample_df)
     data7 = datagrouping('B0p2Im', 'High','S1500', sample_df)
     data8 = datagrouping('B0p2Im', 'Med','S1500', sample_df)
 
-    data9 = datagrouping('B0p5Im', 'High','S400', sample_df)
-    data10 = datagrouping('B0p5Im', 'Med','S400', sample_df)
+    data9 = datagrouping('B0p5Im', 'High',s_low, sample_df)
+    data10 = datagrouping('B0p5Im', 'Med',s_low, sample_df)
     data11 = datagrouping('B0p5Im', 'High','S1500', sample_df)
     data12 = datagrouping('B0p5Im', 'Med','S1500', sample_df)
 
-    data13 = datagrouping('B1p0Im', 'High','S400', sample_df)
-    data14 = datagrouping('B1p0Im', 'Med','S400', sample_df)
+    data13 = datagrouping('B1p0Im', 'High',s_low2, sample_df)
+    data14 = datagrouping('B1p0Im', 'Med',s_low2, sample_df)
     data15 = datagrouping('B1p0Im', 'High','S1500', sample_df)
     data16 = datagrouping('B1p0Im', 'Med','S1500', sample_df)
 
@@ -549,25 +561,40 @@ def plot_sensitivityVars(sample_df, ax1, ax2, ax3, ax4):
     # bp15 = ax15.violinplot(data15, vert=0)
     # bp16 = ax16.violinplot(data16, vert=0)
 
-
-    bp = ax1.violinplot(data1, vert=0)
-    bp2 = ax2.violinplot(data2, vert=0)
-    bp3 = ax3.violinplot(data3, vert=0)
-    bp4 = ax4.violinplot(data4, vert=0)
-    bp5 = ax1.violinplot(data5, vert=0)
-    bp6 = ax2.violinplot(data6, vert=0)
-    bp7 = ax3.violinplot(data7, vert=0)
-    bp8 = ax4.violinplot(data8, vert=0)
-    bp9 = ax1.violinplot(data9, vert=0)
-    bp10 = ax2.violinplot(data10, vert=0)
-    bp11 = ax3.violinplot(data11, vert=0)
-    bp12 = ax4.violinplot(data12, vert=0)
-    bp13 = ax1.violinplot(data13, vert=0)
-    bp14 = ax2.violinplot(data14, vert=0)
-    bp15 = ax3.violinplot(data15, vert=0)
-    bp16 = ax4.violinplot(data16, vert=0)
+    widthViolin=0.4
+    bp = ax1.violinplot(data1, vert=0, widths=widthViolin, positions=[1.1, 2.1,3.1,4.1,5.1,6.1])
+    bp2 = ax2.violinplot(data2, vert=0, widths=widthViolin, positions=[1.1, 2.1,3.1,4.1,5.1,6.1])
+    bp3 = ax3.violinplot(data3, vert=0, widths=widthViolin, positions=[1.1, 2.1,3.1,4.1,5.1,6.1])
+    bp4 = ax4.violinplot(data4, vert=0, widths=widthViolin, positions=[1.1, 2.1,3.1,4.1,5.1,6.1])
+    bp5 = ax1.violinplot(data5, vert=0, widths=widthViolin, positions=[0.9, 1.9,2.9,3.9,4.9,5.9])
+    bp6 = ax2.violinplot(data6, vert=0, widths=widthViolin, positions=[0.9, 1.9,2.9,3.9,4.9,5.9])
+    bp7 = ax3.violinplot(data7, vert=0, widths=widthViolin, positions=[0.9, 1.9,2.9,3.9,4.9,5.9])
+    bp8 = ax4.violinplot(data8, vert=0, widths=widthViolin, positions=[0.9, 1.9,2.9,3.9,4.9,5.9])
+    bp9 = ax1.violinplot(data9, vert=0, widths=widthViolin, positions=[0.8, 1.8,2.8,3.8,4.8,5.8])
+    bp10 = ax2.violinplot(data10, vert=0, widths=widthViolin, positions=[0.8, 1.8,2.8,3.8,4.8,5.8])
+    bp11 = ax3.violinplot(data11, vert=0, widths=widthViolin, positions=[0.8, 1.8,2.8,3.8,4.8,5.8])
+    bp12 = ax4.violinplot(data12, vert=0, widths=widthViolin, positions=[0.8, 1.8,2.8,3.8,4.8,5.8])
+    bp13 = ax1.violinplot(data13, vert=0, widths=widthViolin)
+    bp14 = ax2.violinplot(data14, vert=0, widths=widthViolin)
+    bp15 = ax3.violinplot(data15, vert=0, widths=widthViolin)
+    bp16 = ax4.violinplot(data16, vert=0, widths=widthViolin)
 
     return bp4, bp8, bp12, bp16
+
+
+def errorbars(bm,cs,mandate,sample_df):#,main_value):
+    errorMin = []
+    errorMax = []
+    for i in mandate:
+        errorMin.append(min(sample_df.loc[:, (i, bm, cs)]))
+        errorMax.append(max(sample_df.loc[:, (i, bm, cs)]))
+        # errorMin.append(main_value[mandate.index(i)] - min(sample_df.loc[:, (i, bm, cs)]))
+        # errorMax.append(max(sample_df.loc[:, (i, bm, cs)]) - main_value[mandate.index(i)])
+
+    error = [errorMin,errorMax]
+    print(error)
+
+    return error
 
 
 # fig, ((ax1, ax2, ax3, ax4), (ax5, ax6, ax7, ax8), (ax9, ax10, ax11, ax12), (ax13, ax14, ax15, ax16)) = plt.subplots(nrows=4, ncols=4, figsize=(13, 17), sharey=True)
@@ -576,11 +603,11 @@ fig, ((ax1, ax2, ax3, ax4), (ax5, ax6, ax7, ax8)) = plt.subplots(nrows=2, ncols=
 
 
 plot_balances(balances)
-sample_df2040, sample_dfDiff = sample_gen(metrics2040)
-sample_df2060, sample_dfDiff = sample_gen(metrics2060)
+sample_df2040, sample_dfDiff2040 = sample_gen(metrics2040,2040)
+sample_df2060, sample_dfDiff2060 = sample_gen(metrics2060,2060)
 # bp4 = plot_sensitivityVars(sample_df2040)
-bp4, bp8, bp12, bp16 = plot_sensitivityVars(sample_df2060, ax1, ax2, ax3, ax4)
-bp4_2, bp8_2, bp12_2, bp16_2 = plot_sensitivityVars(sample_df2040, ax5, ax6, ax7, ax8)
+bp4, bp8, bp12, bp16 = plot_sensitivityVars(sample_df2060, ax5, ax6, ax7, ax8, 2060)
+bp4_2, bp8_2, bp12_2, bp16_2 = plot_sensitivityVars(sample_df2040, ax1, ax2, ax3, ax4, 2040)
 
 ax4.legend([bp4['bodies'][0], bp8['bodies'][0], bp12['bodies'][0], bp16['bodies'][0]], ['Opt', '20%', '50%', '100%'], loc="upper left", bbox_to_anchor=[1,1], frameon=False)
 # handles, labels = ax4.get_legend_handles_labels()
@@ -626,6 +653,7 @@ df5 = df2060.filter(regex='Med.*S1500')
 df6 = df2040.filter(regex='High.*S0')
 df7 = df2040.filter(regex='High.*S1500')
 df8 = df2040.filter(regex='Med.*S0')
+print(df8)
 df9 = df2040.filter(regex='Med.*S1500')
 
 order=['0%','Opt','20%','50%','100%']
@@ -639,14 +667,66 @@ df7 = rename_cols(df7, order)
 df8 = rename_cols(df8, order)
 df9 = rename_cols(df9, order)
 
-fig3, (ax98,ax99) = plt.subplots(1,2,figsize=(12,5))
+fig3, ((ax98_2,ax99_2),(ax98,ax99)) = plt.subplots(2,2,figsize=(12,5), gridspec_kw={'height_ratios': [1, 8]})
 
 print('DF4: ',df4.sum())
 print(df4['Opt'].sum())
-ax98.plot([0,BtLshare2040.filter(regex='B0p0Im-High.*S0')[0]*100,20,50,100],(df6.sum().values - df6['Opt'].sum()), label = 'High bio, low CS', linewidth = 1.5, color='#E30B5C')
-ax98.plot([0,BtLshare2040.filter(regex='B0p0Im-High.*S1500')[0]*100,20,50,100],(df7.sum().values - df7['Opt'].sum()), label = 'High bio, high CS', linewidth = 1.5, color='#6495ED')
-ax98.plot([0,BtLshare2040.filter(regex='B0p0Im-Med.*S0')[0]*100,20,50,100],(df8.sum().values - df8['Opt'].sum()), label = 'Low bio, low CS', linewidth = 1.5, color='#C2B280')
-ax98.plot([0,BtLshare2040.filter(regex='B0p0Im-Med.*S1500')[0]*100,20,50,100],(df9.sum().values - df9['Opt'].sum()), label = 'Low bio, high CS', linewidth = 1.5, color='gold')
+# ax98.plot([0,BtLshare2040.filter(regex='B0p0Im-High.*S0')[0]*100,20,50,100],(df6.sum().values - df6['Opt'].sum()), label = 'High bio, low CS', linewidth = 1.5, color='#E30B5C')
+# ax98.plot([0,BtLshare2040.filter(regex='B0p0Im-High.*S1500')[0]*100,20,50,100],(df7.sum().values - df7['Opt'].sum()), label = 'High bio, high CS', linewidth = 1.5, color='#6495ED')
+# ax98.plot([0,BtLshare2040.filter(regex='B0p0Im-Med.*S0')[0]*100,20,50,100],(df8.sum().values - df8['Opt'].sum()), label = 'Low bio, low CS', linewidth = 1.5, color='#C2B280')
+# ax98.plot([0,BtLshare2040.filter(regex='B0p0Im-Med.*S1500')[0]*100,20,50,100],(df9.sum().values - df9['Opt'].sum()), label = 'Low bio, high CS', linewidth = 1.5, color='gold')
+
+
+a = 0.4
+mandate = ['B0p0ImEq','B0p0Im', 'B0p2Im', 'B0p5Im', 'B1p0Im']
+mandateTemp = ['B0p0ImEq', 'B0p0Im', 'B0p2Im', 'B0p5Im']
+
+# print('sample_dfDiff: ', sample_dfDiff)
+#
+# print(sample_dfDiff[sample_dfDiff>1000])
+sample_dfDiff2040.to_csv('../temp13247.csv')
+
+# print('fullsample: ', sample_dfDiff2040)
+print('main value: ', df5.abs().sum())
+print('error: ', errorbars('Med','S0',mandate,sample_dfDiff2040))
+print('error-main: ', errorbars('Med','S0',mandate,sample_dfDiff2040)-df4.abs().sum().values)
+
+ax98.errorbar([0,BtLshare2040.filter(regex='B0p0Im-High.*S0')[0]*100,20,50,100],(df6.abs().sum().values - df6['Opt'].sum()),
+              label = 'High bio, low CS', yerr=abs(errorbars('High','S0',mandate,sample_dfDiff2040)-(df6.abs().sum().values - df6['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='#E30B5C')
+ax98.errorbar([0+a,BtLshare2040.filter(regex='B0p0Im-High.*S1500')[0]*100+a,20+a,50+a,100+a],(df7.abs().sum().values - df7['Opt'].sum()),
+          label = 'High bio, high CS', yerr=abs(errorbars('High','S1500',mandate,sample_dfDiff2040)-(df7.abs().sum().values - df7['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='#6495ED')
+ax98.errorbar([0-a,BtLshare2040.filter(regex='B0p0Im-Med.*S0')[0]*100-a,20-a,50-a,100-a],(df8.abs().sum().values - df8['Opt'].sum()),
+          label = 'Low bio, low CS', yerr=abs(errorbars('Med','S0',mandate,sample_dfDiff2040)-(df8.abs().sum().values - df8['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='#C2B280')
+ax98.errorbar([0-2*a,BtLshare2040.filter(regex='B0p0Im-Med.*S1500')[0]*100-2*a,20-2*a,50-2*a,100-2*a],(df9.abs().sum().values - df9['Opt'].sum()),
+          label = 'Low bio, high CS', yerr=abs(errorbars('Med','S1500',mandate,sample_dfDiff2040)-(df9.abs().sum().values - df9['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='gold')
+
+ax98_2.errorbar([0,BtLshare2040.filter(regex='B0p0Im-High.*S0')[0]*100,20,50,100],(df6.abs().sum().values - df6['Opt'].sum()),
+              label = 'High bio, low CS', yerr=abs(errorbars('High','S0',mandate,sample_dfDiff2040)-(df6.abs().sum().values - df6['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='#E30B5C')
+ax98_2.errorbar([0+a,BtLshare2040.filter(regex='B0p0Im-High.*S1500')[0]*100+a,20+a,50+a,100+a],(df7.abs().sum().values - df7['Opt'].sum()),
+          label = 'High bio, high CS', yerr=abs(errorbars('High','S1500',mandate,sample_dfDiff2040)-(df7.abs().sum().values - df7['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='#6495ED')
+ax98_2.errorbar([0-a,BtLshare2040.filter(regex='B0p0Im-Med.*S0')[0]*100-a,20-a,50-a,100-a],(df8.abs().sum().values - df8['Opt'].sum()),
+          label = 'Low bio, low CS', yerr=abs(errorbars('Med','S0',mandate,sample_dfDiff2040)-(df8.abs().sum().values - df8['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='#C2B280')
+ax98_2.errorbar([0-2*a,BtLshare2040.filter(regex='B0p0Im-Med.*S1500')[0]*100-2*a,20-2*a,50-2*a,100-2*a],(df9.abs().sum().values - df9['Opt'].sum()),
+          label = 'Low bio, high CS', yerr=abs(errorbars('Med','S1500',mandate,sample_dfDiff2040)-(df9.abs().sum().values - df9['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='gold')
+
+
+# hide the spines between ax and ax2
+ax98_2.spines['bottom'].set_visible(False)
+ax98.spines['top'].set_visible(False)
+ax98_2.xaxis.tick_top()
+ax98_2.tick_params(labeltop=False)  # don't put tick labels at the top
+ax98.xaxis.tick_bottom()
+
+# d = .015  # how big to make the diagonal lines in axes coordinates
+# # arguments to pass to plot, just so we don't keep repeating them
+# kwargs = dict(transform=ax98_2.transAxes, color='k', clip_on=False)
+# ax98.plot((-d, +d), (-3*d, +3*d), **kwargs)        # top-left diagonal
+# ax98.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
+#
+# kwargs.update(transform=ax98.transAxes)  # switch to the bottom axes
+# ax98_2.plot((-d, +d), (1 - d, 1 + d), **kwargs)  # bottom-left diagonal
+# ax98_2.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
+
 
 # sample_df.loc[:, ('High','S400')].plot(kind="errorbar", ax=ax99)
 # error = [[min(sample_df.loc[:, ('High','S400')]), max(sample_df.loc[:, ('High','S400')])],
@@ -655,35 +735,55 @@ ax98.plot([0,BtLshare2040.filter(regex='B0p0Im-Med.*S1500')[0]*100,20,50,100],(d
 #          [min(sample_df.loc[:, ('High','S400')]), max(sample_df.loc[:, ('High','S400')])],
 #          [min(sample_df.loc[:, ('High','S400')]), max(sample_df.loc[:, ('High','S400')])]]
 
-def errorbars(bm,cs,mandate,sample_df):
-    errorMin = []
-    errorMax = []
-    for i in mandate:
-        errorMin.append(min(sample_df.loc[:, (i, bm, cs)]))
-        errorMax.append(max(sample_df.loc[:, (i, bm, cs)]))
-
-    error = [errorMin,errorMax]
-    print(error)
-
-    return error
 
 # error = [[0,-20, 0, -10, 30],[10,50, 90, 50, 90]]
 # ax99.plot(50,50, yerr=[min(sample_df.loc[:, ('High','S400')]), max(sample_df.loc[:, ('High','S400')])], fmt='o')
 
-a = 0.4
-mandate = ['B0p0Im', 'B0p0ImEq', 'B0p2Im', 'B0p5Im', 'B1p0Im']
-mandateTemp = ['B0p0Im', 'B0p0ImEq', 'B0p2Im', 'B0p5Im']
 
-print('sample_dfDiff: ', sample_dfDiff)
-
-ax99.errorbar([0,BtLshare2060.filter(regex='B0p0Im-High.*S400')[0]*100,20,50],(df2.sum().values - df2['Opt'].sum()),
-              label = 'High bio, low CS', yerr=errorbars('High','S400',mandateTemp,sample_dfDiff[0,1,2,3]), elinewidth=0.9, linewidth = 1.5, color='#E30B5C')
+ax99.errorbar([0,BtLshare2060.filter(regex='B0p0Im-High.*S400')[0]*100,20,50,100],(df2.abs().sum().values - df2['Opt'].sum()),
+              label = 'High bio, low CS', yerr=abs(errorbars('High','S400',mandate,sample_dfDiff2060) - (df2.abs().sum().values - df2['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='#E30B5C')
 ax99.errorbar([0+a,BtLshare2060.filter(regex='B0p0Im-High.*S1500')[0]*100+a,20+a,50+a,100+a],(df3.sum().values - df3['Opt'].sum()),
-          label = 'High bio, high CS', yerr=errorbars('High','S1500',mandate,sample_dfDiff), elinewidth=0.9, linewidth = 1.5, color='#6495ED')
-ax99.errorbar([0-a,BtLshare2060.filter(regex='B0p0Im-Med.*S400')[0]*100-a,20-a,50-a],(df4.sum().values - df4['Opt'].sum()),
-          label = 'Low bio, low CS', yerr=errorbars('Med','S400',mandateTemp,sample_dfDiff), elinewidth=0.9, linewidth = 1.5, color='#C2B280')
+          label = 'High bio, high CS', yerr=abs(errorbars('High','S1500',mandate,sample_dfDiff2060) - (df3.abs().sum().values - df3['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='#6495ED')
+ax99.errorbar([0-a,BtLshare2060.filter(regex='B0p0Im-Med.*S400')[0]*100-a,20-a,50-a,100-a],(df4.sum().values - df4['Opt'].sum()),
+          label = 'Low bio, low CS', yerr=abs(errorbars('Med','S400',mandate,sample_dfDiff2060) - (df4.abs().sum().values - df4['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='#C2B280')
 ax99.errorbar([0-2*a,BtLshare2060.filter(regex='B0p0Im-Med.*S1500')[0]*100-2*a,20-2*a,50-2*a,100-2*a],(df5.sum().values - df5['Opt'].sum()),
-          label = 'Low bio, high CS', yerr=errorbars('Med','S1500',mandate,sample_dfDiff), elinewidth=0.9, linewidth = 1.5, color='gold')
+          label = 'Low bio, high CS', yerr=abs(errorbars('Med','S1500',mandate,sample_dfDiff2060) - (df5.abs().sum().values - df5['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='gold')
+
+ax99_2.errorbar([0,BtLshare2060.filter(regex='B0p0Im-High.*S400')[0]*100,20,50,100],(df2.abs().sum().values - df2['Opt'].sum()),
+              label = 'High bio, low CS', yerr=abs(errorbars('High','S400',mandate,sample_dfDiff2060) - (df2.abs().sum().values - df2['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='#E30B5C')
+ax99_2.errorbar([0+a,BtLshare2060.filter(regex='B0p0Im-High.*S1500')[0]*100+a,20+a,50+a,100+a],(df3.sum().values - df3['Opt'].sum()),
+          label = 'High bio, high CS', yerr=abs(errorbars('High','S1500',mandate,sample_dfDiff2060) - (df3.abs().sum().values - df3['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='#6495ED')
+ax99_2.errorbar([0-a,BtLshare2060.filter(regex='B0p0Im-Med.*S400')[0]*100-a,20-a,50-a,100-a],(df4.sum().values - df4['Opt'].sum()),
+          label = 'Low bio, low CS', yerr=abs(errorbars('Med','S400',mandate,sample_dfDiff2060) - (df4.abs().sum().values - df4['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='#C2B280')
+ax99_2.errorbar([0-2*a,BtLshare2060.filter(regex='B0p0Im-Med.*S1500')[0]*100-2*a,20-2*a,50-2*a,100-2*a],(df5.sum().values - df5['Opt'].sum()),
+          label = 'Low bio, high CS', yerr=abs(errorbars('Med','S1500',mandate,sample_dfDiff2060) - (df5.abs().sum().values - df5['Opt'].sum())), elinewidth=0.9, linewidth = 1.5, color='gold')
+
+
+
+# hide the spines between ax and ax2
+ax99_2.spines['bottom'].set_visible(False)
+ax99.spines['top'].set_visible(False)
+ax99_2.xaxis.tick_top()
+ax99_2.tick_params(labeltop=False)  # don't put tick labels at the top
+ax99.xaxis.tick_bottom()
+
+# d = .015  # how big to make the diagonal lines in axes coordinates
+# # arguments to pass to plot, just so we don't keep repeating them
+# kwargs = dict(transform=ax99_2.transAxes, color='k', clip_on=False)
+# ax99_2.plot((-d, +d), (-d, +d), **kwargs)        # top-left diagonal
+# ax99_2.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
+#
+# kwargs.update(transform=ax99.transAxes)  # switch to the bottom axes
+# ax99.plot((-d, +d), (1 - d, 1 + d), **kwargs)  # bottom-left diagonal
+# ax99.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
+
+d = .5  # proportion of vertical to horizontal extent of the slanted line
+kwargs = dict(marker=[(-1, -d), (1, d)], markersize=12,
+              linestyle="none", color='k', mec='k', mew=1, clip_on=False)
+ax99_2.plot([0, 1], [0, 0], transform=ax99_2.transAxes, **kwargs)
+ax99.plot([0, 1], [1, 1], transform=ax99.transAxes, **kwargs)
+ax98_2.plot([0, 1], [0, 0], transform=ax98_2.transAxes, **kwargs)
+ax98.plot([0, 1], [1, 1], transform=ax98.transAxes, **kwargs)
 
 def mwhpershare2040_forward(x):
     return x * 42.23 #np.interp(0, 37)
@@ -691,13 +791,15 @@ def mwhpershare2040_forward(x):
 def mwhpershare2040_inverse(x):
     return x / 42.23
 
-ax98.set_ylim([-20, 800])  # snakemake.config['plotting']['costs_max']])
-ax98.set_ylabel('Increase compared to no biofuel mandate [Billion EUR]')  # "System Cost [EUR billion per year]")
+ax98_2.set_ylim([950, 1100])
+ax98.set_ylim([-20, 500])  # snakemake.config['plotting']['costs_max']])
+# ax98.set_ylabel('Increase compared to no biofuel mandate [Billion EUR]')  # "System Cost [EUR billion per year]")
+fig3.text(0.07,0.5, 'Increase compared to no biofuel mandate [Billion EUR]', va='center', rotation='vertical')  # "System Cost [EUR billion per year]")
 ax98.set_xlabel('Biofuel share [%]')
 # ax98.set_xscale('symlog')
-ax98.set_title('2040')
+ax98_2.set_title('2040')
 ax98.legend(loc="upper left")#handles, order, ncol=1, loc="upper left", bbox_to_anchor=[1, 1], frameon=False)
-secax = ax98.secondary_xaxis('top', functions=(mwhpershare2040_forward,mwhpershare2040_inverse))
+secax = ax98_2.secondary_xaxis('top', functions=(mwhpershare2040_forward,mwhpershare2040_inverse))
 secax.set_xlabel('Biofuel amount [TWh]')
 
 
@@ -707,13 +809,17 @@ def mwhpershare2060_forward(x):
 def mwhpershare2060_inverse(x):
     return x / 20.11
 
-ax99.set_ylim([-20, 1000])  # snakemake.config['plotting']['costs_max']])
+ax99_2.set_ylim([950, 1100])
+ax99.set_ylim([-20, 500])  # snakemake.config['plotting']['costs_max']])
 ax99.set_xlabel('Biofuel share [%]')
 # ax99.set_xscale('symlog')
-ax99.set_title('2060')
+ax99_2.set_title('2060')
 # ax.grid(axis='x')
-secax2 = ax99.secondary_xaxis('top', functions=(mwhpershare2060_forward,mwhpershare2060_inverse))
+secax2 = ax99_2.secondary_xaxis('top', functions=(mwhpershare2060_forward,mwhpershare2060_inverse))
 secax2.set_xlabel('Biofuel amount [TWh]')
+fig3.subplots_adjust(hspace=0.05)
+# fig3.tight_layout(pad=1)
+
 plt.show()
 
 fig3.savefig(output + '_2040_costincreaseAbsolute.pdf', bbox_inches='tight')

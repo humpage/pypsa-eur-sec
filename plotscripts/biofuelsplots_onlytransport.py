@@ -8,7 +8,7 @@ import matplotlib.colors as mcolors
 
 plt.style.use('ggplot')
 
-year = 2060
+year = 2040
 scenario = 'serverResults/mainScenarios{}'.format(year)
 sdir = '../results/{}/csvs/costs.csv'.format(scenario)
 output = '../results/fuelSupply{}'.format(year)
@@ -456,8 +456,8 @@ preferred_order2 = pd.Index([
     'fossil liquid fuel + CCS',
     'fossil liquid fuel w/o CCS',
     'fossil liquid fuel',
-    'fossil liquid fuel emission cost',
     'opportunity cost',
+    'fossil liquid fuel emission cost',
 ])
 
 

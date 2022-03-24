@@ -580,6 +580,7 @@ def drop_cols(df):
     df.drop(to_drop)
     return df
 
+
 n_range = 11
 
 df2060 = cost_dataframe(sdir2060)
@@ -717,61 +718,61 @@ metrics2060_df = get_metrics(metrics2060)
 #print(metrics2060_df.loc['co2_shadow'])
 
 
-# co2_df1 = metrics2040_df.loc['co2_shadow'].filter(regex='High.*S0')
-# co2_df2 = metrics2040_df.loc['co2_shadow'].filter(regex='High.*S1500')
-# co2_df3 = metrics2040_df.loc['co2_shadow'].filter(regex='Med.*S0')
-# co2_df4 = metrics2040_df.loc['co2_shadow'].filter(regex='Med.*S1500')
-#
-# co2_df5 = metrics2060_df.loc['co2_shadow'].filter(regex='High.*S400')
-# co2_df6 = metrics2060_df.loc['co2_shadow'].filter(regex='High.*S1500')
-# co2_df7 = metrics2060_df.loc['co2_shadow'].filter(regex='Med.*S400')
-# co2_df8 = metrics2060_df.loc['co2_shadow'].filter(regex='Med.*S1500')
-#
-# print(co2_df1)
-# print(co2_df7)
-# # co2_df1 = rename_cols(co2_df1, order)
-# # co2_df2 = rename_cols(co2_df2, order)
-# # co2_df3 = rename_cols(co2_df3, order)
-# # co2_df4 = rename_cols(co2_df4, order)
-# # co2_df5 = rename_cols(co2_df5, order)
-# # co2_df6 = rename_cols(co2_df6, order)
-# # co2_df7 = rename_cols(co2_df7, order)
-# # co2_df8 = rename_cols(co2_df8, order)
-#
-# #print(co2_df1.values)
-#
-# # order = ['High bio, low CS','High bio, high CS','Low bio, low CS','Low bio, high CS']
-# fig4, (ax198, ax199) = plt.subplots(1,2,figsize=(12,5))
-# ax198.plot([0,20,50,100],co2_df1.values, label = 'High bio, low CS')
-# ax198.plot([0,20,50,100],co2_df2.values, label = 'High bio, high CS')
-# ax198.plot([0,20,50,100],co2_df3.values, label = 'Low bio, low CS')
-# ax198.plot([0,20,50,100],co2_df4.values, label = 'Low bio, high CS')
-#
-# ax199.plot([0,20,50,100],co2_df5.values, label = 'High bio, low CS')
-# ax199.plot([0,20,50,100],co2_df6.values, label = 'High bio, high CS')
-# ax199.plot([0,20,50,100],co2_df7.values, label = 'Low bio, low CS')
-# ax199.plot([0,20,50,100],co2_df8.values, label = 'Low bio, high CS')
-#
-# ax198.set_ylim([0, 200])  # snakemake.config['plotting']['costs_max']])
-# ax198.set_ylabel('CO2 shadow price')  # "System Cost [EUR billion per year]")
-# ax198.set_xlabel('Biofuel mandate [%]')
-# ax198.set_title('2040')
-#
-# ax199.set_ylim([0, 200])  # snakemake.config['plotting']['costs_max']])
-# ax199.set_ylabel('')  # "System Cost [EUR billion per year]")
-# ax199.set_xlabel('Biofuel mandate [%]')
-# ax199.set_title('2060')
-# ax199.legend()
-#
-# fig4.savefig(output + '_2040_co2price.pdf', bbox_inches='tight')
+co2_df1 = metrics2040_df.loc['co2_shadow'].filter(regex='High.*S0')
+co2_df2 = metrics2040_df.loc['co2_shadow'].filter(regex='High.*S1500')
+co2_df3 = metrics2040_df.loc['co2_shadow'].filter(regex='Med.*S0')
+co2_df4 = metrics2040_df.loc['co2_shadow'].filter(regex='Med.*S1500')
+
+co2_df5 = metrics2060_df.loc['co2_shadow'].filter(regex='High.*S400')
+co2_df6 = metrics2060_df.loc['co2_shadow'].filter(regex='High.*S1500')
+co2_df7 = metrics2060_df.loc['co2_shadow'].filter(regex='Med.*S400')
+co2_df8 = metrics2060_df.loc['co2_shadow'].filter(regex='Med.*S1500')
+
+print(co2_df1)
+print(co2_df7)
+# co2_df1 = rename_cols(co2_df1, order)
+# co2_df2 = rename_cols(co2_df2, order)
+# co2_df3 = rename_cols(co2_df3, order)
+# co2_df4 = rename_cols(co2_df4, order)
+# co2_df5 = rename_cols(co2_df5, order)
+# co2_df6 = rename_cols(co2_df6, order)
+# co2_df7 = rename_cols(co2_df7, order)
+# co2_df8 = rename_cols(co2_df8, order)
+
+#print(co2_df1.values)
+
+# order = ['High bio, low CS','High bio, high CS','Low bio, low CS','Low bio, high CS']
+fig4, (ax198, ax199) = plt.subplots(1,2,figsize=(12,5))
+ax198.plot([0,BtLshare2040.filter(regex='B0p0Im-High.*S0')[0]*100,20,50,100],co2_df1.values, label = 'High bio, low CS')
+ax198.plot([0,BtLshare2040.filter(regex='B0p0Im-High.*S1500')[0]*100,20,50,100],co2_df2.values, label = 'High bio, high CS')
+ax198.plot([0,BtLshare2040.filter(regex='B0p0Im-Med.*S0')[0]*100,20,50,100],co2_df3.values, label = 'Low bio, low CS')
+ax198.plot([0,BtLshare2040.filter(regex='B0p0Im-Med.*S1500')[0]*100,20,50,100],co2_df4.values, label = 'Low bio, high CS')
+
+ax199.plot([0,BtLshare2060.filter(regex='B0p0Im-High.*S400')[0]*100,20,50,100],co2_df5.values, label = 'High bio, low CS')
+ax199.plot([0,BtLshare2060.filter(regex='B0p0Im-High.*S1500')[0]*100,20,50,100],co2_df6.values, label = 'High bio, high CS')
+ax199.plot([0,BtLshare2060.filter(regex='B0p0Im-Med.*S400')[0]*100,20,50,100],co2_df7.values, label = 'Low bio, low CS')
+ax199.plot([0,BtLshare2060.filter(regex='B0p0Im-Med.*S1500')[0]*100,20,50,100],co2_df8.values, label = 'Low bio, high CS')
+
+ax198.set_ylim([0, 200])  # snakemake.config['plotting']['costs_max']])
+ax198.set_ylabel('CO2 shadow price')  # "System Cost [EUR billion per year]")
+ax198.set_xlabel('Biofuel mandate [%]')
+ax198.set_title('2040')
+
+ax199.set_ylim([0, 200])  # snakemake.config['plotting']['costs_max']])
+ax199.set_ylabel('')  # "System Cost [EUR billion per year]")
+ax199.set_xlabel('Biofuel mandate [%]')
+ax199.set_title('2060')
+ax199.legend()
+
+fig4.savefig(output + '_2040_co2price.pdf', bbox_inches='tight')
 
 # axes_handling_left(ax2)
 # axes_handling_left(ax4)
 # axes_handling_right(ax3,legend=True)
 # axes_handling_right(ax5)
 fig.tight_layout(pad=1.5)
-# plt.show()
-# fig.savefig(output + '.pdf', bbox_inches='tight')
+plt.show()
+fig.savefig(output + '.pdf', bbox_inches='tight')
 
 df2040 = cost_dataframe(sdir2040)
 
