@@ -149,6 +149,36 @@ def add_ccl_constraints_conventional(n):
         define_constraints(n, p_nom_per_cc_link[maximum_conventional.index], '<=', maximum_conventional, 'agg_p_nom', 'max')
 
 
+
+def add_EQ_constraints(n, o, scaling=1e-1):
+    float_regex = "[0-9]*\.?[0-9]+"
+    level = float(re.findall(float_regex, o)[0])
+    if o[-1] == 'c':
+        ggrouper = n.generators.bus.map(n.buses.country)
+        lgrouper = n.loads.bus.map(n.buses.country)
+        sgrouper = n.storage_units.bus.map(n.buses.country)
+    else:
+        ggrouper = n.generators.bus
+        lgrouper = n.loads.bus
+        sgrouper = n.storage_units.bus
+    load = n.snapshot_weightings.generators @ \
+           n.loads_t.p_set.groupby(lgrouper, axis=1).sum()
+    inflow = n.snapshot_weightings.stores @ \
+             n.storage_units_t.inflow.groupby(sgrouper, axis=1).sum()
+    inflow = inflow.reindex(load.index).fillna(0.)
+    rhs = scaling * ( level * load - inflow )
+    lhs_gen = linexpr((n.snapshot_weightings.generators * scaling,
+                       get_var(n, "Generator", "p").T)
+              ).T.groupby(ggrouper, axis=1).apply(join_exprs)
+    lhs_spill = linexpr((-n.snapshot_weightings.stores * scaling,
+                         get_var(n, "StorageUnit", "spill").T)
+                ).T.groupby(sgrouper, axis=1).apply(join_exprs)
+    lhs_spill = lhs_spill.reindex(lhs_gen.index).fillna("")
+    lhs = lhs_gen + lhs_spill
+    define_constraints(n, lhs, ">=", rhs, "equity", "min")
+
+
+
 def add_biofuel_constraint(n):
 
     options = snakemake.wildcards.sector_opts.split('-')
@@ -184,7 +214,7 @@ def add_biofuel_constraint(n):
 
     print('Constraint type: ', biofuel_constraint_type)
 
-    if biofuel_constraint_type == 'Eq':
+    if biofuel_constraint_type == 'Equ':
         define_constraints(n, lhs, "==", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
     elif biofuel_constraint_type == 'Lt':
         define_constraints(n, lhs, ">=", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
@@ -285,6 +315,8 @@ def extra_functionality(n, snapshots):
         if 'convCCL' in o:
             print('adding conventional ccl constraints')
             add_ccl_constraints_conventional(n)
+        if 'EQ' in o:
+            add_EQ_constraints(n, o)
 
     add_battery_constraints(n)
 
