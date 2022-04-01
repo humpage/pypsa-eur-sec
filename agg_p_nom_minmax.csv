@@ -6,12 +6,12 @@ DE,solar,53781,
 LU,onwind,120,
 LU,solar,128,
 NL,onwind,4100,20000
-NL,offwind-ac,1250,
-NL,offwind-dc,1250,
+NL,offwind-ac,1250,20000
+NL,offwind-dc,1250,20000
 NL,solar,10213,
 GB,onwind,14282,150000
-GB,offwind-ac,5192,
-GB,offwind-dc,5192,
+GB,offwind-ac,5192,75000
+GB,offwind-dc,5192,75000
 GB,solar,13563,
 IE,onwind,3054.8,50000
 IE,offwind-ac,13,
@@ -21,8 +21,8 @@ FR,onwind,17380,
 FR,offwind-dc,2,
 FR,solar,11724,
 DK,onwind,4534,20000
-DK,offwind-ac,850,30000
-DK,offwind-dc,850,
+DK,offwind-ac,850,15000
+DK,offwind-dc,850,15000
 DK,solar,1300,
 BE,onwind,2068,
 BE,offwind-ac,1127,
