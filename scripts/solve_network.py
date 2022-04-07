@@ -6,6 +6,8 @@ import numpy as np
 
 import os
 
+import re
+
 import pandas as pd
 
 from pypsa.linopt import get_var, linexpr, define_constraints, get_dual
@@ -316,6 +318,7 @@ def extra_functionality(n, snapshots):
             print('adding conventional ccl constraints')
             add_ccl_constraints_conventional(n)
         if 'EQ' in o:
+            print('adding minimum supply constraints for each country')
             add_EQ_constraints(n, o)
 
     add_battery_constraints(n)
