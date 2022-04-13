@@ -2,7 +2,7 @@ country,carrier,min,max
 DE,onwind,54437,
 DE,offwind-ac,3874,
 DE,offwind-dc,3874,
-DE,solar,53781,
+DE,solar,53781,250000
 LU,onwind,120,
 LU,solar,128,
 NL,onwind,4100,20000
@@ -17,9 +17,10 @@ IE,onwind,3054.8,50000
 IE,offwind-ac,13,
 IE,offwind-dc,13,
 IE,solar,0,
-FR,onwind,17380,
-FR,offwind-dc,2,
-FR,solar,11724,
+FR,onwind,17380,180000
+FR,offwind-ac,0,90000
+FR,offwind-dc,2,90000
+FR,solar,11724,200000
 DK,onwind,4534,20000
 DK,offwind-ac,850,15000
 DK,offwind-dc,850,15000
@@ -42,7 +43,8 @@ SE,offwind-dc,102,
 SE,onwind,9485,
 FI,offwind-dc,73,
 NO,onwind,3975,
-PL,onwind,6267,
+PL,onwind,6267,20000
 PT,onwind,5214,
 PT,solar,1025,
 EE,onwind,,10000
+RO,solar,,25000
