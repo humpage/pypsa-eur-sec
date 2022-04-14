@@ -3,8 +3,8 @@ DE,onwind,54437,200000
 DE,offwind-ac,3874,
 DE,offwind-dc,3874,
 DE,solar,53781,250000
-LU,onwind,120,10000
-LU,solar,128,10000
+LU,onwind,120,1000
+LU,solar,128,1000
 NL,onwind,4100,20000
 NL,offwind-ac,1250,20000
 NL,offwind-dc,1250,20000
@@ -38,9 +38,9 @@ ES,offwind-ac,0,
 ES,offwind-dc,0,
 ES,solar,11785,300000
 SE,solar,1417,
-SE,offwind-ac,102,
-SE,offwind-dc,102,
-SE,onwind,9485,
+SE,offwind-ac,102,20000
+SE,offwind-dc,102,20000
+SE,onwind,9485,80000
 FI,offwind-dc,73,
 NO,onwind,3975,
 PL,onwind,6267,20000
@@ -49,3 +49,8 @@ PT,solar,1025,
 EE,onwind,,10000
 RO,solar,,25000
 LV,onwind,,10000
+LV,offwind-ac,,10000
+LV,offwind-dc,,10000
+LT,onwind,,10000
+LT,offwind-ac,,10000
+LT,offwind-dc,,10000
