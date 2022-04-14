@@ -41,7 +41,9 @@ SE,solar,1417,
 SE,offwind-ac,102,20000
 SE,offwind-dc,102,20000
 SE,onwind,9485,80000
-FI,offwind-dc,73,
+FI,offwind-dc,73,5000
+FI,onwind,,25000
+FI,offwind-ac,,5000
 NO,onwind,3975,
 PL,onwind,6267,20000
 PT,onwind,5214,
