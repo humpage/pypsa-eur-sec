@@ -13,10 +13,9 @@ GB,onwind,14282,150000
 GB,offwind-ac,5192,75000
 GB,offwind-dc,5192,75000
 GB,solar,13563,
-IE,onwind,3054.8,50000
+IE,onwind,3054.8,30000
 IE,offwind-ac,13,
 IE,offwind-dc,13,
-IE,onwind,,30000
 IE,solar,0,
 FR,onwind,17380,180000
 FR,offwind-ac,0,90000
