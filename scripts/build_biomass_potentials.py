@@ -191,7 +191,6 @@ def convert_nuts2_to_regions(bio_nuts2, regions):
     bio_regions.drop(["area_nuts2", "share"], axis=1, inplace=True)
     
     return bio_regions
->>>>>>> PyPSA-master
 
 
 if __name__ == "__main__":
