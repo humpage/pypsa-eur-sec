@@ -64,7 +64,7 @@ def plot_balances(balances,columnin):
                   'other biomass usage': '#FFE5B4',
                   'biofuel': 'rgba(50,205,50,1)',#'rgba(194,178,128, 1)',
                   'electrofuel': 'rgba(255,215,0, 0.7)',#'pink',#'#832473',
-                  'CHP': 'rgba(192,64,0, 0.5)',
+                  'CHP': 'rgba(222,64,50, 0.5)',
                   'BioSNG': 'rgba(255,215,0, 0.2)',
                   'industry heat': 'rgba(144,238,144, 0.2)'#'lightgreen'
         }
@@ -74,17 +74,22 @@ def plot_balances(balances,columnin):
         dfTemp[lvl1] = df.index
         dfTemp[lvl3] = df.index
         dfTemp[lvl2] = k * len(dfTemp)
-        dfTemp['color'] = [colors.get(x, '#D3D3D3') for x in df.index]
         # print(dfTemp['color'])
         # print(mcolors.to_rgba(dfTemp['color'], alpha=0.7))
 
         for i in range(len(dfTemp)):
             if dfTemp.at[i,'count'] > 0:
                 dfTemp.at[i, lvl3] = np.nan
+                # dfTemp.at[i, lvl1] = dfTemp.at[i, lvl1] + ' [' + str(int(dfTemp.at[i,'count'])) + ' TWh]'
+                # dfTemp.at[i, lvl2] = dfTemp.at[i, lvl2] + ' [' + str(int(dfTemp.at[i,'count'])) + ' TWh]'
+                # dfTemp.at[i, lvl3] = dfTemp.at[i, lvl3] + ' [' + str(int(dfTemp.at[i,'count'])) + ' TWh]'
             elif dfTemp.at[i, 'count'] < 0:
                 dfTemp.at[i, lvl1] = np.nan
+                # dfTemp.at[i, lvl2] = dfTemp.at[i, lvl2] + ' [' + str(int(dfTemp.at[i,'count'])) + ' TWh]'
 
+        dfTemp['color'] = [colors.get(x, '#D3D3D3') for x in df.index]
 
+        print(dfTemp[lvl1])
         # Remove flows less than limit
         limit2 = 5 #TWh
         dfTemp['count'] = abs(dfTemp['count'])
@@ -250,7 +255,8 @@ def genSankey(df, domainx, domainy, cat_cols=[], value_cols='', color='', title=
             source=sourceTargetDf['sourceID'],
             target=sourceTargetDf['targetID'],
             value=sourceTargetDf['count'],
-            color=sourceTargetDf['color']
+            color=sourceTargetDf['color'],
+            label=sourceTargetDf['count']
         ),
     domain={
         'x': domainx,
@@ -283,8 +289,8 @@ df4 = plot_balances(balances,columnin=df4col)
 
 if year == '2060':
     data = genSankey(df, domainx = [0, 0.48], domainy = [0.52, 1], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
-    data2 = genSankey(df2, domainx = [0.52, 1.0], domainy = [0.57, 0.95], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
-    data3 = genSankey(df3, domainx = [0, 0.48], domainy = [0.05, 0.43], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
+    data2 = genSankey(df2, domainx = [0.52, 1.0], domainy = [0.56, 0.96], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
+    data3 = genSankey(df3, domainx = [0, 0.48], domainy = [0.07, 0.42], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
     data4 = genSankey(df4, domainx = [0.52, 1.0], domainy = [0.07, 0.41], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
 elif year == '2040':
     data = genSankey(df, domainx = [0, 0.48], domainy = [0.52, 1], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
@@ -301,29 +307,29 @@ layout = dict(
 
 fig = dict(data=[data, data2, data3, data4], layout=layout)
 fig2 = go.Figure(fig)
-fig2.add_annotation(x=0.23, y=1,
-            text='(a)', #'"High biomass, low CS",
+fig2.add_annotation(x=0.17, y=1,
+            text='High biomass, low CS',
             showarrow=False,
             yshift=10,
             align='center')
 
 
-fig2.add_annotation(x=0.78, y=1,
-            text='(b)',#'"High biomass, high CS",
+fig2.add_annotation(x=0.84, y=1,
+            text='High biomass, high CS',
             showarrow=False,
             yshift=10,
             align='center')
 
 
-fig2.add_annotation(x=0.23, y=0.45,
-            text='(c)',#'"Low biomass, low CS",
+fig2.add_annotation(x=0.17, y=0.45,
+            text='Low biomass, low CS',
             showarrow=False,
             yshift=10,
             align='center')
 
 
-fig2.add_annotation(x=0.78, y=0.45,
-            text='(d)',#'"Low biomass, high CS",
+fig2.add_annotation(x=0.84, y=0.45,
+            text='Low biomass, high CS',
             showarrow=False,
             yshift=10,
             align='center')

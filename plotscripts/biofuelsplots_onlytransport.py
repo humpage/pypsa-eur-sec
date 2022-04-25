@@ -8,7 +8,7 @@ import matplotlib.colors as mcolors
 
 plt.style.use('ggplot')
 
-year = 2040
+year = 2060
 scenario = 'serverResults/mainScenarios{}'.format(year)
 sdir = '../results/{}/csvs/costs.csv'.format(scenario)
 output = '../results/fuelSupply{}'.format(year)
@@ -591,7 +591,7 @@ def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, plottype, twoleg
                     if increase > 0:
                         insert = '+{}%'.format(increase)
                     elif increase < 0:
-                        insert = '-{}%'.format(increase)
+                        insert = '{}%'.format(increase)
                     elif increase == 0:
                         insert = ''
                     ax.text(rect.get_x() - rect.get_width(), total2+60, insert, ha='center', fontsize='x-small')
@@ -992,14 +992,32 @@ def plot_scenarios(costs, costAll, output, mode='cost'):
     # place_subplot(df2, ax2, 2, 1, 'Fuel cost [Billion EUR]', '', 'High bio, low CS')
     # place_subplot(df6, ax2, 2, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS')
 
+    # ax2.plot(df6.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
+    # place_subplot(df2, ax2, 2, 1, 'Fuel cost [Billion EUR]', '', 'High bio, low CS', 'bar')
+    # place_subplot(df6, ax2, 2, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS', 'bar')
+    #
+    # ax3.plot(df7.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
+    # place_subplot(df3, ax3, 2, 1, '', '', 'High bio, high CS', 'bar', legend=True)
+    # place_subplot(df7, ax3, 2, 0, '', '', 'High bio, high CS', 'bar', legend=True)
+    #
+    # place_subplot(df4, ax4, 2, 1, 'Fuel cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS', 'bar')
+    # place_subplot(df8, ax4, 2, 0, 'Fuel cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS', 'bar')
+    # ax4.plot(df8.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black')
+    #
+    # place_subplot(df5, ax5, 2, 1, '', 'Biofuel share', 'Low bio, high CS', 'bar')
+    # place_subplot(df9, ax5, 2, 0, '', 'Biofuel share', 'Low bio, high CS', 'bar')
+    # ax5.plot(df9.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black')
+
+
+
+
     ax2.plot(df6.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
-    place_subplot(df2, ax2, 1, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS', 'bar')
-    # place_subplot(df6.sum(), ax2, 1, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS', 'scatter')
+    place_subplot(df2, ax2, 1, 0, 'Cost [Billion EUR]', '', 'High bio, low CS', 'bar')
 
     ax3.plot(df7.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
     place_subplot(df3, ax3, 1, 0, '', '', 'High bio, high CS', 'bar', legend=True)
 
-    place_subplot(df4, ax4, 1, 0, 'Fuel cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS', 'bar')
+    place_subplot(df4, ax4, 1, 0, 'Cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS', 'bar')
     ax4.plot(df8.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black')
 
     place_subplot(df5, ax5, 1, 0, '', 'Biofuel share', 'Low bio, high CS', 'bar')

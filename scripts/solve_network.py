@@ -115,6 +115,8 @@ def add_ccl_constraints(n):
                     .groupby(['country', 'carrier']).p_nom
                     .apply(join_exprs))
 
+    print('p_nom_per_cc: ', p_nom_per_cc)
+
     minimum = agg_p_nom_minmax['min'].dropna()
     if not minimum.empty:
         define_constraints(n, p_nom_per_cc[minimum.index], '>=', minimum, 'agg_p_nom', 'min')
@@ -151,6 +153,31 @@ def add_ccl_constraints_conventional(n):
         define_constraints(n, p_nom_per_cc_link[maximum_conventional.index], '<=', maximum_conventional, 'agg_p_nom', 'max')
 
 
+def add_feasibility_constraints(n):
+    #Find country specific initial load (el + industrial) from indata
+    el_load = n.loads.p_set.filter(regex='0$') * 8760
+    el_loadindustry = n.loads.p_set.filter(regex='industry electricity') * 8760
+    totLoad = el_load + el_loadindustry
+    #choose all solar and wind
+    #n.generators.filter(regex='onwind')  # .sum(axis=1)
+    #offwind = n.generators_t.p.filter(regex='offwind')  # .sum(axis=1)
+    #solar = n.generators_t.p.filter(regex='solar')
+    #Set all types to be lower than a factor times (year - 2020) times initial load (or initial load times a factor times (year-2020))
+    # Carriers: onwind, offwind-ac, offwind-dc, solar
+    #biofuel_i = n.generators.query('carrier == "biomass to liquid"').index
+    #biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
+
+    gen_country = n.generators.bus.map(n.buses.country)
+
+    # cc means country and carrier
+    p_nom_per_cc = (pd.DataFrame(
+        {'p_nom': linexpr((1, get_var(n, 'Generator', 'p'))),
+         'country': gen_country, 'carrier': n.generators.carrier})
+                    .dropna(subset=['p_nom'])
+                    .groupby(['country', 'carrier']).p_nom
+                    .apply(join_exprs))
+
+    define_constraints(n, p_nom_per_cc, '<=', maximum_conventional, 'feasibility_p_nom', 'max')
 
 def add_EQ_constraints(n, o, scaling=1e-1):
     float_regex = "[0-9]*\.?[0-9]+"

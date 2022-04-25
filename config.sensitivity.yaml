@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: 73h_sensitivity_test_cs # use this to keep track of runs with different settings
+run: test220321_BtLCO2_3 # use this to keep track of runs with different settings
 foresight: myopic # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
@@ -20,18 +20,13 @@ scenario:
   opts: # only relevant for PyPSA-Eur
     - ''
   sector_opts: # this is where the main scenario settings are
-    - 73H-T-H-B0p0Im-High-I-S600-CCL-solar+p3
-  #  - 37H-T-H-B0p0Im15-High-I-S1500-CCL-solar+p3
-  #  - 37H-T-H-B0p5Im15-High-I-S600-CCL-solar+p3
-  #  - 37H-T-H-B0p5Im15-High-I-S1500-CCL-solar+p3
-  #  - 37H-T-H-B1p0Im15-High-I-S600-CCL-solar+p3
-  #  - 37H-T-H-B1p0Im15-High-I-S1500-CCL-solar+p3
-  #  - 37H-T-H-B0p0Im15-Med-I-S600-CCL-solar+p3
-  #  - 37H-T-H-B0p0Im15-Med-I-S1500-CCL-solar+p3
-  #  - 37H-T-H-B0p5Im15-Med-I-S600-CCL-solar+p3
-  #  - 37H-T-H-B0p5Im15-Med-I-S1500-CCL-solar+p3
-  #  - 37H-T-H-B1p0Im15-Med-I-S600-CCL-solar+p3
-  #  - 37H-T-H-B1p0Im15-Med-I-S1500-CCL-solar+p3
+  #  - 273H-T-H-B0p0ImEq-High-I-S400-CCL-solar+p3
+  #  - 397H-T-H-B0p0Im-High-I-S400-CCL-solar+p3-LiqFuExcl
+    - 397H-T-H-B0p0Im-High-I-S0-CCL-solar+p3
+  #  - 397H-T-H-B0p0Im-High-I-S1500-CCL-solar+p3-LiqFuExcl
+  #  - 397H-T-H-B0p0Im-High-I-S1500-CCL-solar+p3
+  #  - 397H-T-H-B0p5Im-High-I-S400-CCL-solar+p3
+    - 397H-T-H-B1p0Im-High-I-S0-CCL-solar+p3
   # to really understand the options here, look in scripts/prepare_sector_network.py
   # Co2Lx specifies the CO2 target in x% of the 1990 values; default will give default (5%);
   # Co2L0p25 will give 25% CO2 emissions; Co2Lm0p05 will give 5% negative emissions
@@ -48,26 +43,32 @@ scenario:
   # cb40ex0 distributes a carbon budget of 40 GtCO2 following an exponential
   # decay with initial growth rate 0
   planning_horizons: # investment years for myopic and perfect; or costs year for overnight
-    - 2050
+    - 2040
+  #  - 2050
   # for example, set to [2020, 2030, 2040, 2050] for myopic foresight
 
   biofuel_sensitivity:
-    - B0 #optimistic
-  #  - B2 #pessimistc
+  #  - FT1 #optimistic
+    - FT0
+  #  - FT2
   electrofuel_sensitivity:
-    - Ef0
+    - Ef1
   #  - Ef2
   electrolysis_sensitivity:
-    - E0
+    - E2
   #  - E2
   cc_sensitivity:
-    - C0
+  #  - CC0
+    - CC2
   cs_sensitivity:
-    - CS1
+  #  - CS0
+    - CS2
   oil_sensitivity:
-    - O0
+    - O2
   biomass_import_sensitivity:
-    - I1
+    - I0
+  #  - I2
+  #  - I1
     
 # CO2 budget as a fraction of 1990 emissions
 # this is over-ridden if CO2Lx is set in sector_opts
@@ -168,7 +169,7 @@ solar_thermal:
 
 # only relevant for foresight = myopic or perfect
 existing_capacities:
-  agg_p_nom_limits: data/agg_p_nom_minmax.csv
+  agg_p_nom_limits: agg_p_nom_minmax.csv
   agg_p_nom_limits_conventional: data/agg_p_nom_minmax_conventional.csv
   grouping_years: [1980, 1985, 1990, 1995, 2000, 2005, 2010, 2015, 2019]
   threshold_capacity: 1
@@ -238,6 +239,12 @@ sector:
     2030: 1.1
     2040: 1.2
     2050: 1.2
+  shipping_oil_demand: true
+  naphtha_demand: #Factor of current demand
+    2020: 1
+    2030: 1
+    2040: 1
+    2050: 1
   time_dep_hp_cop: true #time dependent heat pump coefficient of performance
   heat_pump_sink_T: 55. # Celsius, based on DTU / large area radiators; used in build_cop_profiles.py
    # conservatively high to cover hot water and space heating in poorly-insulated buildings
@@ -301,6 +308,7 @@ sector:
     nuclear_new: uranium
   biomass_transport: false
   hvdc: true
+  #liquid_fuel_exclusion: true
 
 
 industry:

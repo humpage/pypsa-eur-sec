@@ -35,8 +35,8 @@ def update_biomass_potentials():
 
     #Convert EUR/GJ to EUR/MWh
     Costindex = ['FixC','TransC']
-    forest_residues[Costindex] = (forest_residues[Costindex] * 3.6).round(4)
-    agric_residues[Costindex] = (agric_residues[Costindex] * 3.6).round(4)
+    forest_residues[Costindex] = (forest_residues[Costindex] * 3.6).round(1)
+    agric_residues[Costindex] = (agric_residues[Costindex] * 3.6).round(1)
     print(forest_residues.columns)
 
 
@@ -90,7 +90,9 @@ def update_biomass_potentials():
         print(type(biomass_country_costs[crop].values))
         biomass_country_costs.rename(columns={'Cost': crop}, inplace=True)
     biomass_country_costs.index.name = None
-    biomass_country_costs = biomass_country_costs.astype(float).round(4)
+    biomass_country_costs = biomass_country_costs.astype(float).round(1)
+    # biomass_country_costs2 = biomass_country_costs.mean().astype(int)
+    # print(biomass_country_costs2)
 
     print(biomass_country_costs)
     biomass_country_costs.to_csv('../resources/biomass_country_costs.csv')

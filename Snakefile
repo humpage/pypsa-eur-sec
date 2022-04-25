@@ -1,5 +1,5 @@
 
-configfile: "config.sensitivity.yaml"
+configfile: "config.sensitivity2060.yaml"
 
 
 wildcard_constraints:
@@ -415,7 +415,8 @@ rule make_summary:
         weighted_prices=SDIR + '/csvs/weighted_prices.csv',
         market_values=SDIR + '/csvs/market_values.csv',
         price_statistics=SDIR + '/csvs/price_statistics.csv',
-        metrics=SDIR + '/csvs/metrics.csv'
+        metrics=SDIR + '/csvs/metrics.csv',
+        H2_share_of_AC_revenue=SDIR + '/csvs/H2_share_of_AC_revenue.csv'
     threads: 2
     resources: mem_mb=10000
     benchmark: SDIR + "/benchmarks/make_summary"
