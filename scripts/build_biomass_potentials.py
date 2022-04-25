@@ -144,10 +144,12 @@ def build_nuts2_shapes():
     nuts2 = gpd.GeoDataFrame(gpd.read_file(snakemake.input.nuts2).set_index('id').geometry)
 
     countries = gpd.read_file(snakemake.input.country_shapes).set_index('name')
-    missing = countries.loc[["AL", "RS", "BA"]]
+    missing_iso2 = countries.index.intersection(["AL", "RS", "BA"])
+    missing = countries.loc[missing_iso2]
+
     nuts2.rename(index={"ME00": "ME", "MK00": "MK"}, inplace=True)
 
-    return nuts2.append(missing)
+    return pd.concat([nuts2, missing])
 
 
 def area(gdf):
@@ -175,7 +177,7 @@ def convert_nuts2_to_regions(bio_nuts2, regions):
     # calculate area of nuts2 regions
     bio_nuts2["area_nuts2"] = area(bio_nuts2)
 
-    overlay = gpd.overlay(regions, bio_nuts2)
+    overlay = gpd.overlay(regions, bio_nuts2, keep_geom_type=True)
 
     # calculate share of nuts2 area inside region
     overlay["share"] = area(overlay) / overlay["area_nuts2"]

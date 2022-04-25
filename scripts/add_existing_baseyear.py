@@ -16,33 +16,11 @@ import pypsa
 
 import yaml
 
-import pytz
+from prepare_sector_network import prepare_costs, define_spatial
+from helper import override_component_attrs
 
-from vresutils.costdata import annuity
-
-from prepare_sector_network import prepare_costs
-
-# from helper import override_component_attrs
-
-#First tell PyPSA that links can have multiple outputs by
-#overriding the component_attrs. This can be done for
-#as many buses as you need with format busi for i = 2,3,4,5,....
-#See https://pypsa.org/doc/components.html#link-with-multiple-outputs-or-inputs
-
-override_component_attrs = pypsa.descriptors.Dict({k : v.copy() for k,v in pypsa.components.component_attrs.items()})
-override_component_attrs["Link"].loc["bus2"] = ["string",np.nan,np.nan,"2nd bus","Input (optional)"]
-override_component_attrs["Link"].loc["bus3"] = ["string",np.nan,np.nan,"3rd bus","Input (optional)"]
-override_component_attrs["Link"].loc["efficiency2"] = ["static or series","per unit",1.,"2nd bus efficiency","Input (optional)"]
-override_component_attrs["Link"].loc["efficiency3"] = ["static or series","per unit",1.,"3rd bus efficiency","Input (optional)"]
-override_component_attrs["Link"].loc["p2"] = ["series","MW",0.,"2nd bus output","Output"]
-override_component_attrs["Link"].loc["p3"] = ["series","MW",0.,"3rd bus output","Output"]
-
-override_component_attrs["Link"].loc["build_year"] = ["integer","year",np.nan,"build year","Input (optional)"]
-override_component_attrs["Link"].loc["lifetime"] = ["float","years",np.nan,"build year","Input (optional)"]
-override_component_attrs["Generator"].loc["build_year"] = ["integer","year",np.nan,"build year","Input (optional)"]
-override_component_attrs["Generator"].loc["lifetime"] = ["float","years",np.nan,"build year","Input (optional)"]
-override_component_attrs["Store"].loc["build_year"] = ["integer","year",np.nan,"build year","Input (optional)"]
-override_component_attrs["Store"].loc["lifetime"] = ["float","years",np.nan,"build year","Input (optional)"]
+from types import SimpleNamespace
+spatial = SimpleNamespace()
 
 
 def remove_overage_capacities(n, year):
@@ -72,7 +50,7 @@ def add_build_year_to_new_assets(n, baseyear):
     #Give assets with lifetimes and no build year the build year baseyear
     for c in n.iterate_components(["Link", "Generator", "Store"]):
 
-        assets = c.df.index[~c.df.lifetime.isna() & c.df.build_year==0]
+        assets = c.df.index[(c.df.lifetime!=np.inf) & (c.df.build_year==0)]
         c.df.loc[assets, "build_year"] = baseyear
 
         #add -baseyear to name
@@ -183,9 +161,14 @@ def add_power_capacities_installed_before_baseyear(n, grouping_years, costs, bas
     df_agg.drop(df_agg.index[df_agg.Technology.isin(technology_to_drop)],inplace=True)
     df_agg.Fueltype = df_agg.Fueltype.map(rename_fuel)
 
-    #assign clustered bus
+    # assign clustered bus
     busmap_s = pd.read_csv(snakemake.input.busmap_s, index_col=0).squeeze()
     busmap = pd.read_csv(snakemake.input.busmap, index_col=0).squeeze()
+
+    inv_busmap = {}
+    for k, v in busmap.iteritems():
+        inv_busmap[v] = inv_busmap.get(v, []) + [k]
+
     clustermaps = busmap_s.map(busmap)
     clustermaps.index = clustermaps.index.astype(int)
 
@@ -219,48 +202,92 @@ def add_power_capacities_installed_before_baseyear(n, grouping_years, costs, bas
 
         if generator in ['solar', 'onwind', 'offwind']:
 
-            rename = {"offwind": "offwind-ac"}
-            p_max_pu = n.generators_t.p_max_pu[capacity.index + ' ' + rename.get(generator, generator) + '-' + str(baseyear)]
+# <<<<<<< HEAD
+#             rename = {"offwind": "offwind-ac"}
+#             p_max_pu = n.generators_t.p_max_pu[capacity.index + ' ' + rename.get(generator, generator) + '-' + str(baseyear)]
+# =======
+            suffix = '-ac' if generator == 'offwind' else ''
+            name_suffix = f' {generator}{suffix}-{baseyear}'
+# >>>>>>> cdd56288ff73eb6626b7377f1170ba585c5ff939
 
-            n.madd("Generator",
-                capacity.index,
-                suffix=' ' + generator +"-"+ str(grouping_year),
-                bus=capacity.index,
-                carrier=generator,
-                p_nom=capacity,
-                marginal_cost=costs.at[generator, 'VOM'],
-                capital_cost=costs.at[generator, 'fixed'],
-                efficiency=costs.at[generator, 'efficiency'],
-                p_max_pu=p_max_pu.rename(columns=n.generators.bus),
-                build_year=grouping_year,
-                lifetime=costs.at[generator, 'lifetime']
-            )
+            # to consider electricity grid connection costs or a split between
+            # solar utility and rooftop as well, rather take cost assumptions
+            # from existing network than from the cost database
+            capital_cost = n.generators.loc[n.generators.carrier==generator+suffix, "capital_cost"].mean()
+
+            if 'm' in snakemake.wildcards.clusters:
+
+                for ind in capacity.index:
+
+                    # existing capacities are split evenly among regions in every country
+                    inv_ind = [i for i in inv_busmap[ind]]
+
+                    # for offshore the spliting only inludes coastal regions
+                    inv_ind = [i for i in inv_ind if (i + name_suffix) in n.generators.index]
+
+                    p_max_pu = n.generators_t.p_max_pu[[i + name_suffix for i in inv_ind]]
+                    p_max_pu.columns=[i + name_suffix for i in inv_ind ]
+
+                    n.madd("Generator",
+                        [i + name_suffix for i in inv_ind],
+                        bus=ind,
+                        carrier=generator,
+                        p_nom=capacity[ind] / len(inv_ind), # split among regions in a country
+                        marginal_cost=costs.at[generator,'VOM'],
+                        capital_cost=capital_cost,
+                        efficiency=costs.at[generator, 'efficiency'],
+                        p_max_pu=p_max_pu,
+                        build_year=grouping_year,
+                        lifetime=costs.at[generator,'lifetime']
+                    )
+
+            else:
+
+                p_max_pu = n.generators_t.p_max_pu[capacity.index + name_suffix]
+
+                n.madd("Generator",
+                    capacity.index,
+                    suffix=' ' + generator +"-"+ str(grouping_year),
+                    bus=capacity.index,
+                    carrier=generator,
+                    p_nom=capacity,
+                    marginal_cost=costs.at[generator, 'VOM'],
+                    capital_cost=capital_cost,
+                    efficiency=costs.at[generator, 'efficiency'],
+                    p_max_pu=p_max_pu.rename(columns=n.generators.bus),
+                    build_year=grouping_year,
+                    lifetime=costs.at[generator, 'lifetime']
+                )
 
         else:
+
+            bus0 = vars(spatial)[carrier[generator]].nodes
+            if "EU" not in vars(spatial)[carrier[generator]].locations:
+                bus0 = bus0.intersection(capacity.index + " gas")
+
             if generator == 'nuclear':
                 p_max_pu = 0.8
             else:
                 p_max_pu = 1
 
             n.madd("Link",
-                   capacity.index,
-                   suffix= " " + generator +"-" + str(grouping_year),
-                   bus0="EU " + carrier[generator],
-                   bus1=capacity.index,
-                   bus2="co2 atmosphere",
-                   carrier=generator,
-                   marginal_cost=costs.at[generator,'efficiency']*costs.at[generator,'VOM'], #NB: VOM is per MWel
-                   capital_cost=costs.at[generator,'efficiency']*costs.at[generator,'fixed'], #NB: fixed cost is per MWel
-                   p_nom=capacity/costs.at[generator,'efficiency'],
-                   p_max_pu=p_max_pu,
-                   efficiency=costs.at[generator,'efficiency'],
-                   efficiency2=costs.at[carrier[generator],'CO2 intensity'],
-                   build_year=grouping_year,
-                   lifetime=costs.at[generator,'lifetime'])
+                capacity.index,
+                suffix= " " + generator +"-" + str(grouping_year),
+                bus0=bus0,
+                bus1=capacity.index,
+                bus2="co2 atmosphere",
+                carrier=generator,
+                marginal_cost=costs.at[generator, 'efficiency'] * costs.at[generator, 'VOM'], #NB: VOM is per MWel
+                capital_cost=costs.at[generator, 'efficiency'] * costs.at[generator, 'fixed'], #NB: fixed cost is per MWel
+                p_nom=capacity / costs.at[generator, 'efficiency'],
+                efficiency=costs.at[generator, 'efficiency'],
+                efficiency2=costs.at[carrier[generator], 'CO2 intensity'],
+                build_year=grouping_year,
+                lifetime=costs.at[generator, 'lifetime']
+            )
 
 
-def add_heating_capacities_installed_before_baseyear(n, baseyear, grouping_years, ashp_cop, gshp_cop, time_dep_hp_cop,
-                                                     costs, default_lifetime):
+def add_heating_capacities_installed_before_baseyear(n, baseyear, grouping_years, ashp_cop, gshp_cop, time_dep_hp_cop, costs, default_lifetime):
     """
     Parameters
     ----------
@@ -406,10 +433,11 @@ def add_heating_capacities_installed_before_baseyear(n, baseyear, grouping_years
                    lifetime=costs.at[costs_name, 'lifetime']
                    )
 
+
             n.madd("Link",
                 nodes[name],
                 suffix= f" {name} gas boiler-{grouping_year}",
-                bus0="EU gas",
+                bus0=spatial.gas.nodes,
                 bus1=nodes[name] + " " + name + " heat",
                 bus2="co2 atmosphere",
                 carrier=name + " gas boiler",
@@ -422,21 +450,19 @@ def add_heating_capacities_installed_before_baseyear(n, baseyear, grouping_years
             )
 
             n.madd("Link",
-                   nodes[name],
-                   suffix=f" {name} oil boiler-{grouping_year}",
-                   bus0="EU oil",
-                   bus1=nodes[name] + " " + name + " heat",
-                   bus2="co2 atmosphere",
-                   carrier=name + " oil boiler",
-                   efficiency=costs.at['decentral oil boiler', 'efficiency'],
-                   efficiency2=costs.at['oil', 'CO2 intensity'],
-                   capital_cost=costs.at['decentral oil boiler', 'efficiency'] * costs.at[
-                       'decentral oil boiler', 'fixed'],
-                   p_nom=0.5 * nodal_df[f'{heat_type} oil boiler'][nodes[name]] * ratio / costs.at[
-                       'decentral oil boiler', 'efficiency'],
-                   build_year=int(grouping_year),
-                   lifetime=costs.at[name_type + ' gas boiler', 'lifetime']
-                   )
+                nodes[name],
+                suffix=f" {name} oil boiler-{grouping_year}",
+                bus0=spatial.oil.nodes,
+                bus1=nodes[name] + " " + name + " heat",
+                bus2="co2 atmosphere",
+                carrier=name + " oil boiler",
+                efficiency=costs.at['decentral oil boiler', 'efficiency'],
+                efficiency2=costs.at['oil', 'CO2 intensity'],
+                capital_cost=costs.at['decentral oil boiler', 'efficiency'] * costs.at['decentral oil boiler', 'fixed'],
+                p_nom=0.5 * nodal_df[f'{heat_type} oil boiler'][nodes[name]] * ratio / costs.at['decentral oil boiler', 'efficiency'],
+                build_year=int(grouping_year),
+                lifetime=costs.at[name_type + ' gas boiler', 'lifetime']
+            )
 
             # delete links with p_nom=nan corresponding to extra nodes in country
             n.mremove("Link", [index for index in n.links.index.to_list() if
@@ -447,7 +473,7 @@ def add_heating_capacities_installed_before_baseyear(n, baseyear, grouping_years
             n.mremove("Link", [index for index in n.links.index.to_list() if
                                str(grouping_year) in index and n.links.p_nom[index] < threshold])
 
-
+#%%
 if __name__ == "__main__":
     # Detect running outside of snakemake and mock snakemake for testing
     if 'snakemake' not in globals():
@@ -455,10 +481,10 @@ if __name__ == "__main__":
         snakemake = mock_snakemake(
             'add_existing_baseyear',
             simpl='',
-            clusters=45,
+            clusters="37",
             lv=1.0,
             opts='',
-            sector_opts='Co2L0-168H-T-H-B-I-solar+p3-dist1',
+            sector_opts='168H-T-H-B-I-solar+p3-dist1',
             planning_horizons=2020,
         )
         import yaml
@@ -473,11 +499,18 @@ if __name__ == "__main__":
 
     baseyear = snakemake.config['scenario']["planning_horizons"][0]
 
-#TODO: Check if this quick fix is still necessary
-    overrides = override_component_attrs #(snakemake.input.overrides)
-    n = pypsa.Network(snakemake.input.network,
-                      override_component_attrs=overrides)
-
+# <<<<<<< HEAD
+# #TODO: Check if this quick fix is still necessary
+#     overrides = override_component_attrs #(snakemake.input.overrides)
+#     n = pypsa.Network(snakemake.input.network,
+#                       override_component_attrs=overrides)
+#
+# =======
+    overrides = override_component_attrs(snakemake.input.overrides)
+    n = pypsa.Network(snakemake.input.network, override_component_attrs=overrides)
+    # define spatial resolution of carriers
+    spatial = define_spatial(n.buses[n.buses.carrier=="AC"].index, options)
+# >>>>>>> cdd56288ff73eb6626b7377f1170ba585c5ff939
     add_build_year_to_new_assets(n, baseyear)
 
     Nyears = n.snapshot_weightings.sum()/8760.
@@ -487,7 +520,7 @@ if __name__ == "__main__":
                           Nyears,
                           snakemake.config['costs']['lifetime'])
 
-    grouping_years=snakemake.config['existing_capacities']['grouping_years']
+    grouping_years = snakemake.config['existing_capacities']['grouping_years']
     add_power_capacities_installed_before_baseyear(n, grouping_years, costs, baseyear)
 
     if "H" in opts:

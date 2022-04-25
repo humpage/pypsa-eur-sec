@@ -19,9 +19,11 @@ def rename_techs_tyndp(tech):
     tech = rename_techs(tech)
     if "heat pump" in tech or "resistive heater" in tech:
         return "power-to-heat"
-    elif tech in ["methanation", "hydrogen storage", "helmeth"]:
+    elif tech in ["H2 Electrolysis", "methanation", "helmeth", "H2 liquefaction"]:
         return "power-to-gas"
-    elif tech in ["OCGT", "CHP", "gas boiler"]:
+    elif tech == "H2":
+        return "H2 storage"
+    elif tech in ["OCGT", "CHP", "gas boiler", "H2 Fuel Cell"]:
         return "gas-to-power/heat"
     elif "solar" in tech:
         return "solar"
@@ -29,6 +31,8 @@ def rename_techs_tyndp(tech):
         return "power-to-liquid"
     elif "offshore wind" in tech:
         return "offshore wind"
+    elif "CC" in tech or "sequestration" in tech:
+        return "CCS"
     else:
         return tech
 
@@ -258,7 +262,9 @@ def plot_map(network, components=["links", "stores", "storage_units", "generator
     costs = costs.stack()  # .sort_index()
 
     # hack because impossible to drop buses...
-    n.buses.loc["EU gas", ["x", "y"]] = n.buses.loc["DE0 0", ["x", "y"]]
+    eu_location = snakemake.config["plotting"].get("eu_node_location", dict(x=-5.5, y=46))
+    n.buses.loc["EU gas", "x"] = eu_location["x"]
+    n.buses.loc["EU gas", "y"] = eu_location["y"]
 
     n.links.drop(n.links.index[(n.links.carrier != "DC") & (
         n.links.carrier != "B2B")], inplace=True)
@@ -267,7 +273,7 @@ def plot_map(network, components=["links", "stores", "storage_units", "generator
     to_drop = costs.index.levels[0].symmetric_difference(n.buses.index)
     if len(to_drop) != 0:
         print("dropping non-buses", to_drop)
-        costs.drop(to_drop, level=0, inplace=True, axis=0)
+        costs.drop(to_drop, level=0, inplace=True, axis=0, errors="ignore")
 
     # make sure they are removed from index
     costs.index = pd.MultiIndex.from_tuples(costs.index.values)
@@ -366,6 +372,26 @@ def plot_map(network, components=["links", "stores", "storage_units", "generator
         bbox_inches="tight"
     )
 
+def group_pipes(df, drop_direction=False):
+    """Group pipes which connect same buses and return overall capacity.
+    """
+    if drop_direction:
+        positive_order = df.bus0 < df.bus1
+        df_p = df[positive_order]
+        swap_buses = {"bus0": "bus1", "bus1": "bus0"}
+        df_n = df[~positive_order].rename(columns=swap_buses)
+        df = pd.concat([df_p, df_n])
+
+    # there are pipes for each investment period rename to AC buses name for plotting
+    df.index = df.apply(
+        lambda x: f"H2 pipeline {x.bus0.replace(' H2', '')} -> {x.bus1.replace(' H2', '')}",
+        axis=1
+    )
+    # group pipe lines connecting the same buses and rename them for plotting
+    pipe_capacity = df["p_nom_opt"].groupby(level=0).sum()
+
+    return pipe_capacity
+
 
 def plot_h2_map(network):
 
@@ -378,32 +404,39 @@ def plot_h2_map(network):
     bus_size_factor = 1e5
     linewidth_factor = 1e4
     # MW below which not drawn
-    line_lower_threshold = 1e3
-    bus_color = "m"
-    link_color = "c"
+    line_lower_threshold = 1e2
 
     # Drop non-electric buses so they don't clutter the plot
     n.buses.drop(n.buses.index[n.buses.carrier != "AC"], inplace=True)
 
-    elec = n.links.index[n.links.carrier == "H2 Electrolysis"]
+    elec = n.links[n.links.carrier.isin(["H2 Electrolysis", "H2 Fuel Cell"])].index
 
-    bus_sizes = n.links.loc[elec,"p_nom_opt"].groupby(n.links.loc[elec, "bus0"]).sum() / bus_size_factor
+    bus_sizes = n.links.loc[elec,"p_nom_opt"].groupby([n.links["bus0"], n.links.carrier]).sum() / bus_size_factor
 
     # make a fake MultiIndex so that area is correct for legend
-    bus_sizes.index = pd.MultiIndex.from_product(
-        [bus_sizes.index, ["electrolysis"]])
+    bus_sizes.rename(index=lambda x: x.replace(" H2", ""), level=0, inplace=True)
+    # drop all links which are not H2 pipelines
+    n.links.drop(n.links.index[~n.links.carrier.str.contains("H2 pipeline")], inplace=True)
 
-    n.links.drop(n.links.index[n.links.carrier != "H2 pipeline"], inplace=True)
+    h2_new = n.links.loc[n.links.carrier=="H2 pipeline"]
+    h2_retro = n.links.loc[n.links.carrier=='H2 pipeline retrofitted']
+    # sum capacitiy for pipelines from different investment periods
+    h2_new = group_pipes(h2_new)
+    h2_retro = group_pipes(h2_retro, drop_direction=True).reindex(h2_new.index).fillna(0)
 
-    link_widths = n.links.p_nom_opt / linewidth_factor
-    link_widths[n.links.p_nom_opt < line_lower_threshold] = 0.
+
+    n.links.rename(index=lambda x: x.split("-2")[0], inplace=True)
+    n.links = n.links.groupby(level=0).first()
+    link_widths_total = (h2_new + h2_retro) / linewidth_factor
+    link_widths_total = link_widths_total.reindex(n.links.index).fillna(0.)
+    link_widths_total[n.links.p_nom_opt < line_lower_threshold] = 0.
+
+    retro = n.links.p_nom_opt.where(n.links.carrier=='H2 pipeline retrofitted', other=0.)
+    link_widths_retro = retro / linewidth_factor
+    link_widths_retro[n.links.p_nom_opt < line_lower_threshold] = 0.
 
     n.links.bus0 = n.links.bus0.str.replace(" H2", "")
     n.links.bus1 = n.links.bus1.str.replace(" H2", "")
-
-    print(link_widths.sort_values())
-
-    print(n.links[["bus0", "bus1"]])
 
     fig, ax = plt.subplots(
         figsize=(7, 6),
@@ -412,17 +445,28 @@ def plot_h2_map(network):
 
     n.plot(
         bus_sizes=bus_sizes,
-        bus_colors={"electrolysis": bus_color},
-        link_colors=link_color,
-        link_widths=link_widths,
+        bus_colors=snakemake.config['plotting']['tech_colors'],
+        link_colors='#a2f0f2',
+        link_widths=link_widths_total,
         branch_components=["Link"],
-        ax=ax,  **map_opts
+        ax=ax,
+        **map_opts
+    )
+
+    n.plot(
+        geomap=False,
+        bus_sizes=0,
+        link_colors='#72d3d6',
+        link_widths=link_widths_retro,
+        branch_components=["Link"],
+        ax=ax,
+        **map_opts
     )
 
     handles = make_legend_circles_for(
         [50000, 10000],
         scale=bus_size_factor,
-        facecolor=bus_color
+        facecolor='grey'
     )
 
     labels = ["{} GW".format(s) for s in (50, 10)]
@@ -430,7 +474,7 @@ def plot_h2_map(network):
     l2 = ax.legend(
         handles, labels,
         loc="upper left",
-        bbox_to_anchor=(0.01, 1.01),
+        bbox_to_anchor=(-0.03, 1.01),
         labelspacing=1.0,
         frameon=False,
         title='Electrolyzer capacity',
@@ -443,7 +487,7 @@ def plot_h2_map(network):
     labels = []
 
     for s in (50, 10):
-        handles.append(plt.Line2D([0], [0], color=link_color,
+        handles.append(plt.Line2D([0], [0], color="grey",
                                   linewidth=s * 1e3 / linewidth_factor))
         labels.append("{} GW".format(s))
 
@@ -461,7 +505,148 @@ def plot_h2_map(network):
 
     fig.savefig(
         snakemake.output.map.replace("-costs-all","-h2_network"),
-        transparent=True,
+        bbox_inches="tight"
+    )
+
+
+def plot_ch4_map(network):
+
+    n = network.copy()
+
+    if "gas pipeline" not in n.links.carrier.unique():
+        return
+
+    assign_location(n)
+
+    bus_size_factor = 8e7
+    linewidth_factor = 1e4
+    # MW below which not drawn
+    line_lower_threshold = 500
+
+    # Drop non-electric buses so they don't clutter the plot
+    n.buses.drop(n.buses.index[n.buses.carrier != "AC"], inplace=True)
+
+    fossil_gas_i = n.generators[n.generators.carrier=="gas"].index
+    fossil_gas = n.generators_t.p.loc[:,fossil_gas_i].mul(n.snapshot_weightings.generators, axis=0).sum().groupby(n.generators.loc[fossil_gas_i,"bus"]).sum() / bus_size_factor
+    fossil_gas.rename(index=lambda x: x.replace(" gas", ""), inplace=True)
+    fossil_gas = fossil_gas.reindex(n.buses.index).fillna(0)
+    # make a fake MultiIndex so that area is correct for legend
+    fossil_gas.index = pd.MultiIndex.from_product([fossil_gas.index, ["fossil gas"]])
+
+    methanation_i = n.links[n.links.carrier.isin(["helmeth", "Sabatier"])].index
+    methanation = abs(n.links_t.p1.loc[:,methanation_i].mul(n.snapshot_weightings.generators, axis=0)).sum().groupby(n.links.loc[methanation_i,"bus1"]).sum() / bus_size_factor
+    methanation = methanation.groupby(methanation.index).sum().rename(index=lambda x: x.replace(" gas", ""))
+    # make a fake MultiIndex so that area is correct for legend
+    methanation.index = pd.MultiIndex.from_product([methanation.index, ["methanation"]])
+
+    biogas_i = n.stores[n.stores.carrier=="biogas"].index
+    biogas = n.stores_t.p.loc[:,biogas_i].mul(n.snapshot_weightings.generators, axis=0).sum().groupby(n.stores.loc[biogas_i,"bus"]).sum() / bus_size_factor
+    biogas = biogas.groupby(biogas.index).sum().rename(index=lambda x: x.replace(" biogas", ""))
+    # make a fake MultiIndex so that area is correct for legend
+    biogas.index = pd.MultiIndex.from_product([biogas.index, ["biogas"]])
+
+    bus_sizes = pd.concat([fossil_gas, methanation, biogas])
+    bus_sizes.sort_index(inplace=True)
+
+    to_remove = n.links.index[~n.links.carrier.str.contains("gas pipeline")]
+    n.links.drop(to_remove, inplace=True)
+
+    link_widths_rem = n.links.p_nom_opt / linewidth_factor
+    link_widths_rem[n.links.p_nom_opt < line_lower_threshold] = 0.
+
+    link_widths_orig = n.links.p_nom / linewidth_factor
+    link_widths_orig[n.links.p_nom < line_lower_threshold] = 0.
+
+    max_usage = n.links_t.p0.abs().max(axis=0)
+    link_widths_used =  max_usage / linewidth_factor
+    link_widths_used[max_usage < line_lower_threshold] = 0.
+
+    link_color_used = n.links.carrier.map({"gas pipeline": "#f08080",
+                                           "gas pipeline new": "#c46868"})
+
+    n.links.bus0 = n.links.bus0.str.replace(" gas", "")
+    n.links.bus1 = n.links.bus1.str.replace(" gas", "")
+
+    tech_colors = snakemake.config['plotting']['tech_colors']
+
+    bus_colors = {
+        "fossil gas": tech_colors["fossil gas"],
+        "methanation": tech_colors["methanation"],
+        "biogas": "seagreen"
+    }
+
+    fig, ax = plt.subplots(figsize=(7,6), subplot_kw={"projection": ccrs.PlateCarree()})
+
+    n.plot(
+        bus_sizes=bus_sizes,
+        bus_colors=bus_colors,
+        link_colors='lightgrey',
+        link_widths=link_widths_orig,
+        branch_components=["Link"],
+        ax=ax,
+        **map_opts
+    )
+
+    n.plot(
+        geomap=False,
+        ax=ax,
+        bus_sizes=0.,
+        link_colors='#e8d1d1',
+        link_widths=link_widths_rem,
+        branch_components=["Link"],
+        **map_opts
+    )
+
+    n.plot(
+        geomap=False,
+        ax=ax,
+        bus_sizes=0.,
+        link_colors=link_color_used,
+        link_widths=link_widths_used,
+        branch_components=["Link"],
+        **map_opts
+    )
+
+    handles = make_legend_circles_for(
+        [10e6, 100e6],
+        scale=bus_size_factor,
+        facecolor='grey'
+    )
+    labels = ["{} TWh".format(s) for s in (10, 100)]
+
+    l2 = ax.legend(
+        handles, labels,
+        loc="upper left",
+        bbox_to_anchor=(-0.03, 1.01),
+        labelspacing=1.0,
+        frameon=False,
+        title='gas generation',
+        handler_map=make_handler_map_to_scale_circles_as_in(ax)
+    )
+
+    ax.add_artist(l2)
+
+    handles = []
+    labels = []
+
+    for s in (50, 10):
+        handles.append(plt.Line2D([0], [0], color="grey", linewidth=s * 1e3 / linewidth_factor))
+        labels.append("{} GW".format(s))
+
+    l1_1 = ax.legend(
+        handles, labels,
+        loc="upper left",
+        bbox_to_anchor=(0.28, 1.01),
+        frameon=False,
+        labelspacing=0.8,
+        handletextpad=1.5,
+        title='gas pipeline used capacity'
+    )
+
+    ax.add_artist(l1_1)
+
+    fig.savefig(
+        snakemake.output.map.replace("-costs-all","-ch4_network"),
         bbox_inches="tight"
     )
 
@@ -487,7 +672,10 @@ def plot_map_without(network):
     dc_color = "m"
 
     # hack because impossible to drop buses...
-    n.buses.loc["EU gas", ["x", "y"]] = n.buses.loc["DE0 0", ["x", "y"]]
+    if "EU gas" in n.buses.index:
+            eu_location = snakemake.config["plotting"].get("eu_node_location", dict(x=-5.5, y=46))
+            n.buses.loc["EU gas", "x"] = eu_location["x"]
+            n.buses.loc["EU gas", "y"] = eu_location["y"]
 
     to_drop = n.links.index[(n.links.carrier != "DC") & (n.links.carrier != "B2B")]
     n.links.drop(to_drop, inplace=True)
@@ -670,11 +858,11 @@ if __name__ == "__main__":
         snakemake = mock_snakemake(
             'plot_network',
             simpl='',
-            clusters=45,
-            lv=1.5,
+            clusters="45",
+            lv=1.0,
             opts='',
-            sector_opts='Co2L0-168H-T-H-B-I-solar+p3-dist1',
-            planning_horizons=2030,
+            sector_opts='168H-T-H-B-I-A-solar+p3-dist1',
+            planning_horizons="2050",
         )
 
     overrides = override_component_attrs(snakemake.input.overrides)
@@ -691,6 +879,7 @@ if __name__ == "__main__":
         transmission=False)
 
     plot_h2_map(n)
+    plot_ch4_map(n)
     plot_map_without(n)
 
     #plot_series(n, carrier="AC", name=suffix)

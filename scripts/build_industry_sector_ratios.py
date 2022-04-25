@@ -78,12 +78,11 @@ def load_idees_data(sector, country="EU28"):
         sheet_name=list(sheets.values()),
         index_col=0,
         header=0,
-        squeeze=True,
         usecols=usecols,
     )
 
     for k, v in sheets.items():
-        idees[k] = idees.pop(v)
+        idees[k] = idees.pop(v).squeeze()
 
     return idees
 
@@ -1006,7 +1005,7 @@ def non_ferrous_metals():
     # Alumina
 
     # High enthalpy heat is converted to methane.
-    # Process heat at T>500ºC is required here.
+    # Process heat at T>500C is required here.
     # Refining is electrified.
     # There are no process emissions associated to Alumina manufacturing.
 
