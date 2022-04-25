@@ -7,7 +7,7 @@ retrieve_sector_databundle: true
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: your-run-name  # use this to keep track of runs with different settings
+run: test-overnight  # use this to keep track of runs with different settings
 foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
@@ -15,13 +15,13 @@ scenario:
   simpl: # only relevant for PyPSA-Eur
     - ''
   lv: # allowed transmission line volume expansion, can be any float >= 1.0 (today) or "opt"
-    - 1.0
+    - 1.5
   clusters: # number of nodes in Europe, any integer between 37 (1 node per country-zone) and several hundred
-    - 45
+    - 5
   opts: # only relevant for PyPSA-Eur
     - ''
   sector_opts: # this is where the main scenario settings are
-    - Co2L0-273H-T-H-B-I-A-solar+p3-dist1
+    - CO2L0-191H-T-H-B-I-A-solar+p3-dist1
   # to really understand the options here, look in scripts/prepare_sector_network.py
   # Co2Lx specifies the CO2 target in x% of the 1990 values; default will give default (5%);
   # Co2L0p25 will give 25% CO2 emissions; Co2Lm0p05 will give 5% negative emissions
@@ -57,12 +57,12 @@ co2_budget:
 # snapshots are originally set in PyPSA-Eur/config.yaml but used again by PyPSA-Eur-Sec
 snapshots:
   # arguments to pd.date_range
-  start: "2013-01-01"
-  end: "2014-01-01"
+  start: "2013-03-01"
+  end: "2013-04-01"
   closed: left # end is not inclusive
 
 atlite:
-  cutout: ../pypsa-eur/cutouts/europe-2013-era5.nc
+  cutout: ../pypsa-eur/cutouts/be-03-2013-era5.nc
 
 # this information is NOT used but needed as an argument for
 # pypsa-eur/scripts/add_electricity.py/load_costs in make_summary.py
@@ -102,23 +102,13 @@ biomass:
   year: 2030
   scenario: ENS_Med
   classes:
-    manureslurry:
-      - Manure biomass potential
-    municipal biowaste:
+    solid biomass:
+      - Agricultural waste
+      - Fuelwood residues
+      - Secondary Forestry residues - woodchips
+      - Sawdust
+      - Residues from landscape care
       - Municipal waste
-    sewage sludge:
-      - Sludge biomass
-    straw:
-      - Primary agricultural residues
-    poplar:
-      - Poplar biomass potential
-      - Willow biomass
-    forest residues:
-      - Forestry energy residue
-      - Forestry residues from landscape care biomass
-    industry wood residues:
-      - Secondary forestry residues
-      - Secondary Forestry residues sawdust
     not included:
       - Sugar from sugar beet
       - Rape seed
@@ -129,18 +119,9 @@ biomass:
       - Poplar
       - FuelwoodRW
       - C&P_RW
-#=======
-#    solid biomass:
-#      - Agricultural waste
-#      - Fuelwood residues
-#      - Secondary Forestry residues - woodchips
-#      - Sawdust
-#      - Residues from landscape care
-#      - Municipal waste
-#    biogas:
-#      - Manure solid, liquid
-#      - Sludge
-#>>>>>>> de48b4656fae9dd9bec621df919b0eb6ee9eae5d
+    biogas:
+      - Manure solid, liquid
+      - Sludge
 
 
 solar_thermal:
@@ -206,35 +187,14 @@ sector:
   agriculture_machinery_electric_efficiency: 0.3 # electricity per use
   shipping_average_efficiency: 0.4 #For conversion of fuel oil to propulsion in 2011
   shipping_hydrogen_liquefaction: false # whether to consider liquefaction costs for shipping H2 demands
-  shipping_hydrogen_share: # 1 means all hydrogen FC
-    2020: 0
-    2025: 0
-    2030: 0.05
-    2035: 0.15
-    2040: 0.3
-    2045: 0.6
-    2050: 1
-  #Sector total demand change factor
-  industry_electrification: # 1 means completely electrified
-    2020: 0
-    2030: 0.05
-    2040: 0.2
-    2050: 1
-  land_transport_demand: #Factor of current demand
-    2020: 1
-    2030: 1.1
-    2040: 1.2
-    2050: 1.9
-  aviation_demand: #Factor of current demand
-    2020: 1
-    2030: 1.2
-    2040: 1.5
-    2050: 1.7
-  shipping_demand: #Factor of current demand
-    2020: 1
-    2030: 1.2
-    2040: 1.5
-    2050: 1.7
+  shipping_hydrogen_share: 1 # 1 means all hydrogen FC
+    # 2020: 0
+    # 2025: 0
+    # 2030: 0.05
+    # 2035: 0.15
+    # 2040: 0.3
+    # 2045: 0.6
+    # 2050: 1
   time_dep_hp_cop: true #time dependent heat pump coefficient of performance
   heat_pump_sink_T: 55. # Celsius, based on DTU / large area radiators; used in build_cop_profiles.py
    # conservatively high to cover hot water and space heating in poorly-insulated buildings
@@ -284,13 +244,12 @@ sector:
     # - offshore
   use_fischer_tropsch_waste_heat: true
   use_fuel_cell_waste_heat: true
-  use_biofuel_waste_heat: true
-  electricity_distribution_grid: false
+  electricity_distribution_grid: true
   electricity_distribution_grid_cost_factor: 1.0  #multiplies cost in data/costs.csv
   electricity_grid_connection: true  # only applies to onshore wind and utility PV
   H2_network: true
-  gas_network: false
-  H2_retrofit: false  # if set to True existing gas pipes can be retrofitted to H2 pipes
+  gas_network: true
+  H2_retrofit: true  # if set to True existing gas pipes can be retrofitted to H2 pipes
   # according to hydrogen backbone strategy (April, 2020) p.15
   # https://gasforclimate2050.eu/wp-content/uploads/2020/07/2020_European-Hydrogen-Backbone_Report.pdf
   # 60% of original natural gas capacity could be used in cost-optimal case as H2 capacity
@@ -301,8 +260,6 @@ sector:
   biomass_transport: false  # biomass transport between nodes
   conventional_generation: # generator : carrier
     OCGT: gas
-  biomass_transport: false
-  hvdc: true
 
 
 industry:
@@ -356,7 +313,6 @@ industry:
   # DECHEMA (2017): https://dechema.de/dechema_media/Downloads/Positionspapiere/Technology_study_Low_carbon_energy_and_feedstock_for_the_European_chemical_industry-p-20002750.pdf
   # Material Economics (2019): https://materialeconomics.com/latest-updates/industrial-transformation-2050
 
-
 costs:
   lifetime: 25 #default lifetime
   # From a Lion Hirth paper, also reflects average of Noothout et al 2016
@@ -404,14 +360,15 @@ solving:
       - StorageUnit
 
   solver:
-    name: gurobi
-    threads: 4
-    method: 2 # barrier
-    crossover: 0
-    BarConvTol: 1.e-6
-    Seed: 123
-    AggFill: 0
-    PreDual: 0
+    name: cbc
+    # threads: 4
+    # method: 2 # barrier
+    # crossover: 0
+    # BarConvTol: 1.e-6
+    # Seed: 123
+    # AggFill: 0
+    # PreDual: 0
+    # GURO_PAR_BARDENSETHRESH: 200
     #FeasibilityTol: 1.e-6
 
     #name: cplex
@@ -420,7 +377,7 @@ solving:
     #solutiontype: 2 # non basic solution, ie no crossover
     #barrier_convergetol: 1.e-5
     #feasopt_tolerance: 1.e-6
-  mem: 30000 #memory in MB; 20 GB enough for 50+B+I+H2; 100 GB for 181+B+I+H2
+  mem: 4000 #memory in MB; 20 GB enough for 50+B+I+H2; 100 GB for 181+B+I+H2
 
 
 plotting:
@@ -429,9 +386,6 @@ plotting:
     color_geomap:
       ocean: white
       land: whitesmoke
-  eu_node_location:
-    x: -5.5
-    y: 46.
   costs_max: 1000
   costs_threshold: 1
   energy_max: 20000
@@ -636,40 +590,6 @@ plotting:
     process emissions: '#222222'
     process emissions to stored: '#444444'
     process emissions to atmosphere: '#888888'
-    oil emissions: '#666666'
-    land transport oil emissions: '#666666'
-    land transport fuel cell: '#AAAAAA'
-    biogas: '#800000'
-    solid biomass: '#DAA520'
-    today: '#D2691E'
-    shipping: '#6495ED'
-    shipping oil: "#6495ED"
-    shipping oil emissions: "#6495ED"
-    electricity distribution grid: '#333333'
-    solid biomass transport: green
-    H2 for industry: "#222222"
-    H2 for shipping: "#6495ED"
-    lowT process steam solid biomass: "#555555"
-    lowT process steam methane: "#555555"
-    lowT process steam H2: "#555555"
-    lowT process steam: "#555555"
-    solid biomass transport: "green"
-    BioSNG: "#123456"
-    biomass to liquid: "gold"
-    electrofuel: "#832473"
-    liquid biofuel: "#384257"
-    digestible biomass: "yellow"
-    digestible biomass to hydrogen: "blue"
-    digestible biomass to gas: "yellow"
-    solid biomass to hydrogen: "black"
-    solid biomass to electricity: "purple"
-    forest residues solid biomass: "green"
-    industry wood residues solid biomass: "green"
-    manureslurry digestible biomass: "green"
-    municipal biowaste digestible biomass: "green"
-    poplar solid biomass: "green"
-    sewage sludge digestible biomass: "green"
-    straw digestible biomass: "green"
     oil emissions: '#aaaaaa'
     shipping oil emissions: "#555555"
     land transport oil emissions: '#777777'
