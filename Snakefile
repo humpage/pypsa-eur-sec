@@ -1,5 +1,5 @@
 
-configfile: "config.sensitivity.yaml"
+configfile: "config.feasibilityPrior.yaml"
 
 
 wildcard_constraints:
@@ -163,6 +163,7 @@ rule build_energy_totals:
         co2="data/eea/UNFCCC_v23.csv",
         swiss="data/switzerland-sfoe/switzerland-new_format.csv",
         idees="data/jrc-idees-2015",
+        district_heat_share='data/district_heat_share.csv',
         eurostat=input_eurostat
     output:
         energy_name='resources/energy_totals.csv',
@@ -415,7 +416,8 @@ rule make_summary:
         weighted_prices=SDIR + '/csvs/weighted_prices.csv',
         market_values=SDIR + '/csvs/market_values.csv',
         price_statistics=SDIR + '/csvs/price_statistics.csv',
-        metrics=SDIR + '/csvs/metrics.csv'
+        metrics=SDIR + '/csvs/metrics.csv',
+        H2_share_of_AC_revenue=SDIR + '/csvs/H2_share_of_AC_revenue.csv'
     threads: 2
     resources: mem_mb=10000
     benchmark: SDIR + "/benchmarks/make_summary"

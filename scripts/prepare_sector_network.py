@@ -535,6 +535,8 @@ def prepare_data(n):
     nodal_energy_totals.index = pop_layout.index
     nodal_energy_totals = nodal_energy_totals.multiply(pop_layout.fraction, axis=0)
 
+    district_heat_share = round(nodal_energy_totals["district heat share"], ndigits=2)
+
     # copy forward the daily average heat demand into each hour, so it can be multipled by the intraday profile
     daily_space_heat_demand = xr.open_dataarray(snakemake.input.heat_demand_total).to_pandas().reindex(
         index=n.snapshots, method="ffill")
@@ -665,7 +667,7 @@ def prepare_data(n):
         weekly_profile=dsm_week
     )
 
-    return nodal_energy_totals, heat_demand, ashp_cop, gshp_cop, solar_thermal, transport, avail_profile, dsm_profile, nodal_transport_data
+    return nodal_energy_totals, heat_demand, ashp_cop, gshp_cop, solar_thermal, transport, avail_profile, dsm_profile, nodal_transport_data, district_heat_share
 
 
 # TODO checkout PyPSA-Eur script
@@ -1353,7 +1355,7 @@ def add_heat(n, costs):
 
     sectors = ["residential", "services"]
 
-    nodes = create_nodes_for_heat_sector()
+    nodes, dist_fraction, urban_fraction = create_nodes_for_heat_sector()
 
     # NB: must add costs of central heating afterwards (EUR 400 / kWpeak, 50a, 1% FOM from Fraunhofer ISE)
 
@@ -1391,8 +1393,12 @@ def add_heat(n, costs):
         for sector in sectors:
             if "rural" in name:
                 factor = 1 - urban_fraction[nodes[name]]
-            elif "urban" in name:
-                factor = urban_fraction[nodes[name]]
+            elif "urban central" in name:
+                factor = dist_fraction[nodes[name]]
+            elif "urban decentral" in name:
+                factor = urban_fraction[nodes[name]] - \
+                    dist_fraction[nodes[name]]
+
             if sector in name:
                 heat_load = heat_demand[[sector + " water", sector + " space"]].groupby(level=1, axis=1).sum()[
                     nodes[name]].multiply(factor)
@@ -1400,7 +1406,7 @@ def add_heat(n, costs):
         if name == "urban central":
             # TODO: seems to be an error in the grouping?
             heat_load = heat_demand.groupby(level=1, axis=1).sum()[nodes[name]].multiply(
-                urban_fraction[nodes[name]] * (1 + options['district_heating_loss']))
+                urban_fraction[nodes[name]] * (1 + options['district_heating']['district_heating_loss']))
 
         n.madd("Load",
                nodes[name],
@@ -1676,6 +1682,66 @@ def add_heat(n, costs):
                        )
 
 
+# def create_nodes_for_heat_sector():
+#     # TODO pop_layout
+#
+#     # rural are areas with low heating density and individual heating
+#     # urban are areas with high heating density
+#     # urban can be split into district heating (central) and individual heating (decentral)
+#
+#     ct_urban = pop_layout.urban.groupby(pop_layout.ct).sum()
+#     # distribution of urban population within a country
+#     pop_layout["urban_ct_fraction"] = pop_layout.urban / pop_layout.ct.map(ct_urban.get)
+#
+#     sectors = ["residential", "services"]
+#
+#     nodes = {}
+#     urban_fraction = pop_layout.urban / pop_layout[["rural", "urban"]].sum(axis=1)
+#
+#     for sector in sectors:
+#         nodes[sector + " rural"] = pop_layout.index
+#
+#         if options["central"] and not options["central_real"]:
+#             # TODO: this looks hardcoded, move to config
+#             urban_decentral_ct = pd.Index(["ES", "GR", "PT", "IT", "BG"])
+#             nodes[sector + " urban decentral"] = pop_layout.index[pop_layout.ct.isin(urban_decentral_ct)]
+#         # else:
+#         #     nodes[sector + " urban decentral"] = pop_layout.index
+#
+#         # if options["central"] and not options["central_real"]:
+#             # central_fraction = options['central_fraction']
+#             # decentral_nodes = dist_heat_share[dist_heat_share == 0]
+#             # dist_fraction = central_fraction * urban_fraction
+#             # nodes["urban central"] = dist_fraction.index
+#
+#         if options["central_real"]:  # take current district heating share
+#             dist_fraction = dist_heat_share * \
+#                             pop_layout["urban_ct_fraction"] / pop_layout["fraction"]
+#             nodes["urban central"] = dist_fraction.index
+#             # if district heating share larger than urban fraction -> set urban
+#             # fraction to district heating share
+#             urban_fraction = pd.concat([urban_fraction, dist_fraction],
+#                                        axis=1).max(axis=1)
+#             diff = urban_fraction - dist_fraction
+#             dist_fraction += diff * options["dh_strength"]
+#             print("************************************")
+#             print(
+#                 "the current DH share compared to the maximum possible is increased \
+#                    \n by a factor of ",
+#                 options["dh_strength"],
+#                 "resulting DH share: ",
+#                 dist_fraction)
+#             print("**********************************")
+#
+#         else:
+#             dist_fraction = urban_fraction * 0
+#             nodes["urban central"] = dist_fraction.index
+#
+#     # for central nodes, residential and services are aggregated
+#     nodes["urban central"] = pop_layout.index.symmetric_difference(nodes["residential urban decentral"])
+#
+#     return nodes
+
 def create_nodes_for_heat_sector():
     # TODO pop_layout
 
@@ -1683,23 +1749,39 @@ def create_nodes_for_heat_sector():
     # urban are areas with high heating density
     # urban can be split into district heating (central) and individual heating (decentral)
 
+    ct_urban = pop_layout.urban.groupby(pop_layout.ct).sum()
+    # distribution of urban population within a country
+    pop_layout["urban_ct_fraction"] = pop_layout.urban / pop_layout.ct.map(ct_urban.get)
+
     sectors = ["residential", "services"]
 
     nodes = {}
+    urban_fraction = pop_layout.urban / pop_layout[["rural", "urban"]].sum(axis=1)
+
     for sector in sectors:
         nodes[sector + " rural"] = pop_layout.index
+        nodes[sector + " urban decentral"] = pop_layout.index
 
-        if options["central"]:
-            # TODO: this looks hardcoded, move to config
-            urban_decentral_ct = pd.Index(["ES", "GR", "PT", "IT", "BG"])
-            nodes[sector + " urban decentral"] = pop_layout.index[pop_layout.ct.isin(urban_decentral_ct)]
-        else:
-            nodes[sector + " urban decentral"] = pop_layout.index
+    # maximum potential of urban demand covered by district heating
+    central_fraction = options['district_heating']["potential"]
+    # district heating share at each node
+    dist_fraction_node = district_heat_share * pop_layout["urban_ct_fraction"] / pop_layout["fraction"]
+    nodes["urban central"] = dist_fraction_node.index
+    # if district heating share larger than urban fraction -> set urban
+    # fraction to district heating share
+    urban_fraction = pd.concat([urban_fraction, dist_fraction_node],
+                               axis=1).max(axis=1)
+    # difference of max potential and today's share of district heating
+    diff = (urban_fraction * central_fraction) - dist_fraction_node
+    progress = get(options["district_heating"]["progress"], investment_year)
+    dist_fraction_node += diff * progress
+    print(
+        "The current district heating share compared to the maximum",
+        f"possible is increased by a progress factor of\n{progress}",
+        f"resulting in a district heating share of\n{dist_fraction_node}"
+    )
 
-    # for central nodes, residential and services are aggregated
-    nodes["urban central"] = pop_layout.index.symmetric_difference(nodes["residential urban decentral"])
-
-    return nodes
+    return nodes, dist_fraction_node, urban_fraction
 
 
 def add_biomass(n, costs, beccs, biomass_import_price):
@@ -2890,7 +2972,7 @@ if __name__ == "__main__":
             options['electricity_distribution_grid'] = True
             options['electricity_distribution_grid_cost_factor'] = float(o[4:].replace("p", ".").replace("m", "-"))
 
-    nodal_energy_totals, heat_demand, ashp_cop, gshp_cop, solar_thermal, transport, avail_profile, dsm_profile, nodal_transport_data = prepare_data(
+    nodal_energy_totals, heat_demand, ashp_cop, gshp_cop, solar_thermal, transport, avail_profile, dsm_profile, nodal_transport_data, district_heat_share = prepare_data(
         n)
 
     if "nodistrict" in opts:
