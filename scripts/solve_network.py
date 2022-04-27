@@ -158,6 +158,9 @@ def add_feasibility_constraints(n):
     el_load = n.loads.p_set.filter(regex='0$') * 8760
     el_loadindustry = n.loads.p_set.filter(regex='industry electricity') * 8760
     totLoad = el_load + el_loadindustry
+    print(totLoad)
+    totLoad = totLoad.map(n.buses.country)
+    print(totLoad)
     #choose all solar and wind
     #n.generators.filter(regex='onwind')  # .sum(axis=1)
     #offwind = n.generators_t.p.filter(regex='offwind')  # .sum(axis=1)
@@ -168,16 +171,22 @@ def add_feasibility_constraints(n):
     #biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
 
     gen_country = n.generators.bus.map(n.buses.country)
+    print(gen_country)
 
     # cc means country and carrier
-    p_nom_per_cc = (pd.DataFrame(
-        {'p_nom': linexpr((1, get_var(n, 'Generator', 'p'))),
-         'country': gen_country, 'carrier': n.generators.carrier})
-                    .dropna(subset=['p_nom'])
-                    .groupby(['country', 'carrier']).p_nom
-                    .apply(join_exprs))
+    # p_nom_per_cc = linexpr((1, get_var(n, 'Generator', 'p'))),
+    #      'country': gen_country, 'carrier': n.generators.carrier})
+    #                 .dropna(subset=['p_nom'])
+    #                 .groupby(['country', 'carrier']).p_nom
+    #                 .apply(join_exprs))
+    # print(p_nom_per_cc)
 
-    define_constraints(n, p_nom_per_cc, '<=', maximum_conventional, 'feasibility_p_nom', 'max')
+    lhs_gen = linexpr((n.snapshot_weightings.generators * scaling,
+                       get_var(n, "Generator", "p").T)
+                      ).T.groupby(gen_country, axis=1).sum().apply(join_exprs)
+    print(lhs_gen)
+
+    define_constraints(n, lhs_gen, '<=', totLoad*3, 'feasibility_p_nom', 'max')
 
 def add_EQ_constraints(n, o, scaling=1e-1):
     float_regex = "[0-9]*\.?[0-9]+"
@@ -334,6 +343,10 @@ def extra_functionality(n, snapshots):
 
     options = snakemake.wildcards.sector_opts.split('-')
     print('options: ', options)
+
+    print('adding feasibility constraints')
+    add_feasibility_constraints(n)
+
     for o in options:
         if "B" in o:
             print('adding biofuel constraints')
