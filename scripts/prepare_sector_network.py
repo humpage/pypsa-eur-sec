@@ -1691,6 +1691,7 @@ def add_heat(n, costs):
                 lifetime=costs.at['central gas CHP', 'lifetime']
             )
 
+
             n.madd("Link",
                 nodes[name] + " urban central gas CHP CC",
                 bus0=spatial.gas.df.loc[nodes[name], "nodes"].values,
