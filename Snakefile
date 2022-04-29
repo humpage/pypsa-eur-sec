@@ -1,5 +1,5 @@
 
-configfile: "config.feasibilityPrior.yaml"
+configfile: config["configfile"] #"config.feasibilityPrior.yaml"
 
 
 wildcard_constraints:
