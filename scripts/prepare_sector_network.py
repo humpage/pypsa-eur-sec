@@ -735,19 +735,20 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
     elif 'FT1' in snakemake.wildcards.biofuel_sensitivity:
         pass
 
-    print('BtL CO2 stored: ', costs.at['BtL', 'CO2 stored'])
+    # print('BtL CO2 stored: ', costs.at['BtL', 'CO2 stored'])
     # input('Press ENTER to continue')
     # if 'Ef0' in snakemake.wildcards.electrofuel_sensitivity:
     # elif 'Ef2' in snakemake.wildcards.electrofuel_sensitivity:
     # elif 'Ef1' in snakemake.wildcards.electrofuel_sensitivity:
     #     pass
 
-    if 'Ef0' in snakemake.wildcards.electrolysis_sensitivity:
+    if 'Ef0' in snakemake.wildcards.electrofuel_sensitivity:
         costs.at['nuclear_new', 'investment'] = 4000000
-    elif 'Ef2' in snakemake.wildcards.electrolysis_sensitivity:
+    elif 'Ef2' in snakemake.wildcards.electrofuel_sensitivity:
         costs.at['nuclear_new', 'investment'] = 8000000
-    elif 'Ef1' in snakemake.wildcards.electrolysis_sensitivity:
+    elif 'Ef1' in snakemake.wildcards.electrofuel_sensitivity:
         pass
+
 
     if 'E0' in snakemake.wildcards.electrolysis_sensitivity:
         costs.at['electrolysis', 'efficiency'] = 0.8
@@ -798,6 +799,7 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
 
     print('BtL investment: ', costs.at['BtL', 'investment'])
     print('Electrofuel investment: ', costs.at['Fischer-Tropsch', 'investment'])
+    print('Nuclear investment: ', costs.at['nuclear_new', 'investment'])
     print('Biomass import price: ', biomass_import_price)
 
     return costs, biomass_import_price, carbon_sequestration_cost
