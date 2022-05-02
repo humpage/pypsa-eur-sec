@@ -742,6 +742,13 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
     # elif 'Ef1' in snakemake.wildcards.electrofuel_sensitivity:
     #     pass
 
+    if 'Ef0' in snakemake.wildcards.electrolysis_sensitivity:
+        costs.at['nuclear_new', 'investment'] = 4000000
+    elif 'Ef2' in snakemake.wildcards.electrolysis_sensitivity:
+        costs.at['nuclear_new', 'investment'] = 8000000
+    elif 'Ef1' in snakemake.wildcards.electrolysis_sensitivity:
+        pass
+
     if 'E0' in snakemake.wildcards.electrolysis_sensitivity:
         costs.at['electrolysis', 'efficiency'] = 0.8
         costs.at['electrolysis', 'investment'] = 150000
