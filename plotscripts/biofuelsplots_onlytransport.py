@@ -8,10 +8,10 @@ import matplotlib.colors as mcolors
 
 plt.style.use('ggplot')
 
-year = 2040
-scenario = 'serverResults/mainScenarios{}'.format(year)
+year = 2060
+scenario = 'serverResults/electrofuels3'#.format(year)
 sdir = '../results/{}/csvs/costs.csv'.format(scenario)
-output = '../results/fuelSupply{}'.format(year)
+output = '../results/{}/plots/fuelSupply{}'.format(scenario,year)
 balances = '../results/{}/csvs/supply_energy.csv'.format(scenario)
 metrics = '../results/{}/csvs/metrics.csv'.format(scenario)
 costs = '../results/{}/csvs/costs.csv'.format(scenario)
@@ -136,7 +136,8 @@ def plot_balances(balances):
             BiofuelCO2captureShare = df.loc['biomass to liquid'] / df[df > 0].dropna().sum()
             # print('Biofuel captured CO2 share: ', BiofuelCO2captureShare)
 
-            CCUS_DACshare = df.loc['DAC'] / df[df > 0].dropna().sum()
+            CCUS_DACshare = 0#df.loc['DAC'] / df[df > 0].dropna().sum()
+
             # print('CCUS DAC share: ', CCUS_DACshare)
 
             TotalCO2captured = df[df > 0].sum()
@@ -245,7 +246,7 @@ def rename_techs(label):
         'oil': 'fossil liquid fuel',
         'gas': 'fossil gas',
         'lignite': 'coal',
-        'uranium': 'power',
+        'uranium': 'nuclear',
         'process emissions': 'industry',
         'gas for industry': 'industry',
         'gas for mediumT industry': 'industry',
@@ -253,8 +254,8 @@ def rename_techs(label):
         'SMR': 'other',
         'CC': 'carbon capture',
         'methanation': 'other',
-        'nuclear': 'power',
-        'nuclear_new': 'power',
+        'nuclear': 'nuclear',
+        'nuclear_new': 'nuclear',
         'lowT process steam heat pump': 'industry',
         'solid biomass for mediumT industry': 'other biomass usage',
         'gas for highT industry': 'industry',
@@ -442,8 +443,14 @@ preferred_order = pd.Index([
 
 preferred_order2 = pd.Index([
     'power excl. fossil fuels',
+    'other power',
+    'solar PV',
+    'onshore wind',
+    'offshore wind',
+    'nuclear',
     'heat',
     'CHP',
+    'hydrogen',
     'industry',
     'fossils',
     'H2 usages',
@@ -496,14 +503,21 @@ def axes_handling_right(ax, legend=False):
     if legend == False:
         ax.get_legend().remove()
 
-colors = {'power excl. fossil fuels': '#6495ED', #'#235ebc',
+colors = {'power excl. fossil fuels': '#6495ED',
+              'other power': '#6495ED',#'#235ebc',
+              'nuclear': 'brown',
+              'offshore wind': 'darkblue',
+              'onshore wind': 'lightblue',
+              'solar PV': 'gold',
               'fossil fuels': '#C0C0C0',
               'fossil liquid fuel': '#C0C0C0',#'#708090',
               'fossil fuel + CCS': 'grey',
               'fossil liquid fuel + CCS': '#708090',
               'fossil liquid fuel w/o CCS': '#708090',
               'fossil gas': 'darkgrey',
-              'other': 'lightblue',
+              'other': 'pink',
+              'hydrogen': 'white',
+              'CHP': 'red',
               'biomass': 'green',
               'other biomass usage': '#FFE5B4',
               'biofuel': '#32CD32',#'#ADFF2F',#'#00FF00',#'#32CD33',#'#C2B280',
@@ -518,7 +532,7 @@ colors = {'power excl. fossil fuels': '#6495ED', #'#235ebc',
               'biomass import': '#48CC22',
               'biofuel process': 'lightgreen',
               'electrofuel process': '#E30B5C',
-              'fossil liquid fuel emission cost': '#E5E4B7'
+              'fossil liquid fuel emission cost': '#E5E4B7',
               # 'electrofuel + CC': '#832473',  # 'lightgreen',
               # 'carbon storage': 'darkgreen'
               }
@@ -554,8 +568,8 @@ def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, plottype, twoleg
 
     totals = to_plot.sum(axis=1)
     totals2 = to_plot[to_plot>0].sum(axis=1)
-    print('totals: ', totals)
-    print('totals2: ', totals2)
+    # print('totals: ', totals)
+    # print('totals2: ', totals2)
 
     for rect, total in itertools.zip_longest(ax.patches, totals, fillvalue=0):  # zip(ax.patches, list_values):# #
 
@@ -630,7 +644,7 @@ def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, plottype, twoleg
 
     if year == 2060:
         ymin = -30
-        ymax = 1000
+        ymax = 650
     elif year == 2040:
         ymin = -30
         ymax = 1000
@@ -660,17 +674,16 @@ def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, plottype, twoleg
 
 
 def rename_cols(df,order):
+    print(df)
     for num in np.arange(0, 9):
         # print(df.filter(regex='0p{}'.format(str(num))).columns)
         if num == 0:
-            df.columns = df.columns.str.replace('.*B0p{}Im-.*'.format(str(num)), 'Opt')
-            df.columns = df.columns.str.replace('.*B0p{}ImEq-.*'.format(str(num)), '0%')
+            df.columns = df.columns.str.replace('.*Ef0.*', '4000 €/kW')
         else:
-            df.columns = df.columns.str.replace('.*B0p{}.*'.format(str(num)), '{}0%'.format(num))
-        df.columns = df.columns.str.replace('.*B1p0.*', '100%')
+            df.columns = df.columns.str.replace('.*Ef1.*', '6000 €/kW')
 
     df = df[order]
-    # print(df)
+    print(df)
     return df
 
 
@@ -729,11 +742,11 @@ def rename_techsAll(label):
         "hydro reservoir": 'power',
         "run of river": 'power',
         "pumped hydro storage": 'power',
-        "onshore wind": 'power',
-        "offshore wind": 'power',
-        "offshore wind (AC)": 'power',
-        "offshore wind (DC)": 'power',
-        "solar PV": 'power',
+        # "onshore wind": 'power',
+        # "offshore wind": 'power',
+        "offshore wind (AC)": 'offshore wind',
+        "offshore wind (DC)": 'offshore wind',
+        # "solar PV": 'power',
         "solar thermal": 'heat',
         "building retrofitting": 'heat',
         "ground heat pump": 'heat',
@@ -745,14 +758,14 @@ def rename_techsAll(label):
         "CHP": 'CHP',
         "OCGT": 'CHP',
         "gas boiler": 'heat',
-        "hydrogen storage": 'hydrogen derivatives',
+        "hydrogen storage": 'hydrogen',
         "power-to-gas": 'hydrogen derivatives',
-        "H2": 'hydrogen derivatives',
+        "H2": 'hydrogen',
         "H2 liquefaction": 'hydrogen derivatives',
         "landscape care solid biomass": 'solid biomass',
         "forest residues solid biomass": 'solid biomass',
         "industry wood residues solid biomass": 'solid biomass',
-        "solid biomass import": 'biomass import',
+        "solid biomass import": 'solid biomass',
         "straw digestible biomass": 'digestible biomass',
         "municipal biowaste digestible biomass": 'digestible biomass',
         "manureslurry digestible biomass": 'digestible biomass',
@@ -776,8 +789,8 @@ def rename_techsAll(label):
         'SMR': 'other',
         'CC': 'other',
         'methanation': 'other',
-        'nuclear': 'power',
-        'nuclear_new': 'power',
+        'nuclear': 'nuclear',
+        'nuclear_new': 'nuclear',
         'lowT process steam heat pump': 'industry',
         'solid biomass for mediumT industry': 'other biomass usage',
         'gas for highT industry': 'industry',
@@ -796,11 +809,11 @@ def rename_techsAll(label):
     simplify_more = {
         'heat': 'other',
         'industry': 'other',
-        'CHP': 'other',
-        'power': 'power excl. fossil fuels',
+        # 'CHP': 'other',
+        'power': 'other power',
         'hydrogen derivatives': 'other',
-        'digestible biomass': 'biomass domestic',
-        'solid biomass': 'biomass domestic',
+        'digestible biomass': 'biomass',
+        'solid biomass': 'biomass',
         'biomass to liquid': 'biofuel process',
         'electrofuel': 'electrofuel process',
         'DAC': 'DAC',
@@ -865,7 +878,7 @@ def gen_transport_df_for_plots(transportOnly, mode='cost'):
         s_low = 'S0'
 
     carbonstorage = [s_low, 'S1500']
-    mandate = ['B0p0Im', 'B0p0ImEq', 'B0p2Im', 'B0p5Im', 'B1p0Im']
+    mandate = ['B0p0Im']
 
     for man, bm, cs in [(man, bm, cs) for man in mandate for bm in biomass for cs in carbonstorage]:
         sample = costs.filter(regex='{}-.*{}.*{}'.format(man, bm, cs))
@@ -873,7 +886,7 @@ def gen_transport_df_for_plots(transportOnly, mode='cost'):
         sampleRef.columns = sample.columns
         diff = sample.sum() - sampleRef.sum()
         diff.columns = sample.columns
-        print('Sample cols: ', sample.columns)
+        # print('Sample cols: ', sample.columns)
         costs.loc['opportunity cost total', sample.columns] = diff[0]
 
     if mode == 'cost':
@@ -883,7 +896,7 @@ def gen_transport_df_for_plots(transportOnly, mode='cost'):
 
         if transportOnly:
             co2price = abs(prices.loc['co2'])
-            print('co2 price', co2price)
+            # print('co2 price', co2price)
             costs.loc['electrofuel'] += ElectrofuelAmount * 0.25714 * co2price / 1e3
 
             # if year == 2040:
@@ -932,12 +945,12 @@ def gen_transport_df_for_plots(transportOnly, mode='cost'):
     if transportOnly:
         print('dropping non-transport')
         if year == 2060:
-            to_drop = ['power excl. fossil fuels', 'other', 'other biomass usage', 'fossil gas', 'carbon storage', 'DAC']
+            to_drop = ['power excl. fossil fuels', 'other', 'other biomass usage', 'fossil gas', 'carbon storage']#, 'DAC']
         elif year == 2040:
             to_drop = ['power excl. fossil fuels', 'other', 'other biomass usage', 'fossil gas', 'carbon storage', 'fossil fuels']
 
         costs = costs.drop(to_drop, axis=0)
-        costs2 = costs.drop(['opportunity cost total'], axis=0)
+        costs2 = costs#.drop(['opportunity cost total'], axis=0)
 
         for man, bm, cs in [(man, bm, cs) for man in mandate for bm in biomass for cs in carbonstorage]:
             sample = costs2.filter(regex='{}-.*{}.*{}'.format(man, bm, cs))
@@ -946,14 +959,14 @@ def gen_transport_df_for_plots(transportOnly, mode='cost'):
             diff = sample.sum() - sampleRef.sum()
             diff.columns = sample.columns
             costs.loc['fuel delta', sample.columns] = diff[0]
-            costs.loc['opportunity cost', sample.columns] = costs.loc['opportunity cost total', sample.columns] - diff[0]
+            #costs.loc['opportunity cost', sample.columns] = costs.loc['opportunity cost total', sample.columns] - diff[0]
 
         # costs.to_csv('../test415.csv')
 
 
-        # print(costs)
+        # print(costsAll)
 
-        costs = costs.drop(['opportunity cost total', 'fuel delta'], axis=0)
+        # costs = costs.drop(['opportunity cost total', 'fuel delta'], axis=0)
 
     return costs, costsAll
 
@@ -968,7 +981,7 @@ def df_for_subplots(costs):
     df4 = costs.filter(regex='Med.*{}'.format(s_low))#.*B0.*Ef2.*E2.*C2.*CS2.*O2.*I0')
     df5 = costs.filter(regex='Med.*S1500')#.*B0.*Ef2.*E2.*C2.*CS2.*O2.*I0')
 
-    order = ['0%', 'Opt', '20%', '50%', '100%']
+    order = ['6000 €/kW', '4000 €/kW']
     df2 = rename_cols(df2, order)
     df3 = rename_cols(df3, order)
     df4 = rename_cols(df4, order)
@@ -981,6 +994,7 @@ def plot_scenarios(costs, costAll, output, mode='cost'):
 
     df2, df3, df4, df5 = df_for_subplots(costs)
     df6, df7, df8, df9 = df_for_subplots(costAll)
+    print(df6)
 
     fig, ((ax2, ax3), (ax4, ax5)) = plt.subplots(2, 2, figsize=(12, 8))
 
@@ -992,18 +1006,21 @@ def plot_scenarios(costs, costAll, output, mode='cost'):
     # place_subplot(df2, ax2, 2, 1, 'Fuel cost [Billion EUR]', '', 'High bio, low CS')
     # place_subplot(df6, ax2, 2, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS')
 
-    ax2.plot(df6.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
-    place_subplot(df2, ax2, 1, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS', 'bar')
-    # place_subplot(df6.sum(), ax2, 1, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS', 'scatter')
+    # ax2.plot(df6.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
+    # place_subplot(df2, ax2, 1, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS', 'bar')
+    place_subplot(df6, ax2, 1, 0, 'Cost [Billion EUR]', '', 'High bio, low CS', 'bar')
 
-    ax3.plot(df7.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
-    place_subplot(df3, ax3, 1, 0, '', '', 'High bio, high CS', 'bar', legend=True)
+    # ax3.plot(df7.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
+    # place_subplot(df3, ax3, 1, 0, '', '', 'High bio, high CS', 'bar', legend=True)
+    place_subplot(df7, ax3, 1, 0, '', '', 'High bio, high CS', 'bar', legend=True)
 
-    place_subplot(df4, ax4, 1, 0, 'Fuel cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS', 'bar')
-    ax4.plot(df8.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black')
+    # place_subplot(df4, ax4, 1, 0, 'Fuel cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS', 'bar')
+    place_subplot(df8, ax4, 1, 0, 'Cost [Billion EUR]', 'Nuclear cost', 'Low bio, low CS', 'bar')
+    # ax4.plot(df8.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black')
 
-    place_subplot(df5, ax5, 1, 0, '', 'Biofuel share', 'Low bio, high CS', 'bar')
-    ax5.plot(df9.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black')
+    # place_subplot(df5, ax5, 1, 0, '', 'Biofuel share', 'Low bio, high CS', 'bar')
+    place_subplot(df9, ax5, 1, 0, '', 'Nuclear cost', 'Low bio, high CS', 'bar')
+    # ax5.plot(df9.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black')
 
     # place_subplot(df3, ax3, 2, 1, '', '', 'High bio, high CS', 'bar')
     # place_subplot(df7, ax3, 2, 0, '', '', 'High bio, high CS', 'bar', twolegend=True, legend=True)
