@@ -225,10 +225,18 @@ def add_co2_sequestration_limit(n, sns):
     lhs = linexpr((1, vars_final_co2_stored)).sum()
 
     limit = n.config["sector"].get("co2_sequestration_potential", 200) * 1e6
+    # for o in opts:
+    #     if not "seq" in o: continue
+    #     limit = float(o[o.find("seq")+3:]) * 1e6
+    #     print(float(o[o.find("seq")+3:]))
+    #     break
+
+    opts = snakemake.wildcards.sector_opts.split('-')
     for o in opts:
-        if not "seq" in o: continue
-        limit = float(o[o.find("seq")+3:])
-        break
+        if "seq" in o:
+            limit = float(o[o.find("seq") + 3:]) * 1e6
+
+    print('CO2 sequestration limit: ', limit)
 
     name = 'co2_sequestration_limit'
     sense = "<="
