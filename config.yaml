@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: testbranch2060_11 # use this to keep track of runs with different settings
+run: testbranch2060_19 # use this to keep track of runs with different settings
 foresight: myopic # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
@@ -19,7 +19,8 @@ scenario:
   opts: # only relevant for PyPSA-Eur
     - ''
   sector_opts: # this is where the main scenario settings are
-    - 173H-H-I-T-A-B-High-seq1500
+    - 175H-H-I-T-A-B-High-seq400
+    - 175H-H-I-T-A-B-High-seq1500
   #  - 301H-T-H-B0p0-I-S600-CCL-convCCL
   #  - 301H-T-H-B0p4-I-S600-CCL
   #  - 301H-T-H-B0p0Im-I-S600-CCL
@@ -55,7 +56,7 @@ co2_budget:
   2035: 0.1500896057
   2040: 0.4 #0.0712365591
   2045: 0.0322580645
-  2050: 0.05
+  2050: -0.05
 
 # snapshots are originally set in PyPSA-Eur/config.yaml but used again by PyPSA-Eur-Sec
 snapshots:
@@ -106,30 +107,32 @@ biomass:
   scenario: High
   classes:
     manureslurry:
-      - Manure biomass potential
+      - Manure solid, liquid
     municipal biowaste:
       - Municipal waste
     sewage sludge:
-      - Sludge biomass
+      - Sludge
     straw:
-      - Primary agricultural residues
+      - Agricultural waste
+#      - Primary agricultural residues
     forest residues:
-      - Forestry energy residue
+      - Fuelwood residues
+#      - Forestry energy residue
     landscape care:
-      - Forestry residues from landscape care biomass
+      - Residues from landscape care
     industry wood residues:
-      - Secondary forestry residues
-      - Secondary Forestry residues sawdust
+      - Secondary Forestry residues - woodchips
+      - Sawdust
     not included:
-      - Poplar biomass potential
-      - Willow biomass
-      - Bioethanol sugar beet biomass
-      - Rapeseeds for biodiesel
-      - sunflower and soya for Biodiesel
-      - Starchy crops biomass
-      - Grassy crops biomass
-      - Roundwood fuelwood
-      - Roundwood Chips & Pellets
+      - Sugar from sugar beet
+      - Rape seed
+      - "Sunflower, soya seed "
+      - Bioethanol barley, wheat, grain maize, oats, other cereals and rye
+      - Miscanthus, switchgrass, RCG
+      - Willow
+      - Poplar
+      - FuelwoodRW
+      - C&P_RW
   import price: 15 #EUR/GJ
   beccs: true
   mediumT industry biomass: true
@@ -273,7 +276,7 @@ sector:
   industrial_steam_electric_boiler: true
   industrial_steam_methane: true
   gas_for_mediumT_industry: true
-  co2_sequestration_potential: 200  #MtCO2/a sequestration potential for Europe
+  co2_sequestration_potential: 1500  #MtCO2/a sequestration potential for Europe
   co2_sequestration_cost: 10   #EUR/tCO2 for transport and sequestration of CO2
   co2_network: false
   cc_fraction: 0.9  # default fraction of CO2 captured with post-combustion capture

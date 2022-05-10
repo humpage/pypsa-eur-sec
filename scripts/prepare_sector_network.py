@@ -475,12 +475,6 @@ def add_co2_tracking(n, options, carbon_sequestration_cost):
         carrier="co2 stored"
     )
 
-    # co2_sequestration_potential = 0
-    # for o in opts:
-    #     if "seq" in o:
-    #         co2_sequestration_potential = float(o[o.find("seq") + 3:])
-    #
-    # print('CO2 sequestration potential: ', co2_sequestration_potential)
     print('CO2 sequestration cost: ', carbon_sequestration_cost)
 
     n.madd("Store",
@@ -1712,41 +1706,37 @@ def create_nodes_for_heat_sector():
 
 
 def add_biomass(n, costs, beccs, biomass_import_price):
-    print("adding biomass")
+
+    print("Add biomass")
 
     nodes = pop_layout.index
 
     # biomass distributed at country level - i.e. transport within country allowed
     # cts = pop_layout.ct.value_counts().index
 
-    biomass_potentials = pd.read_csv(snakemake.input.biomass_potentials,
-                                     index_col=0)
-    logger.info("Add biomass")
+    biomass_pot_node = pd.read_csv(snakemake.input.biomass_potentials, index_col=0)
+
+    # need to aggregate potentials if gas not nodally resolved
+    # if options["gas_network"]:
+    #     biogas_potentials_spatial = biomass_potentials["biogas"].rename(index=lambda x: x + " biogas")
+    # else:
+    #     biogas_potentials_spatial = biomass_potentials["biogas"].sum()
+
+    # if options["biomass_transport"]:
+    #     solid_biomass_potentials_spatial = biomass_potentials["solid biomass"].rename(index=lambda x: x + " solid biomass")
+    # else:
+    #     solid_biomass_potentials_spatial = biomass_potentials["solid biomass"].sum()
 
     # potential per node distributed within country by population
-    biomass_pot_node = (biomass_potentials.loc[pop_layout.ct]
-                        .set_index(pop_layout.index)
-                        .mul(pop_layout.fraction, axis="index"))
+    # biomass_pot_node = (biomass_potentials.loc[pop_layout.ct]
+    #                     .set_index(pop_layout.index)
+    #                     .mul(pop_layout.fraction, axis="index"))
 
     biomass_costs = pd.read_csv('resources/biomass_country_costs.csv', index_col=0)
     biomass_costs_node = (biomass_costs.loc[pop_layout.ct].set_index(pop_layout.index))
     # biomass_costs_node = biomass_costs
-    print(biomass_costs_node)
-    print(biomass_pot_node)
-# =======
-#     # need to aggregate potentials if gas not nodally resolved
-#     if options["gas_network"]:
-#         biogas_potentials_spatial = biomass_potentials["biogas"].rename(index=lambda x: x + " biogas")
-#     else:
-#         biogas_potentials_spatial = biomass_potentials["biogas"].sum()
-#
-#     if options["biomass_transport"]:
-#         solid_biomass_potentials_spatial = biomass_potentials["solid biomass"].rename(index=lambda x: x + " solid biomass")
-#     else:
-#         solid_biomass_potentials_spatial = biomass_potentials["solid biomass"].sum()
-#
-# >>>>>>> f4e1d28be30f845bad513a11141eb318ff2a5bff
-
+    # print(biomass_costs_node)
+    # print(biomass_pot_node)
 
     n.add("Carrier", "digestible biomass")
 
@@ -1784,7 +1774,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
 
         biomass_costs[name] = ((biomass_costs_node[name].values * biomass_pot_node[name].values).sum() / biomass_pot_node[name].values.sum()).round(3)
         print(name,' cost: ',biomass_costs[name])
-        print(name, ' comp. avg. cost: ', biomass_costs_node[name].values.mean())
+        # print(name, ' comp. avg. cost: ', biomass_costs_node[name].values.mean())
 
         n.add("Carrier", name + " digestible biomass")
 
@@ -1895,7 +1885,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
         biomass_potential[name] = biomass_pot_node[name].values
         biomass_costs[name] = ((biomass_costs_node[name].values * biomass_pot_node[name].values).sum() / biomass_pot_node[name].values.sum()).round(3)
         print(name, ' cost: ', biomass_costs[name])
-        print(name, ' comp. avg. cost: ', biomass_costs_node[name].values.mean())
+        # print(name, ' comp. avg. cost: ', biomass_costs_node[name].values.mean())
 
         n.madd("Store",
                nodes + " " + name + " solid biomass",
