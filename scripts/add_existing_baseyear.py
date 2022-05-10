@@ -202,13 +202,8 @@ def add_power_capacities_installed_before_baseyear(n, grouping_years, costs, bas
 
         if generator in ['solar', 'onwind', 'offwind']:
 
-# <<<<<<< HEAD
-#             rename = {"offwind": "offwind-ac"}
-#             p_max_pu = n.generators_t.p_max_pu[capacity.index + ' ' + rename.get(generator, generator) + '-' + str(baseyear)]
-# =======
             suffix = '-ac' if generator == 'offwind' else ''
             name_suffix = f' {generator}{suffix}-{baseyear}'
-# >>>>>>> cdd56288ff73eb6626b7377f1170ba585c5ff939
 
             # to consider electricity grid connection costs or a split between
             # solar utility and rooftop as well, rather take cost assumptions
@@ -241,6 +236,7 @@ def add_power_capacities_installed_before_baseyear(n, grouping_years, costs, bas
                         lifetime=costs.at[generator,'lifetime']
                     )
 
+
             else:
 
                 p_max_pu = n.generators_t.p_max_pu[capacity.index + name_suffix]
@@ -260,6 +256,9 @@ def add_power_capacities_installed_before_baseyear(n, grouping_years, costs, bas
                 )
 
         else:
+            bus0 = vars(spatial)[carrier[generator]].nodes
+            if "EU" not in vars(spatial)[carrier[generator]].locations:
+                bus0 = bus0.intersection(capacity.index + " gas")
 
             bus0 = vars(spatial)[carrier[generator]].nodes
             if "EU" not in vars(spatial)[carrier[generator]].locations:
@@ -382,18 +381,7 @@ def add_heating_capacities_installed_before_baseyear(n, baseyear, grouping_years
 
         cop = {"air": ashp_cop, "ground": gshp_cop}
 
-#TODO: check if this quick fix is still necessary
-# <<<<<<< HEAD
-        # if time_dep_hp_cop:
-        #     efficiency = cop[heat_pump_type][nodes[name]]
-        # else:
         efficiency = costs.at[costs_name, 'efficiency']
-# =======
-#         if time_dep_hp_cop:
-#             efficiency = cop[heat_pump_type][nodes[name]]
-#         else:
-#             efficiency = costs.at[costs_name, 'efficiency']
-# >>>>>>> de48b4656fae9dd9bec621df919b0eb6ee9eae5d
 
         for i, grouping_year in enumerate(grouping_years):
 
@@ -434,6 +422,7 @@ def add_heating_capacities_installed_before_baseyear(n, baseyear, grouping_years
                    )
 
 
+
             n.madd("Link",
                 nodes[name],
                 suffix= f" {name} gas boiler-{grouping_year}",
@@ -470,8 +459,7 @@ def add_heating_capacities_installed_before_baseyear(n, baseyear, grouping_years
 
             # delete links if their lifetime is over and p_nom=0
             threshold = snakemake.config['existing_capacities']['threshold_capacity']
-            n.mremove("Link", [index for index in n.links.index.to_list() if
-                               str(grouping_year) in index and n.links.p_nom[index] < threshold])
+            n.mremove("Link", [index for index in n.links.index.to_list() if str(grouping_year) in index and n.links.p_nom[index] < threshold])
 
 #%%
 if __name__ == "__main__":
@@ -499,18 +487,11 @@ if __name__ == "__main__":
 
     baseyear = snakemake.config['scenario']["planning_horizons"][0]
 
-# <<<<<<< HEAD
-# #TODO: Check if this quick fix is still necessary
-#     overrides = override_component_attrs #(snakemake.input.overrides)
-#     n = pypsa.Network(snakemake.input.network,
-#                       override_component_attrs=overrides)
-#
-# =======
     overrides = override_component_attrs(snakemake.input.overrides)
     n = pypsa.Network(snakemake.input.network, override_component_attrs=overrides)
     # define spatial resolution of carriers
     spatial = define_spatial(n.buses[n.buses.carrier=="AC"].index, options)
-# >>>>>>> cdd56288ff73eb6626b7377f1170ba585c5ff939
+
     add_build_year_to_new_assets(n, baseyear)
 
     Nyears = n.snapshot_weightings.sum()/8760.
