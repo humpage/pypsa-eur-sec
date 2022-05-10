@@ -1917,58 +1917,36 @@ def add_biomass(n, costs, beccs, biomass_import_price):
             print("Adding biomass import with cost ", biomass_import_price, ' EUR/MWh')
 
             n.add("Carrier", "solid biomass import")
-            import_potential = {}
-            import_cost = {}
-            import_name = {}
-            superfluous = {}
-            tot_EU_biomass = biomass_pot_node.values.sum() - biomass_pot_node["not included"].values.sum()
-            print('Total EU biomass: ', tot_EU_biomass * 3.6 / 1e9, ' EJ')
-            step_size = 10  # EJ
-            biomass_import_limit_low_level = 20e9  # EJ
 
-            for num in range(1, 10):
-                import_name[num] = "import" + str(num)
-                if num == 1:
-                    import_potential[num] = max(biomass_import_limit_low_level / 3.6 - tot_EU_biomass,
-                                                0)  # substract EU biomass from 20 EJ. If EU biomass > 20, return 0
-                    import_cost[num] = biomass_import_price  # EUR/MWh
-                    superfluous = min(biomass_import_limit_low_level / 3.6 - tot_EU_biomass,
-                                      0)  # If EU biomass > 20, reduce the following group(s)
-                else:
-                    import_potential[num] = max(step_size * 1e9 / 3.6 + superfluous, 0)  # EJ --> MWh
-                    import_cost[num] = biomass_import_price + (step_size * 0.25 * (num - 1)) * 3.6  # EUR/MWh
-                    superfluous += min(-superfluous, step_size * 1e9 / 3.6)
+            n.madd("Bus",
+                   ["solid biomass import"],
+                   location="EU",
+                   carrier="solid biomass import")
 
-                n.madd("Bus",
-                       [import_name[num] + " solid biomass"],
-                       location="EU",
-                       carrier="solid biomass import")
+            n.madd("Store",
+                   ["solid biomass import"],
+                   bus="solid biomass import",
+                   e_nom_extendable=True,
+                   e_cyclic=True,
+                   carrier="solid biomass import",
+                   )
 
-                n.madd("Store",
-                       [import_name[num] + " solid biomass"],
-                       bus=import_name[num] + " solid biomass",
-                       e_nom_extendable=True,
-                       e_cyclic=True,
-                       carrier="solid biomass import",
-                       )
+            n.madd("Generator",
+                   ["solid biomass import"],
+                   bus="solid biomass import",
+                   carrier="solid biomass import",
+                   p_nom_extendable=True,
+                   marginal_cost=biomass_import_price)
 
-                n.madd("Generator",
-                       [import_name[num] + " solid biomass"],
-                       bus=import_name[num] + " solid biomass",
-                       carrier="solid biomass import",
-                       p_nom_extendable=True,
-                       p_nom_max=import_potential[num] / 8760,
-                       marginal_cost=import_cost[num])
-
-                n.madd("Link",
-                       nodes + " " + import_name[num] + " solid biomass",
-                       bus0=import_name[num] + " solid biomass",
-                       bus1=nodes + " solid biomass",
-                       bus2="co2 atmosphere",
-                       carrier="solid biomass",
-                       efficiency=1.,
-                       efficiency2=-costs.at['solid biomass', 'CO2 intensity'],  # Here, if the store at bus1 is cyclic
-                       p_nom_extendable=True)
+            n.madd("Link",
+                   nodes + " solid biomass import",
+                   bus0="solid biomass import",
+                   bus1=nodes + " solid biomass",
+                   bus2="co2 atmosphere",
+                   carrier="solid biomass",
+                   efficiency=1.,
+                   efficiency2=-costs.at['solid biomass', 'CO2 intensity'],  # Here, if the store at bus1 is cyclic
+                   p_nom_extendable=True)
 
     n.madd("Link",
            nodes + " solid biomass to gas",
@@ -2642,71 +2620,6 @@ def add_agriculture(n, costs):
         suffix=" agriculture electricity",
         bus=nodes,
         carrier='agriculture electricity',
-        p_set=nodal_energy_totals.loc[nodes, "total agriculture electricity"] * 1e6 / 8760
-    )
-
-    # heat
-
-    n.madd("Load",
-        nodes,
-        suffix=" agriculture heat",
-        bus=nodes + " services rural heat",
-        carrier="agriculture heat",
-        p_set=nodal_energy_totals.loc[nodes, "total agriculture heat"] * 1e6 / 8760
-    )
-
-    # machinery
-
-    electric_share = get(options["agriculture_machinery_electric_share"], investment_year)
-    assert electric_share <= 1.
-    ice_share = 1 - electric_share
-
-    machinery_nodal_energy = nodal_energy_totals.loc[nodes, "total agriculture machinery"]
-
-    if electric_share > 0:
-
-        efficiency_gain = options["agriculture_machinery_fuel_efficiency"] / options["agriculture_machinery_electric_efficiency"]
-
-        n.madd("Load",
-            nodes,
-            suffix=" agriculture machinery electric",
-            bus=nodes,
-            carrier="agriculture machinery electric",
-            p_set=electric_share / efficiency_gain * machinery_nodal_energy * 1e6 / 8760,
-        )
-
-    if ice_share > 0:
-
-        n.add("Load",
-            "agriculture machinery oil",
-            bus=spatial.oil.nodes,
-            carrier="agriculture machinery oil",
-            p_set=ice_share * machinery_nodal_energy.sum() * 1e6 / 8760
-        )
-
-        co2 = ice_share * machinery_nodal_energy.sum() * 1e6 / 8760 * costs.at["oil", 'CO2 intensity']
-
-        n.add("Load",
-            "agriculture machinery oil emissions",
-            bus="co2 atmosphere",
-            carrier="agriculture machinery oil emissions",
-            p_set=-co2
-        )
-
-
-def add_agriculture(n, costs):
-
-    logger.info('Add agriculture, forestry and fishing sector.')
-
-    nodes = pop_layout.index
-
-    # electricity
-
-    n.madd("Load",
-        nodes,
-        suffix=" agriculture electricity",
-        bus=nodes,
-        carrier='agriculture electricity',
         p_set=pop_weighted_energy_totals.loc[nodes, "total agriculture electricity"] * 1e6 / 8760
     )
 
@@ -2741,6 +2654,13 @@ def add_agriculture(n, costs):
         )
 
     if ice_share > 0:
+
+        if "oil" not in n.buses.carrier.unique():
+            n.madd("Bus",
+                   spatial.oil.nodes,
+                   location=spatial.oil.locations,
+                   carrier="oil"
+                   )
 
         n.add("Load",
             "agriculture machinery oil",
@@ -2944,8 +2864,6 @@ if __name__ == "__main__":
         if o[:4] == "dist":
             options['electricity_distribution_grid'] = True
             options['electricity_distribution_grid_cost_factor'] = float(o[4:].replace("p", ".").replace("m", "-"))
-
-    # nodal_energy_totals, heat_demand, ashp_cop, gshp_cop, solar_thermal, transport, avail_profile, dsm_profile, nodal_transport_data, district_heat_share = prepare_data(n)
 
     if "nodistrict" in opts:
         options["district_heating"]["progress"] = 0.0
