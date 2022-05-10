@@ -2,7 +2,6 @@ import pandas as pd
 
 rename = {"UK" : "GB", "BH" : "BA"}
 
-
 def build_biomass_potentials():
 
     opts = snakemake.wildcards.sector_opts.split('-')
