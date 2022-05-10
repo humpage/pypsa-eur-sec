@@ -5,37 +5,17 @@ import pypsa
 import numpy as np
 import pandas as pd
 
-import pandas as pd
-
 from pypsa.linopt import get_var, linexpr, define_constraints
 
-from pypsa.linopf import network_lopf, ilopf, join_exprs
+from pypsa.linopf import network_lopf, ilopf
 
 from vresutils.benchmark import memory_logger
 
-# from helper import override_component_attrs
+from helper import override_component_attrs
 
 import logging
 logger = logging.getLogger(__name__)
 pypsa.pf.logger.setLevel(logging.WARNING)
-
-#First tell PyPSA that links can have multiple outputs by
-#overriding the component_attrs. This can be done for
-#as many buses as you need with format busi for i = 2,3,4,5,....
-#See https://pypsa.org/doc/components.html#link-with-multiple-outputs-or-inputs
-
-
-override_component_attrs = pypsa.descriptors.Dict({k : v.copy() for k,v in pypsa.components.component_attrs.items()})
-override_component_attrs["Link"].loc["bus2"] = ["string",np.nan,np.nan,"2nd bus","Input (optional)"]
-override_component_attrs["Link"].loc["bus3"] = ["string",np.nan,np.nan,"3rd bus","Input (optional)"]
-override_component_attrs["Link"].loc["bus4"] = ["string",np.nan,np.nan,"4th bus","Input (optional)"]
-override_component_attrs["Link"].loc["efficiency2"] = ["static or series","per unit",1.,"2nd bus efficiency","Input (optional)"]
-override_component_attrs["Link"].loc["efficiency3"] = ["static or series","per unit",1.,"3rd bus efficiency","Input (optional)"]
-override_component_attrs["Link"].loc["efficiency4"] = ["static or series","per unit",1.,"4th bus efficiency","Input (optional)"]
-override_component_attrs["Link"].loc["p2"] = ["series","MW",0.,"2nd bus output","Output"]
-override_component_attrs["Link"].loc["p3"] = ["series","MW",0.,"3rd bus output","Output"]
-override_component_attrs["Link"].loc["p4"] = ["series","MW",0.,"4th bus output","Output"]
-
 
 
 def add_land_use_constraint(n):
@@ -46,22 +26,15 @@ def add_land_use_constraint(n):
         _add_land_use_constraint(n)
 
 
-# def _add_land_use_constraint(n):
-#     #warning: this will miss existing offwind which is not classed AC-DC and has carrier 'offwind'
-#
-#     for carrier in ['solar', 'onwind', 'offwind-ac', 'offwind-dc']:
-# <<<<<<< HEAD
-#         existing = n.generators.loc[n.generators.carrier == carrier, "p_nom"].groupby(n.generators.bus.map(n.buses.location)).sum()
-#         print(existing)
-#         existing.index += " " + carrier + "-" + snakemake.wildcards.planning_horizons
-#         print(existing.index)
-#         n.generators.loc[existing.index, "p_nom_max"] -= existing
-# =======
-#         existing = n.generators.loc[n.generators.carrier==carrier,"p_nom"].groupby(n.generators.bus.map(n.buses.location)).sum()
-#         existing.index += " " + carrier + "-" + snakemake.wildcards.planning_horizons
-#         n.generators.loc[existing.index,"p_nom_max"] -= existing
-#
-#     n.generators.p_nom_max.clip(lower=0, inplace=True)
+def _add_land_use_constraint(n):
+    #warning: this will miss existing offwind which is not classed AC-DC and has carrier 'offwind'
+
+    for carrier in ['solar', 'onwind', 'offwind-ac', 'offwind-dc']:
+        existing = n.generators.loc[n.generators.carrier==carrier,"p_nom"].groupby(n.generators.bus.map(n.buses.location)).sum()
+        existing.index += " " + carrier + "-" + snakemake.wildcards.planning_horizons
+        n.generators.loc[existing.index,"p_nom_max"] -= existing
+
+    n.generators.p_nom_max.clip(lower=0, inplace=True)
 
 
 def _add_land_use_constraint_m(n):
@@ -87,7 +60,6 @@ def _add_land_use_constraint_m(n):
             sel_current = [i + " " + carrier + "-" + current_horizon for i in ind2]
             sel_p_year = [i + " " + carrier + "-" + p_year for i in ind2]
             n.generators.loc[sel_current, "p_nom_max"] -= existing.loc[sel_p_year].rename(lambda x: x[:-4] + current_horizon)
-# >>>>>>> cdd56288ff73eb6626b7377f1170ba585c5ff939
 
     n.generators.p_nom_max.clip(lower=0, inplace=True)
 
@@ -128,90 +100,10 @@ def prepare_network(n, solve_opts=None):
         n.set_snapshots(n.snapshots[:nhours])
         n.snapshot_weightings[:] = 8760./nhours
 
-    # if snakemake.config['foresight'] == 'myopic':
-    #     add_land_use_constraint(n)
+    if snakemake.config['foresight'] == 'myopic':
+        add_land_use_constraint(n)
 
     return n
-
-
-def add_ccl_constraints(n):
-
-    agg_p_nom_limits = n.config['existing_capacities'].get('agg_p_nom_limits')
-
-    agg_p_nom_minmax = pd.read_csv(agg_p_nom_limits, index_col=list(range(2)))
-    print(agg_p_nom_minmax)
-
-    logger.info("Adding per carrier generation capacity constraints for individual countries")
-    print('adding per carrier generation capacity constraints for individual countries')
-    gen_country = n.generators.bus.map(n.buses.country)
-
-    # cc means country and carrier
-    p_nom_per_cc = (pd.DataFrame(
-        {'p_nom': linexpr((1, get_var(n, 'Generator', 'p_nom'))),
-         'country': gen_country, 'carrier': n.generators.carrier})
-                    .dropna(subset=['p_nom'])
-                    .groupby(['country', 'carrier']).p_nom
-                    .apply(join_exprs))
-
-    minimum = agg_p_nom_minmax['min'].dropna()
-    if not minimum.empty:
-        define_constraints(n, p_nom_per_cc[minimum.index], '>=', minimum, 'agg_p_nom', 'min')
-
-    maximum = agg_p_nom_minmax['max'].dropna()
-    if not maximum.empty:
-        define_constraints(n, p_nom_per_cc[maximum.index], '<=', maximum, 'agg_p_nom', 'max')
-
-
-def add_ccl_constraints_conventional(n):
-
-    agg_p_nom_limits_conventional = n.config['existing_capacities'].get('agg_p_nom_limits_conventional')
-
-    agg_p_nom_minmax_conventional = pd.read_csv(agg_p_nom_limits_conventional, index_col=list(range(2)))
-
-    logger.info("Adding per carrier conventional link capacity constraints for individual countries")
-    print('adding per carrier conventional link capacity constraints for individual countries')
-    link_country = n.links.bus1.map(n.buses.country)
-
-    # cc means country and carrier
-    p_nom_per_cc_link = (pd.DataFrame(
-        {'p_nom': linexpr((1, get_var(n, 'Link', 'p_nom'))),
-         'country': link_country, 'carrier': n.links.carrier})
-                    .dropna(subset=['p_nom'])
-                    .groupby(['country', 'carrier']).p_nom
-                    .apply(join_exprs))
-
-    minimum_conventional = agg_p_nom_minmax_conventional['min'].dropna()
-    if not minimum_conventional.empty:
-        define_constraints(n, p_nom_per_cc_link[minimum_conventional.index], '>=', minimum_conventional, 'agg_p_nom', 'min')
-
-    maximum_conventional = agg_p_nom_minmax_conventional['max'].dropna()
-    if not maximum_conventional.empty:
-        define_constraints(n, p_nom_per_cc_link[maximum_conventional.index], '<=', maximum_conventional, 'agg_p_nom', 'max')
-
-
-def add_biofuel_constraint(n):
-
-    options = snakemake.wildcards.sector_opts.split('-')
-    print('options: ', options)
-    liquid_biofuel_limit = 0
-    for o in options:
-        if "B" in o:
-            liquid_biofuel_limit = o[o.find("B") + 1:o.find("B") + 4]
-            liquid_biofuel_limit = float(liquid_biofuel_limit.replace("p", "."))
-
-    print('Liq biofuel minimum constraint: ', liquid_biofuel_limit, ' ', type(liquid_biofuel_limit))
-
-    biofuel_i = n.links.query('carrier == "biomass to liquid"').index
-    biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
-    biofuel_vars_eta = n.links.query('carrier == "biomass to liquid"').efficiency
-
-    napkership = n.loads.p_set.filter(regex='naphtha for industry|kerosene for aviation|shipping oil').sum() * len(n.snapshots)
-    landtrans = n.loads_t.p_set.filter(regex='land transport oil$').sum().sum()
-    total_oil_load = napkership+landtrans
-    liqfuelloadlimit = liquid_biofuel_limit * total_oil_load
-
-    lhs = linexpr((biofuel_vars_eta, biofuel_vars)).sum().sum()
-    define_constraints(n, lhs, ">=", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
 
 
 def add_battery_constraints(n):
@@ -349,29 +241,14 @@ def add_co2_sequestration_limit(n, sns):
 
 
 def extra_functionality(n, snapshots):
-    print('adding extra constraints')
     add_battery_constraints(n)
     add_pipe_retrofit_constraint(n)
     add_co2_sequestration_limit(n, snapshots)
-
-    options = snakemake.wildcards.sector_opts.split('-')
-    print('options: ', options)
-    for o in options:
-        if "B" in o:
-            print('adding biofuel constraints')
-            add_biofuel_constraint(n)
-        if 'CCL' in o:
-            print('adding ccl constraints')
-            add_ccl_constraints(n)
-        if 'convCCL' in o:
-            print('adding conventional ccl constraints')
-            add_ccl_constraints_conventional(n)
 
 
 def solve_network(n, config, opts='', **kwargs):
     solver_options = config['solving']['solver'].copy()
     solver_name = solver_options.pop('name')
-
     cf_solving = config['solving']['options']
     track_iterations = cf_solving.get('track_iterations', False)
     min_iterations = cf_solving.get('min_iterations', 4)
@@ -423,7 +300,7 @@ if __name__ == "__main__":
     fn = getattr(snakemake.log, 'memory', None)
     with memory_logger(filename=fn, interval=30.) as mem:
 
-        overrides = override_component_attrs #(snakemake.input.overrides)
+        overrides = override_component_attrs(snakemake.input.overrides)
         n = pypsa.Network(snakemake.input.network, override_component_attrs=overrides)
 
         n = prepare_network(n, solve_opts)
@@ -436,10 +313,6 @@ if __name__ == "__main__":
             n.line_volume_limit = n.global_constraints.at["lv_limit", "constant"]
             n.line_volume_limit_dual = n.global_constraints.at["lv_limit", "mu"]
 
-        print(n.constraints)
-        # print(n.cons["Link"]["pnl"]["liquid_biofuel_min"])
-        n.constraints.to_csv('results/testconstraints.csv')
-        # n.cons["Link"]["pnl"]["liquid_biofuel_min"].to_csv('results/testconstraint_biofuelmin.csv', mode='a', header=False)
         n.export_to_netcdf(snakemake.output[0])
 
     logger.info("Maximum memory usage: {}".format(mem.mem_usage))
