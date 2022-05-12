@@ -1551,6 +1551,21 @@ def add_heat(n, costs):
                 lifetime=costs.at['central gas CHP', 'lifetime']
             )
 
+        if options["chp"] and options["hydrogen_chp"] and name == "urban central":
+            n.madd("Link",
+                nodes[name] + " urban central hydrogen CHP",
+                bus0=nodes[name] + " H2",
+                bus1=nodes[name],
+                bus2=nodes[name] + " urban central heat",
+                carrier="urban central hydrogen CHP",
+                p_nom_extendable=True,
+                capital_cost=costs.at['central hydrogen CHP', 'fixed'] * costs.at['central hydrogen CHP', 'efficiency'],
+                # marginal_cost=costs.at['central hydrogen CHP', 'VOM'],
+                efficiency=costs.at['central hydrogen CHP', 'efficiency'],
+                efficiency2=costs.at['central hydrogen CHP', 'efficiency'] / costs.at['central hydrogen CHP', 'c_b'],
+                lifetime=costs.at['central hydrogen CHP', 'lifetime']
+            )
+
         if options["chp"] and options["micro_chp"] and name != "urban central":
             n.madd("Link",
                 nodes[name] + f" {name} micro gas CHP",
@@ -1952,7 +1967,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
     n.madd("Link",
            nodes + " biomass to liquid",
            bus0=nodes + " solid biomass",
-           bus1="EU oil",
+           bus1=spatial.oil.nodes,
            bus3="co2 atmosphere",
            carrier="biomass to liquid",
            lifetime=costs.at['BtL', 'lifetime'],
@@ -1967,7 +1982,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
         n.madd("Link",
                nodes + " biomass to liquid CC",
                bus0=nodes + " solid biomass",
-               bus1="EU oil",
+               bus1=spatial.oil.nodes,
                bus2="co2 stored",
                bus3="co2 atmosphere",
                carrier="biomass to liquid",
@@ -2064,7 +2079,6 @@ def add_biomass(n, costs, beccs, biomass_import_price):
 
 
 def add_industry(n, costs):
-    logger.info("Add industrial demand")
 
     logger.info("Add industrial demand")
     nodes = pop_layout.index
