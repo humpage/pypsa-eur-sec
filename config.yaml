@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: testbranch2060_19 # use this to keep track of runs with different settings
+run: biopower_test # use this to keep track of runs with different settings
 foresight: myopic # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
@@ -19,8 +19,8 @@ scenario:
   opts: # only relevant for PyPSA-Eur
     - ''
   sector_opts: # this is where the main scenario settings are
-    - 175H-H-I-T-A-B-High-seq400
-    - 175H-H-I-T-A-B-High-seq1500
+    - 175H-H-I-T-A-B0p0Im-High-seq400
+    - 175H-H-I-T-A-B0p0Im-High-seq1500
   #  - 301H-T-H-B0p0-I-S600-CCL-convCCL
   #  - 301H-T-H-B0p4-I-S600-CCL
   #  - 301H-T-H-B0p0Im-I-S600-CCL
@@ -403,7 +403,7 @@ solving:
 
   solver:
     name: gurobi
-    threads: 4
+    threads: 64
     method: 2 # barrier
     crossover: 0
     BarConvTol: 1.e-6
