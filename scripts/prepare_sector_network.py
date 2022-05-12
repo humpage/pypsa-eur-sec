@@ -1500,6 +1500,19 @@ def add_heat(n, costs):
                 lifetime=costs.at[key, 'lifetime']
             )
 
+            n.madd("Link",
+                nodes[name] + " biomass boiler",
+                p_nom_extendable=True,
+                bus0=spatial.biomass.nodes,
+                bus1=nodes[name] + f" {name} heat",
+                bus2="co2 atmosphere",
+                carrier=name + " biomass boiler",
+                efficiency=costs.at['biomass boiler', 'efficiency'],
+                efficiency2=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
+                capital_cost=costs.at['biomass boiler', 'efficiency'] * costs.at['biomass boiler', 'fixed'],
+                lifetime=costs.at['biomass boiler', 'lifetime']
+            )
+
 
         if options["solar_thermal"]:
             n.add("Carrier", name + " solar thermal")
@@ -2315,6 +2328,30 @@ def add_industry(n, costs):
            efficiency2=costs.at['gas', 'CO2 intensity'] * (1 - costs.at["cement capture", "capture_rate"]),
            efficiency3=costs.at['gas', 'CO2 intensity'] * costs.at["cement capture", "capture_rate"],
            lifetime=costs.at['cement capture', 'lifetime'])
+
+    if options["hydrogen_for_mediumT_industry"]:
+        print('Adding H2 for mediumT industry')
+        n.madd("Link",
+               nodes,
+               suffix=" hydrogen for mediumT industry",
+               bus0=nodes + " H2",
+               bus1=nodes + " mediumT industry",
+               carrier="hydrogen for mediumT industry",
+               p_nom_extendable=True,
+               p_min_pu=0.8,
+               efficiency=1.)
+
+    if options["hydrogen_for_highT_industry"]:
+        print('Adding H2 for highT industry')
+        n.madd("Link",
+               nodes,
+               suffix=" hydrogen for highT industry",
+               bus0=nodes + " H2",
+               bus1=nodes + " highT industry",
+               carrier="hydrogen for highT industry",
+               p_nom_extendable=True,
+               p_min_pu=0.8,
+               efficiency=1.)
 
     n.madd("Load",
         nodes,
