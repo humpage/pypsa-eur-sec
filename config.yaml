@@ -264,6 +264,7 @@ sector:
   oil_boilers: false
   chp: true
   micro_chp: false
+  hydrogen_chp: true
   solar_thermal: false
   solar_cf_correction: 0.788457  # =  >>> 1/1.2683
   marginal_cost_storage: 0. #1e-4
@@ -272,10 +273,12 @@ sector:
   dac: true
   co2_vent: true
   SMR: true
-  industrial_steam_heat_pumps: false
+  industrial_steam_heat_pumps: true
   industrial_steam_electric_boiler: true
   industrial_steam_methane: true
   gas_for_mediumT_industry: true
+  hydrogen_for_mediumT_industry: true
+  hydrogen_for_highT_industry: true
   co2_sequestration_potential: 1500  #MtCO2/a sequestration potential for Europe
   co2_sequestration_cost: 10   #EUR/tCO2 for transport and sequestration of CO2
   co2_network: false
@@ -662,25 +665,29 @@ plotting:
     digestible biomass to gas: "yellow"
     solid biomass to hydrogen: "black"
     solid biomass to electricity: "purple"
-    forest residues solid biomass: "green"
-    industry wood residues solid biomass: "green"
-    manureslurry digestible biomass: "green"
-    municipal biowaste digestible biomass: "green"
+    forest residues solid biomass: "#454B1B"
+    industry wood residues solid biomass: "#097969"
+    manureslurry digestible biomass: "#AFE1AF"
+    municipal biowaste digestible biomass: "50C878"
     poplar solid biomass: "green"
-    sewage sludge digestible biomass: "green"
-    straw digestible biomass: "green"
+    sewage sludge digestible biomass: "#5F8575"
+    straw digestible biomass: "4F7942"
     solid biomass import: "yellow"
     gas for mediumT industry: '#333666'
     gas for highT industry: '#333333'
+    hydrogen for mediumT industry: '#993666'
+    hydrogen for highT industry: '#993333'
     lowT process steam electricity: "pink"
-    solid biomass for mediumT industry: grey
+    lowT process steam heat pump: "purple"
+    solid biomass for mediumT industry: '#009E60'
     mediumT industry: "yellow"
     highT industry: "brown"
-    forest residues solid biomass: "green"
-    industry wood residues solid biomass: "green"
-    manureslurry digestible biomass: "green"
+    forest residues solid biomass: "#808000"
+    industry wood residues solid biomass: "#C9CC3F"
+    manureslurry digestible biomass: "#8A9A5B"
     municipal biowaste digestible biomass: "green"
     poplar solid biomass: "green"
     sewage sludge digestible biomass: "green"
-    straw digestible biomass: "green"
-    landscape care solid biomass: "green"
+    straw digestible biomass: "#00FF7F"
+    landscape care solid biomass: "#9FE2BF"
+    biomass boiler: "#8A9A5B"

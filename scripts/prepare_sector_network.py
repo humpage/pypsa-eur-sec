@@ -1500,6 +1500,19 @@ def add_heat(n, costs):
                 lifetime=costs.at[key, 'lifetime']
             )
 
+            n.madd("Link",
+                nodes[name] + " biomass boiler",
+                p_nom_extendable=True,
+                bus0=spatial.biomass.nodes,
+                bus1=nodes[name] + f" {name} heat",
+                bus2="co2 atmosphere",
+                carrier=name + " biomass boiler",
+                efficiency=costs.at['biomass boiler', 'efficiency'],
+                efficiency2=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
+                capital_cost=costs.at['biomass boiler', 'efficiency'] * costs.at['biomass boiler', 'fixed'],
+                lifetime=costs.at['biomass boiler', 'lifetime']
+            )
+
 
         if options["solar_thermal"]:
             n.add("Carrier", name + " solar thermal")
@@ -1549,6 +1562,21 @@ def add_heat(n, costs):
                 efficiency3=costs.at['gas', 'CO2 intensity'] * (1-costs.at['biomass CHP capture', 'capture_rate']),
                 efficiency4=costs.at['gas', 'CO2 intensity'] * costs.at['biomass CHP capture', 'capture_rate'],
                 lifetime=costs.at['central gas CHP', 'lifetime']
+            )
+
+        if options["chp"] and options["hydrogen_chp"] and name == "urban central":
+            n.madd("Link",
+                nodes[name] + " urban central hydrogen CHP",
+                bus0=nodes[name] + " H2",
+                bus1=nodes[name],
+                bus2=nodes[name] + " urban central heat",
+                carrier="urban central hydrogen CHP",
+                p_nom_extendable=True,
+                capital_cost=costs.at['central hydrogen CHP', 'fixed'] * costs.at['central hydrogen CHP', 'efficiency'],
+                # marginal_cost=costs.at['central hydrogen CHP', 'VOM'],
+                efficiency=costs.at['central hydrogen CHP', 'efficiency'],
+                efficiency2=costs.at['central hydrogen CHP', 'efficiency'] / costs.at['central hydrogen CHP', 'c_b'],
+                lifetime=costs.at['central hydrogen CHP', 'lifetime']
             )
 
         if options["chp"] and options["micro_chp"] and name != "urban central":
@@ -1952,7 +1980,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
     n.madd("Link",
            nodes + " biomass to liquid",
            bus0=nodes + " solid biomass",
-           bus1="EU oil",
+           bus1=spatial.oil.nodes,
            bus3="co2 atmosphere",
            carrier="biomass to liquid",
            lifetime=costs.at['BtL', 'lifetime'],
@@ -1967,7 +1995,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
         n.madd("Link",
                nodes + " biomass to liquid CC",
                bus0=nodes + " solid biomass",
-               bus1="EU oil",
+               bus1=spatial.oil.nodes,
                bus2="co2 stored",
                bus3="co2 atmosphere",
                carrier="biomass to liquid",
@@ -2064,7 +2092,6 @@ def add_biomass(n, costs, beccs, biomass_import_price):
 
 
 def add_industry(n, costs):
-    logger.info("Add industrial demand")
 
     logger.info("Add industrial demand")
     nodes = pop_layout.index
@@ -2301,6 +2328,30 @@ def add_industry(n, costs):
            efficiency2=costs.at['gas', 'CO2 intensity'] * (1 - costs.at["cement capture", "capture_rate"]),
            efficiency3=costs.at['gas', 'CO2 intensity'] * costs.at["cement capture", "capture_rate"],
            lifetime=costs.at['cement capture', 'lifetime'])
+
+    if options["hydrogen_for_mediumT_industry"]:
+        print('Adding H2 for mediumT industry')
+        n.madd("Link",
+               nodes,
+               suffix=" hydrogen for mediumT industry",
+               bus0=nodes + " H2",
+               bus1=nodes + " mediumT industry",
+               carrier="hydrogen for mediumT industry",
+               p_nom_extendable=True,
+               p_min_pu=0.8,
+               efficiency=1.)
+
+    if options["hydrogen_for_highT_industry"]:
+        print('Adding H2 for highT industry')
+        n.madd("Link",
+               nodes,
+               suffix=" hydrogen for highT industry",
+               bus0=nodes + " H2",
+               bus1=nodes + " highT industry",
+               carrier="hydrogen for highT industry",
+               p_nom_extendable=True,
+               p_min_pu=0.8,
+               efficiency=1.)
 
     n.madd("Load",
         nodes,
