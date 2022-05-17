@@ -247,11 +247,62 @@ def add_co2_sequestration_limit(n, sns):
     define_constraints(n, lhs, sense, limit, 'GlobalConstraint',
                        'mu', axes=pd.Index([name]), spec=name)
 
+def add_biofuel_constraint(n):
+
+    options = snakemake.wildcards.sector_opts.split('-')
+    # print('options: ', options)
+    liquid_biofuel_limit = 0
+    biofuel_constraint_type = 'Lt'
+    for o in options:
+        if "B" in o:
+            liquid_biofuel_limit = o[o.find("B") + 1:o.find("B") + 4]
+            liquid_biofuel_limit = float(liquid_biofuel_limit.replace("p", "."))
+            print('Length of o: ', len(o))
+            if len(o) > 7:
+                biofuel_constraint_type = o[o.find("B") + 6:o.find("B") + 8]
+
+    print('Liq biofuel minimum constraint: ', liquid_biofuel_limit, ' ', type(liquid_biofuel_limit))
+
+    biofuel_i = n.links.query('carrier == "biomass to liquid"').index
+    biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
+    # print('Biofuel p', biofuel_vars)
+    biofuel_vars_eta = n.links.query('carrier == "biomass to liquid"').efficiency
+    # print('Eta', biofuel_vars_eta)
+    # print('biofuel vars*eta', biofuel_vars*biofuel_vars_eta)
+
+    napkership = n.loads.p_set.filter(regex='naphtha for industry|kerosene for aviation|shipping oil$').sum() * len(n.snapshots)
+    # print(napkership)
+    landtrans = n.loads_t.p_set.filter(regex='land transport oil$').sum().sum()
+    # print(landtrans)
+
+    total_oil_load = napkership+landtrans
+    liqfuelloadlimit = liquid_biofuel_limit * total_oil_load
+
+    lhs = linexpr((biofuel_vars_eta, biofuel_vars)).sum().sum()
+
+    # print('Constraint type: ', biofuel_constraint_type)
+
+    if biofuel_constraint_type == 'Eq':
+        define_constraints(n, lhs, "==", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
+    elif biofuel_constraint_type == 'Lt':
+        define_constraints(n, lhs, ">=", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
 
 def extra_functionality(n, snapshots):
     add_battery_constraints(n)
     add_pipe_retrofit_constraint(n)
     add_co2_sequestration_limit(n, snapshots)
+
+    options = snakemake.wildcards.sector_opts.split('-')
+    for o in options:
+        if "B" in o:
+            print('adding biofuel constraints')
+            add_biofuel_constraint(n)
+        if 'CCL' in o:
+            print('adding ccl constraints')
+            add_ccl_constraints(n)
+        if 'convCCL' in o:
+            print('adding conventional ccl constraints')
+            add_ccl_constraints_conventional(n)
 
 
 def solve_network(n, config, opts='', **kwargs):
