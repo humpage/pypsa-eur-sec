@@ -5,8 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-<<<<<<< HEAD
-run: testBiofuelConstraint # use this to keep track of runs with different settings
+run: testBiofuelConstraint2 # use this to keep track of runs with different settings
 foresight: myopic # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
