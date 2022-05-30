@@ -3,12 +3,13 @@ import itertools
 import numpy as np
 import pandas as pd
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
 plt.style.use('ggplot')
 
-year = 2040
+year = 2060
 scenario = 'serverResults/mainScenarios{}'.format(year)
 sdir = '../results/{}/csvs/costs.csv'.format(scenario)
 output = '../results/fuelSupply{}'.format(year)
@@ -518,7 +519,7 @@ colors = {'power excl. fossil fuels': '#6495ED', #'#235ebc',
               'biomass import': '#48CC22',
               'biofuel process': 'lightgreen',
               'electrofuel process': '#E30B5C',
-              'fossil liquid fuel emission cost': '#E5E4B7'
+              'fossil liquid fuel emission cost': '#E0E0E0'
               # 'electrofuel + CC': '#832473',  # 'lightgreen',
               # 'carbon storage': 'darkgreen'
               }
@@ -556,6 +557,16 @@ def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, plottype, twoleg
     totals2 = to_plot[to_plot>0].sum(axis=1)
     print('totals: ', totals)
     print('totals2: ', totals2)
+
+    mpl.rcParams['hatch.linewidth'] = 0.1  # previous svg hatch linewidth
+    # mpl.rcParams['figure.dpi'] = dpi
+    # mpl.rcParams['savefig.dpi'] = dpi  # or leave as default 'figure'
+    # mpl.rcParams['hatch.linewidth'] = 1.0 / dpi  # previous ps and Agg hatch linewidth
+    for num in [15,17,18,19,20,21,22,23]:
+        ax.patches[num].set_linewidth(0.4)
+        ax.patches[num].set_linestyle(':')
+        ax.patches[num].set_edgecolor('white')
+        ax.patches[num].set_hatch('///')
 
     for rect, total in itertools.zip_longest(ax.patches, totals, fillvalue=0):  # zip(ax.patches, list_values):# #
 
@@ -611,8 +622,8 @@ def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, plottype, twoleg
                             fontsize='x-small')
         elif ndf == 1:
             if total > 0:
-                ax.text(rect.get_x() + rect.get_width()/2, total2 + 20, int(total), ha='center', weight='bold',
-                    fontsize='small')
+                # ax.text(rect.get_x() + rect.get_width()/2, total2 + 20, int(total), ha='center', weight='bold',
+                #     fontsize='small')
                 if increase > 0:
                     insert = '+{}%'.format(increase)
                 elif increase < 0:
@@ -993,13 +1004,13 @@ def plot_scenarios(costs, costAll, output, mode='cost'):
     # place_subplot(df6, ax2, 2, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS')
 
     ax2.plot(df6.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
-    place_subplot(df2, ax2, 1, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS', 'bar')
+    place_subplot(df2, ax2, 1, 0, 'Cost [Billion EUR]', '', 'High bio, low CS', 'bar')
     # place_subplot(df6.sum(), ax2, 1, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS', 'scatter')
 
     ax3.plot(df7.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
     place_subplot(df3, ax3, 1, 0, '', '', 'High bio, high CS', 'bar', legend=True)
 
-    place_subplot(df4, ax4, 1, 0, 'Fuel cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS', 'bar')
+    place_subplot(df4, ax4, 1, 0, 'Cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS', 'bar')
     ax4.plot(df8.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black')
 
     place_subplot(df5, ax5, 1, 0, '', 'Biofuel share', 'Low bio, high CS', 'bar')
