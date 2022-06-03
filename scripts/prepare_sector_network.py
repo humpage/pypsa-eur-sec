@@ -2892,9 +2892,6 @@ if __name__ == "__main__":
             if options["biomass_transport"]:
                 add_biomass_transport(n)
 
-    if "T" in opts:
-        add_land_transport(n, costs)
-
     if "I" in opts and "H" in opts:
         add_waste_heat(n)
 
