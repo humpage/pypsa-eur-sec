@@ -1164,6 +1164,10 @@ def add_land_transport(n, costs):
     logger.info("Add land transport")
 
     transport = pd.read_csv(snakemake.input.transport_demand, index_col=0, parse_dates=True)
+
+    # Add transport demand factor depending on the year
+    transport = transport * get(options["land_transport_demand"], investment_year)
+
     number_cars = pd.read_csv(snakemake.input.transport_data, index_col=0)["number cars"]
     avail_profile = pd.read_csv(snakemake.input.avail_profile, index_col=0, parse_dates=True)
     dsm_profile = pd.read_csv(snakemake.input.dsm_profile, index_col=0, parse_dates=True)
@@ -2402,7 +2406,7 @@ def add_industry(n, costs):
 
         shipping_oil_share = 1 - shipping_hydrogen_share
 
-        p_set = shipping_oil_share * pop_weighted_energy_totals.loc[nodes, all_navigation].sum(axis=1) * 1e6 / 8760.
+        p_set = shipping_oil_share * get(options["shipping_demand"], investment_year) * pop_weighted_energy_totals.loc[nodes, all_navigation].sum(axis=1) * 1e6 / 8760.
 
         n.madd("Load",
             nodes,
@@ -2412,7 +2416,7 @@ def add_industry(n, costs):
             p_set=p_set
         )
 
-        co2 = shipping_oil_share * pop_weighted_energy_totals.loc[nodes, all_navigation].sum().sum() * 1e6 / 8760 * costs.at["oil", "CO2 intensity"]
+        co2 = shipping_oil_share * get(options["shipping_demand"], investment_year) * pop_weighted_energy_totals.loc[nodes, all_navigation].sum().sum() * 1e6 / 8760 * costs.at["oil", "CO2 intensity"]
 
         n.add("Load",
             "shipping oil emissions",
@@ -2493,7 +2497,7 @@ def add_industry(n, costs):
     )
 
     all_aviation = ["total international aviation", "total domestic aviation"]
-    p_set = pop_weighted_energy_totals.loc[nodes, all_aviation].sum(axis=1).sum() * 1e6 / 8760
+    p_set = get(options["aviation_demand"], investment_year) * pop_weighted_energy_totals.loc[nodes, all_aviation].sum(axis=1).sum() * 1e6 / 8760
 
     n.madd("Load",
         ["kerosene for aviation"],
