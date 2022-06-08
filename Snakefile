@@ -8,7 +8,7 @@ HTTP = HTTPRemoteProvider()
 if not exists("config.yaml"):
     copyfile("config.default.yaml", "config.yaml")
 
-configfile: "config.yaml"
+configfile: config["configfile"] #"config.yaml"
 
 
 wildcard_constraints:
