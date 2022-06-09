@@ -1909,30 +1909,52 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                    location="EU",
                    carrier="solid biomass import")
 
-            n.madd("Store",
-                   ["solid biomass import"],
-                   bus="solid biomass import",
-                   e_nom_extendable=True,
-                   e_cyclic=True,
-                   carrier="solid biomass import",
-                   )
+            import_potential = {}
+            import_cost = {}
+            import_name = {}
+            superfluous = {}
+            tot_EU_biomass = biomass_pot_node.values.sum() - biomass_pot_node["not included"].values.sum()
+            print('Total EU biomass: ', tot_EU_biomass * 3.6 / 1e9, ' EJ')
+            step_size = 10  # EJ
+            biomass_import_limit_low_level = 20e9  # EJ
 
-            n.madd("Generator",
-                   ["solid biomass import"],
-                   bus="solid biomass import",
-                   carrier="solid biomass import",
-                   p_nom_extendable=True,
-                   marginal_cost=biomass_import_price)
+            for num in range(1, 10):
+                import_name[num] = "import" + str(num)
+                if num == 1:
+                    import_potential[num] = max(biomass_import_limit_low_level / 3.6 - tot_EU_biomass,
+                                                0)  # substract EU biomass from 20 EJ. If EU biomass > 20, return 0
+                    import_cost[num] = biomass_import_price  # EUR/MWh
+                    superfluous = min(biomass_import_limit_low_level / 3.6 - tot_EU_biomass,
+                                      0)  # If EU biomass > 20, reduce the following group(s)
+                else:
+                    import_potential[num] = max(step_size * 1e9 / 3.6 + superfluous, 0)  # EJ --> MWh
+                    import_cost[num] = biomass_import_price + (step_size * 0.25 * (num - 1)) * 3.6  # EUR/MWh
+                    superfluous += min(-superfluous, step_size * 1e9 / 3.6)
 
-            n.madd("Link",
-                   nodes + " solid biomass import",
-                   bus0="solid biomass import",
-                   bus1=nodes + " solid biomass",
-                   # bus2="co2 atmosphere",
-                   carrier="solid biomass",
-                   efficiency=1.,
-                   # efficiency2=-costs.at['solid biomass', 'CO2 intensity'],  # Here, if the store at bus1 is cyclic
-                   p_nom_extendable=True)
+
+                n.madd("Store",
+                       [import_name[num] + " solid biomass"],
+                       bus="solid biomass import",
+                       e_nom_extendable=True,
+                       e_cyclic=True,
+                       carrier="solid biomass import",
+                       )
+
+                n.madd("Generator",
+                       [import_name[num] + " solid biomass"],
+                       bus="solid biomass import",
+                       carrier="solid biomass import",
+                       p_nom_extendable=True,
+                       p_nom_max=import_potential[num] / 8760,
+                       marginal_cost=import_cost[num])
+
+                n.madd("Link",
+                       nodes + " " + import_name[num] + " solid biomass",
+                       bus0="solid biomass import",
+                       bus1=nodes + " solid biomass",
+                       carrier="solid biomass",
+                       efficiency=1.,
+                       p_nom_extendable=True)
 
     n.madd("Link",
            nodes + " solid biomass to gas",
