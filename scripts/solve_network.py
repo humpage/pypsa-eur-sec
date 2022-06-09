@@ -267,6 +267,7 @@ def add_biofuel_constraint(n):
     biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
     # print('Biofuel p', biofuel_vars)
     biofuel_vars_eta = n.links.query('carrier == "biomass to liquid"').efficiency
+    biofuel_vars_eta = n.links.query('carrier == "biomass to liquid"').efficiency
     # print('Eta', biofuel_vars_eta)
     # print('biofuel vars*eta', biofuel_vars*biofuel_vars_eta)
 
@@ -321,7 +322,10 @@ def solve_network(n, config, opts='', **kwargs):
     if cf_solving.get('skip_iterations', False):
         network_lopf(n, solver_name=solver_name, solver_options=solver_options,
                      extra_functionality=extra_functionality,
-                     keep_shadowprices=keep_shadowprices, **kwargs)
+                     keep_shadowprices=keep_shadowprices,
+                     keep_references=True,
+                     keep_files=True,
+                     **kwargs)
     else:
         ilopf(n, solver_name=solver_name, solver_options=solver_options,
               track_iterations=track_iterations,
@@ -329,6 +333,8 @@ def solve_network(n, config, opts='', **kwargs):
               max_iterations=max_iterations,
               extra_functionality=extra_functionality,
               keep_shadowprices=keep_shadowprices,
+              keep_references=True,
+              keep_files=True,
               **kwargs)
     return n
 
@@ -371,6 +377,23 @@ if __name__ == "__main__":
         if "lv_limit" in n.global_constraints.index:
             n.line_volume_limit = n.global_constraints.at["lv_limit", "constant"]
             n.line_volume_limit_dual = n.global_constraints.at["lv_limit", "mu"]
+
+        cluster = snakemake.wildcards.clusters
+        lv = snakemake.wildcards.lv
+
+        # Save shadow price of biofuel constraint
+        sector_opts = snakemake.wildcards.sector_opts
+        planning_horizon = snakemake.wildcards.planning_horizons[-4:]
+        headerBiofuelConstraint = '{}_lv{}_{}_{}'.format(cluster, lv, sector_opts, planning_horizon)
+
+        biofuelConstraintFile = snakemake.config['results_dir'] + snakemake.config['run'] + '/biofuelminConstraint.csv'
+        df = pd.DataFrame()
+        print(n.duals["Link"]["df"]["liquid_biofuel_min"])
+        data = pd.DataFrame({f'{headerBiofuelConstraint}': n.duals["Link"]["df"]["liquid_biofuel_min"].values}).T
+
+        data.to_csv(biofuelConstraintFile, mode='a', header=False)
+        ###
+
 
         n.export_to_netcdf(snakemake.output[0])
 
