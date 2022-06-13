@@ -1845,7 +1845,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
         print(name,' cost: ',biomass_costs[name])
         print(name, ' comp. avg. cost: ', biomass_costs_node[name].values.mean())
 
-        # n.add("Carrier", name + " digestible biomass")
+        n.add("Carrier", name + " digestible biomass")
 
         # n.madd("Bus",
         #        nodes + " " + name + " digestible biomass",
@@ -1891,7 +1891,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
            efficiency=costs.at["biogas","efficiency"],
            # efficiency3=costs.at["biogas", "CO2 stored"],
            #TODO: could perform system expansion, emitting CH4 directly causes more CO2eq
-           efficiency3=-costs.at['gas', 'CO2 intensity']+costs.at["biogas", "CO2 stored"],
+           efficiency3=-costs.at['gas', 'CO2 intensity']-costs.at["biogas", "CO2 stored"],
            p_nom_extendable=True)
 
     if beccs:
@@ -1911,7 +1911,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                efficiency=costs.at["biogas","efficiency"],
                #TODO: could perform system expansion, emitting CH4 directly causes more CO2eq
                efficiency2=costs.at["biogas", "CO2 stored"] * costs.at['biogas', 'capture rate'],
-               efficiency3=-costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"] * (1 - costs.at['biogas', 'capture rate']),
+               efficiency3=costs.at["biogas", "CO2 stored"] * (1 - costs.at['biogas', 'capture rate']),
                p_nom_extendable=True)
 
         n.madd("Link",
@@ -1926,7 +1926,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                efficiency=costs.at['digestible biomass to hydrogen', 'efficiency'],
                efficiency2=(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * costs.at[
                    'digestible biomass to hydrogen', 'capture rate'],
-               efficiency3=-costs.at['gas', 'CO2 intensity'] + (costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * (
+               efficiency3=(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * (
                            1 - costs.at['digestible biomass to hydrogen', 'capture rate']),
                p_nom_extendable=True)
 
@@ -2037,7 +2037,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                        bus0=import_name[num] + " solid biomass",
                        bus1=nodes + " solid biomass",
                        # bus2="co2 atmosphere",
-                       carrier="solid biomass",
+                       carrier="solid biomass import",
                        efficiency=1.,
                        # efficiency2=-costs.at['solid biomass', 'CO2 intensity'],  # Here, if the store at bus1 is cyclic
                        p_nom_extendable=True)
