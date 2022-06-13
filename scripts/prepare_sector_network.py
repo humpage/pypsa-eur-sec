@@ -1999,6 +1999,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
             biomass_import_limit_low_level = 20e9  # EJ
 
             for num in range(1, 10):
+                n.add("Carrier", "solid biomass import " + str(num))
                 import_name[num] = "import" + str(num)
                 if num == 1:
                     import_potential[num] = max(biomass_import_limit_low_level / 3.6 - tot_EU_biomass,
@@ -2021,13 +2022,13 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                        bus=import_name[num] + " solid biomass",
                        e_nom_extendable=True,
                        e_cyclic=True,
-                       carrier="solid biomass import",
+                       carrier="solid biomass import " + str(num),
                        )
 
                 n.madd("Generator",
                        [import_name[num] + " solid biomass"],
                        bus=import_name[num] + " solid biomass",
-                       carrier="solid biomass import",
+                       carrier="solid biomass import " + str(num),
                        p_nom_extendable=True,
                        p_nom_max=import_potential[num] / 8760,
                        marginal_cost=import_cost[num])
