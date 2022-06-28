@@ -1359,8 +1359,6 @@ def add_heat(n, costs):
 
     # NB: must add costs of central heating afterwards (EUR 400 / kWpeak, 50a, 1% FOM from Fraunhofer ISE)
 
-    urban_fraction = options['central_fraction'] * pop_layout["urban"] / pop_layout[["urban", "rural"]].sum(axis=1)
-
     # exogenously reduce space heat demand
     if options["reduce_space_heat_exogenously"]:
         dE = get(options["reduce_space_heat_exogenously_factor"], investment_year)
