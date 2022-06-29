@@ -1997,7 +1997,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
             biomass_import_limit_low_level = 20e9  # EJ
 
             for num in range(1, 10):
-                n.add("Carrier", "solid biomass import " + str(num))
+                # n.add("Carrier", "solid biomass import " + str(num))
                 import_name[num] = "import" + str(num)
                 if num == 1:
                     import_potential[num] = max(biomass_import_limit_low_level / 3.6 - tot_EU_biomass,
