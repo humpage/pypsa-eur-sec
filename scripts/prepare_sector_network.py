@@ -2020,13 +2020,13 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                        bus=import_name[num] + " solid biomass",
                        e_nom_extendable=True,
                        e_cyclic=True,
-                       carrier="solid biomass import " + str(num),
+                       carrier="solid biomass import",
                        )
 
                 n.madd("Generator",
                        [import_name[num] + " solid biomass"],
                        bus=import_name[num] + " solid biomass",
-                       carrier="solid biomass import " + str(num),
+                       carrier="solid biomass import",
                        p_nom_extendable=True,
                        p_nom_max=import_potential[num] / 8760,
                        marginal_cost=import_cost[num])
