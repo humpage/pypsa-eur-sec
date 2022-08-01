@@ -10,7 +10,7 @@ import matplotlib.colors as mcolors
 plotly.io.kaleido.scope.mathjax = None
 
 year = '2060'
-scenario = 'serverResults/mainScenarios{}'.format(year) #'serverResults/test'
+scenario = 'serverResults/mainScenarios{}_update'.format(year) #'serverResults/test'
 sdir = '../results/{}/csvs/costs.csv'.format(scenario)
 output = '../results/1h_{}_fuelSankey'.format(year)
 balances = '../results/{}/csvs/supply_energy.csv'.format(scenario)
@@ -64,7 +64,7 @@ def plot_balances(balances,columnin):
                   'other biomass usage': '#FFE5B4',
                   'biofuel': 'rgba(50,205,50,1)',#'rgba(194,178,128, 1)',
                   'electrofuel': 'rgba(255,215,0, 0.7)',#'pink',#'#832473',
-                  'CHP': 'rgba(192,64,0, 0.5)',
+                  'CHP': 'rgba(236,100,75, 0.5)',
                   'BioSNG': 'rgba(255,215,0, 0.2)',
                   'industry heat': 'rgba(144,238,144, 0.2)'#'lightgreen'
         }
@@ -129,8 +129,8 @@ def rename_techs_balances(label):
         # "H2 pipeline": "hydrogen storage",
         "battery": "battery storage",
         "CC": "CC",
-        'industry wood': 'domestic biomass',
-        'forest residues': 'domestic biomass',
+        'industry wood': 'domestic',
+        'forest residues': 'domestic',
     }
 
     rename = {
@@ -162,9 +162,10 @@ def rename_techs_balances(label):
         'gas for mediumT industry': 'industry heat',
         'lowT process steam methane': 'industry heat',
         'gas boiler': 'heating',
-        'forest residues solid biomass': 'domestic solid biomass',
-        'industry wood residues solid biomass': 'domestic solid biomass',
-        'landscape care solid biomass': 'domestic solid biomass',
+        'forest residues solid biomass': 'domestic',
+        'industry wood residues solid biomass': 'domestic',
+        'landscape care solid biomass': 'domestic',
+        'solid biomass import': 'import',
         'highT industry': 'process heat',
         'mediumT industry': 'process heat',
         'H2 for industry': 'industry feedstock',
@@ -207,7 +208,7 @@ def genSankey(df, domainx, domainy, cat_cols=[], value_cols='', color='', title=
         labelListTemp = list(set(df[catCol].values))
         colorNumList.append(len(labelListTemp))
         labelList = labelList + labelListTemp
-    print(labelList)
+    #print(labelList)
 
     labelList = list(dict.fromkeys(labelList))
 
@@ -233,11 +234,11 @@ def genSankey(df, domainx, domainy, cat_cols=[], value_cols='', color='', title=
 
     # sourceTargetDf.to_csv('../sourcetarget.csv')
     # creating the sankey diagram
-    print(sourceTargetDf)
+    # print(sourceTargetDf)
     data = dict(
         type='sankey',
         node=dict(
-            pad=5,
+            pad=4,
             thickness=1,
             line=dict(
                 color="black",
@@ -282,14 +283,14 @@ df3 = plot_balances(balances,columnin=df3col)
 df4 = plot_balances(balances,columnin=df4col)
 
 if year == '2060':
-    data = genSankey(df, domainx = [0, 0.48], domainy = [0.52, 1], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
+    data = genSankey(df, domainx = [0, 0.48], domainy = [0.56, 0.97], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
     data2 = genSankey(df2, domainx = [0.52, 1.0], domainy = [0.57, 0.95], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
-    data3 = genSankey(df3, domainx = [0, 0.48], domainy = [0.05, 0.43], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
-    data4 = genSankey(df4, domainx = [0.52, 1.0], domainy = [0.07, 0.41], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
+    data3 = genSankey(df3, domainx = [0, 0.48], domainy = [0.06, 0.41], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
+    data4 = genSankey(df4, domainx = [0.52, 1.0], domainy = [0.05, 0.43], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
 elif year == '2040':
     data = genSankey(df, domainx = [0, 0.48], domainy = [0.52, 1], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
     data2 = genSankey(df2, domainx = [0.52, 1.0], domainy = [0.52, 1], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
-    data3 = genSankey(df3, domainx = [0, 0.48], domainy = [0.02, 0.46], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
+    data3 = genSankey(df3, domainx = [0, 0.48], domainy = [0.03, 0.45], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
     data4 = genSankey(df4, domainx = [0.52, 1.0], domainy = [0.02, 0.46], cat_cols=['lvl1','lvl2','lvl3'],value_cols='count', color='color', title='Energy sankey')
 
 layout = dict(
@@ -301,29 +302,29 @@ layout = dict(
 
 fig = dict(data=[data, data2, data3, data4], layout=layout)
 fig2 = go.Figure(fig)
-fig2.add_annotation(x=0.23, y=1,
-            text='(a)', #'"High biomass, low CS",
+fig2.add_annotation(x=0.16, y=1,
+            text="High biomass, low CS",
             showarrow=False,
             yshift=10,
             align='center')
 
 
-fig2.add_annotation(x=0.78, y=1,
-            text='(b)',#'"High biomass, high CS",
+fig2.add_annotation(x=0.84, y=1,
+            text="High biomass, high CS",
             showarrow=False,
             yshift=10,
             align='center')
 
 
-fig2.add_annotation(x=0.23, y=0.45,
-            text='(c)',#'"Low biomass, low CS",
+fig2.add_annotation(x=0.16, y=0.45,
+            text="Low biomass, low CS",
             showarrow=False,
             yshift=10,
             align='center')
 
 
-fig2.add_annotation(x=0.78, y=0.45,
-            text='(d)',#'"Low biomass, high CS",
+fig2.add_annotation(x=0.84, y=0.45,
+            text="Low biomass, high CS",
             showarrow=False,
             yshift=10,
             align='center')

@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
 scenario = 'serverResults/mainScenarios'
-sdir2060 = '../results/serverResults/mainScenarios2060/csvs/costs.csv'
-sdir2040 = '../results/serverResults/mainScenarios2040/csvs/costs.csv'
+sdir2060 = '../results/serverResults/mainScenarios2060_update/csvs/costs.csv'
+sdir2040 = '../results/serverResults/mainScenarios2040_update/csvs/costs.csv'
 output = '../results/1h_2060'
-metrics2040 = '../results/{}2040/csvs/metrics.csv'.format(scenario)
-metrics2060 = '../results/{}2060/csvs/metrics.csv'.format(scenario)
-balances2040 = '../results/{}2040/csvs/supply_energy.csv'.format(scenario)
-balances2060 = '../results/{}2060/csvs/supply_energy.csv'.format(scenario)
+metrics2040 = '../results/{}2040_update/csvs/metrics.csv'.format(scenario)
+metrics2060 = '../results/{}2060_update/csvs/metrics.csv'.format(scenario)
+balances2040 = '../results/{}2040_update/csvs/supply_energy.csv'.format(scenario)
+balances2060 = '../results/{}2060_update/csvs/supply_energy.csv'.format(scenario)
 
 
 def plot_balances(balances):
@@ -274,9 +274,9 @@ def rename_techs(label):
     }
 
     simplify_more = {
-        'heat': 'other',
-        'industry': 'other',
-        'CHP': 'other',
+        'heat': 'heat and industry',
+        'industry': 'heat and industry',
+        'CHP': 'heat and industry',
         'power': 'power excl. fossil fuels',
         'hydrogen derivatives': 'other',
         'digestible biomass': 'biomass domestic',
@@ -357,6 +357,7 @@ preferred_order2 = pd.Index([
     'heat',
     'CHP',
     'industry',
+    'heat and industry',
     'other',
     'fossil fuels',
     'H2 usages',
@@ -423,7 +424,8 @@ def place_subplot(df,ax,ylabel,xlabel,ymax,title,legend=False):
               'fossil liquid fuel + CCS': '#708090',
               'fossil liquid fuel w/o CCS': '#708090',
               'fossil gas': 'darkgrey',
-              'other': '#FFD700',#'#FAFA33',#'#CD7F32',#'lightblue',
+              'heat and industry': '#FFD700',#'#FAFA33',#'#CD7F32',#'lightblue',
+              'other': '#FAFA33',#'#CD7F32',#'lightblue',
               'biomass': 'green',
               'other biomass usage': '#FFE5B4',
               'biofuel': 'gold',
@@ -788,8 +790,8 @@ rename_cols_onlyOptimal(dfOpt2040)
 # dfOpt2040 = reorder_df(dfOpt2040,order)
 
 fig2, (ax6, ax7) = plt.subplots(1,2,figsize=(12,5))
-place_subplot(dfOpt2060,ax7,'','',600,'2060', legend=True)
-place_subplot(dfOpt2040,ax6,'Total cost (billion EUR)','',600,'2040')
+place_subplot(dfOpt2060,ax7,'','',650,'2060', legend=True)
+place_subplot(dfOpt2040,ax6,'Total cost (billion EUR)','',650,'2040')
 
 fig2.tight_layout(pad=1.5)
 plt.show()

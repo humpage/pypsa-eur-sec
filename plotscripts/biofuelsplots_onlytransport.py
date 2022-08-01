@@ -10,7 +10,7 @@ import matplotlib.colors as mcolors
 plt.style.use('ggplot')
 
 year = 2060
-scenario = 'serverResults/mainScenarios{}'.format(year)
+scenario = 'serverResults/mainScenarios{}_update'.format(year)
 sdir = '../results/{}/csvs/costs.csv'.format(scenario)
 output = '../results/fuelSupply{}'.format(year)
 balances = '../results/{}/csvs/supply_energy.csv'.format(scenario)
@@ -137,7 +137,7 @@ def plot_balances(balances):
             BiofuelCO2captureShare = df.loc['biomass to liquid'] / df[df > 0].dropna().sum()
             # print('Biofuel captured CO2 share: ', BiofuelCO2captureShare)
 
-            CCUS_DACshare = df.loc['DAC'] / df[df > 0].dropna().sum()
+            CCUS_DACshare = 0#df.loc['DAC'] / df[df > 0].dropna().sum()
             # print('CCUS DAC share: ', CCUS_DACshare)
 
             TotalCO2captured = df[df > 0].sum()
@@ -275,6 +275,7 @@ def rename_techs(label):
         # 'solid biomass': 'biomass',
         'biomass to liquid': 'biofuel',
         'DAC': 'DAC',
+        'carbon capture': 'other',
         'CO2 sequestration': 'carbon storage',
         # "power-to-liquid": 'hydrogen derivatives',
     }
@@ -589,6 +590,7 @@ def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, plottype, twoleg
     for rect, total, total2 in itertools.zip_longest(ax.patches, totals, totals2, fillvalue=0):#zip(ax.patches, totals):#
 
         increase = round((total / totals[1]-1) * 100, 1)
+        increaseAbs = round(total - totals[1],1)
         if abs(increase) >= 1:
             increase = int(increase)
         # print('increase: ', increase)
@@ -620,6 +622,8 @@ def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, plottype, twoleg
                         insert = ''
                     ax.text(rect.get_x() + rect.get_width() / 4, total2 + 60, insert, ha='center',
                             fontsize='x-small')
+                    ax.text(rect.get_x() + rect.get_width() / 4, total2 + 110, increaseAbs, ha='center',
+                            fontsize='x-small')
         elif ndf == 1:
             if total > 0:
                 # ax.text(rect.get_x() + rect.get_width()/2, total2 + 20, int(total), ha='center', weight='bold',
@@ -640,11 +644,11 @@ def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, plottype, twoleg
     labels.reverse()
 
     if year == 2060:
-        ymin = -30
-        ymax = 1000
+        ymin = -50
+        ymax = 1050
     elif year == 2040:
-        ymin = -30
-        ymax = 1000
+        ymin = -50
+        ymax = 1050
 
     # if transportOnly:
     ax.set_ylim([ymin, ymax])  # snakemake.config['plotting']['costs_max']])
@@ -943,7 +947,7 @@ def gen_transport_df_for_plots(transportOnly, mode='cost'):
     if transportOnly:
         print('dropping non-transport')
         if year == 2060:
-            to_drop = ['power excl. fossil fuels', 'other', 'other biomass usage', 'fossil gas', 'carbon storage', 'DAC']
+            to_drop = ['power excl. fossil fuels', 'other', 'other biomass usage', 'fossil gas', 'carbon storage']
         elif year == 2040:
             to_drop = ['power excl. fossil fuels', 'other', 'other biomass usage', 'fossil gas', 'carbon storage', 'fossil fuels']
 
@@ -1003,18 +1007,32 @@ def plot_scenarios(costs, costAll, output, mode='cost'):
     # place_subplot(df2, ax2, 2, 1, 'Fuel cost [Billion EUR]', '', 'High bio, low CS')
     # place_subplot(df6, ax2, 2, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS')
 
-    ax2.plot(df6.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
-    place_subplot(df2, ax2, 1, 0, 'Cost [Billion EUR]', '', 'High bio, low CS', 'bar')
-    # place_subplot(df6.sum(), ax2, 1, 0, 'Fuel cost [Billion EUR]', '', 'High bio, low CS', 'scatter')
+# Just fuels
+#     ax2.plot(df6.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
+#     place_subplot(df2, ax2, 1, 0, 'Cost [Billion EUR]', '', 'High bio, low CS', 'bar')
+#
+#     ax3.plot(df7.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
+#     place_subplot(df3, ax3, 1, 0, '', '', 'High bio, high CS', 'bar', legend=True)
+#
+#     place_subplot(df4, ax4, 1, 0, 'Cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS', 'bar')
+#     ax4.plot(df8.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black')
+#
+#     place_subplot(df5, ax5, 1, 0, '', 'Biofuel share', 'Low bio, high CS', 'bar')
+#     ax5.plot(df9.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black')
 
-    ax3.plot(df7.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black', label='total energy system cost')
-    place_subplot(df3, ax3, 1, 0, '', '', 'High bio, high CS', 'bar', legend=True)
 
-    place_subplot(df4, ax4, 1, 0, 'Cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS', 'bar')
-    ax4.plot(df8.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black')
+### Both
+    # place_subplot(df6, ax2, 2, 0, 'Cost [Billion EUR]', '', 'High bio, low CS', 'bar')
+    place_subplot(df2, ax2, 2, 1, 'Cost [Billion EUR]', '', 'High bio, low CS', 'bar')
 
-    place_subplot(df5, ax5, 1, 0, '', 'Biofuel share', 'Low bio, high CS', 'bar')
-    ax5.plot(df9.sum(), linewidth=0, marker='_', ms=20, mew=2, color='black')
+    # place_subplot(df7, ax3, 2, 0, '', '', 'High bio, high CS', 'bar', legend=True)
+    place_subplot(df3, ax3, 2, 1, '', '', 'High bio, high CS', 'bar', legend=True)
+
+    # place_subplot(df8, ax4, 2, 0, 'Cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS', 'bar')
+    place_subplot(df4, ax4, 2, 1, 'Cost [Billion EUR]', 'Biofuel share', 'Low bio, low CS', 'bar')
+
+    # place_subplot(df9, ax5, 2, 0, '', 'Biofuel share', 'Low bio, high CS', 'bar')
+    place_subplot(df5, ax5, 2, 1, '', 'Biofuel share', 'Low bio, high CS', 'bar')
 
     # place_subplot(df3, ax3, 2, 1, '', '', 'High bio, high CS', 'bar')
     # place_subplot(df7, ax3, 2, 0, '', '', 'High bio, high CS', 'bar', twolegend=True, legend=True)
@@ -1052,7 +1070,7 @@ get_H2shareofACrevenue(H2shareofACrevenueCSV)
 plot_metrics(metrics)
 
 costs, costsAll = gen_transport_df_for_plots(transportOnly=True, mode='cost')
-# prices, costAll = gen_transport_df_for_plots(transportOnly=True, mode='prices')
+# prices, costsAll = gen_transport_df_for_plots(transportOnly=True, mode='prices')
 
 # plot_scenarios(output, transportOnly=False)
 # plot_scenarios(output, transportOnly=False)
@@ -1060,4 +1078,4 @@ costs, costsAll = gen_transport_df_for_plots(transportOnly=True, mode='cost')
 # plot_clustered_stacked([costs.T, costAll.T], ['df1', 'df2'])
 
 plot_scenarios(costs, costsAll, output, mode='cost')
-# plot_scenarios(prices, transportOnly=True)
+# plot_scenarios(prices, costsAll, output, mode='prices')
