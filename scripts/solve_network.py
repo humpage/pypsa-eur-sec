@@ -382,16 +382,15 @@ if __name__ == "__main__":
         lv = snakemake.wildcards.lv
 
         # Save shadow price of biofuel constraint
-        sector_opts = snakemake.wildcards.sector_opts
-        planning_horizon = snakemake.wildcards.planning_horizons[-4:]
-        headerBiofuelConstraint = '{}_lv{}_{}_{}'.format(cluster, lv, sector_opts, planning_horizon)
+        #sector_opts = snakemake.wildcards.sector_opts
+        #planning_horizon = snakemake.wildcards.planning_horizons[-4:]
+        #headerBiofuelConstraint = '{}_lv{}_{}_{}'.format(cluster, lv, sector_opts, planning_horizon)
+        #biofuelConstraintFile = snakemake.config['results_dir'] + snakemake.config['run'] + '/biofuelminConstraint.csv'
+        #df = pd.DataFrame()
+        #print(n.duals["Link"]["df"]["liquid_biofuel_min"])
+        #data = pd.DataFrame({f'{headerBiofuelConstraint}': n.duals["Link"]["df"]["liquid_biofuel_min"].values}).T
 
-        biofuelConstraintFile = snakemake.config['results_dir'] + snakemake.config['run'] + '/biofuelminConstraint.csv'
-        df = pd.DataFrame()
-        print(n.duals["Link"]["df"]["liquid_biofuel_min"])
-        data = pd.DataFrame({f'{headerBiofuelConstraint}': n.duals["Link"]["df"]["liquid_biofuel_min"].values}).T
-
-        data.to_csv(biofuelConstraintFile, mode='a', header=False)
+        #data.to_csv(biofuelConstraintFile, mode='a', header=False)
         ###
 
 

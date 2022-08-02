@@ -2688,15 +2688,8 @@ def add_agriculture(n, costs):
 
     if ice_share > 0:
 
-        if "oil" not in n.buses.carrier.unique():
-            n.madd("Bus",
-                   spatial.oil.nodes,
-                   location=spatial.oil.locations,
-                   carrier="oil"
-                   )
-
-        n.add("Load",
-            "agriculture machinery oil",
+        n.madd("Load",
+            ["agriculture machinery oil"],
             bus=spatial.oil.nodes,
             carrier="agriculture machinery oil",
             p_set=ice_share * machinery_nodal_energy.sum() * 1e6 / 8760
@@ -2710,7 +2703,6 @@ def add_agriculture(n, costs):
             carrier="agriculture machinery oil emissions",
             p_set=-co2
         )
-
 
 def decentral(n):
     """Removes the electricity transmission system."""
