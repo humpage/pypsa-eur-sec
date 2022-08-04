@@ -16,7 +16,9 @@ wildcard_constraints:
     simpl="[a-zA-Z0-9]*",
     clusters="[0-9]+m?",
     opts="[-+a-zA-Z0-9]*",
-    sector_opts="[-+a-zA-Z0-9\.\s]*"
+    sector_opts="[-+a-zA-Z0-9\.\s]*",
+    planning_horizons="[0-9]+m?",
+    epsilon="[0-9\.]*",
 
 
 SDIR = config['summary_dir'] + '/' + config['run']
@@ -29,8 +31,10 @@ subworkflow pypsaeur:
     snakefile: "../pypsa-eur/Snakefile"
     configfile: "../pypsa-eur/config.yaml"
 
+
 rule all:
-    input: SDIR + '/graphs/costs.pdf'
+#     input: SDIR + '/graphs/costs.pdf'
+    input: SDIR + "/csvs/mga/investments.csv"
 
 
 rule solve_all_networks:
@@ -662,7 +666,70 @@ if config["foresight"] == "myopic":
             solver=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_solver.log",
             python=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_python.log",
             memory=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_memory.log"
-        threads: 4
+        threads: config['solving']['solver'].get('threads', 4)
         resources: mem_mb=config['solving']['mem']
         benchmark: RDIR + "/benchmarks/solve_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}"
         script: "scripts/solve_network.py"
+
+
+# MODELLING TO GENERATE ALTERNATIVES
+
+# At this checkpoint (https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#data-dependent-conditional-execution)
+# based on the variables of the original problem the search directions of the MGA iterations are inferred.
+
+# checkpoint generate_list_of_alternatives:
+#     input: RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc"
+#     output: RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_cat-{category}.txt"
+#     script: "scripts/mga/generate_list_of_alternatives.py"
+
+
+rule solve_all_alternatives:
+    input:
+        expand(RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}+{sense}.nc",
+               **config['scenario'])
+
+
+rule generate_alternative:
+    input:
+        overrides="data/override_component_attrs",
+        network=RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
+        costs=CDIR + "costs_{planning_horizons}.csv",
+        config=SDIR + '/configs/config.yaml'
+    output: RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}+{sense}.nc"
+    benchmark: RDIR + "/benchmarks/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}+{sense}_time"
+
+    log:
+        solver=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}+{sense}_solver.log",
+        python=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}+{sense}_python.log",
+        memory=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}+{sense}_memory.log"
+    threads: config['solving']['solver'].get('threads', 4)
+    resources: mem_mb=config['solving']['mem']
+    script: "scripts/solve_network_mga.py"
+
+# EVALUATION
+
+rule extract_results:
+    input: #input_generate_clusters_alternatives
+        networks=expand(
+            RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}+{sense}.nc",
+            **config['scenario']
+        ),
+    output:
+        investments=SDIR + "/csvs/mga/investments.csv",
+        energy=SDIR + "/csvs/mga/energy.csv",
+        storage_capacity=SDIR + "/csvs/mga/storage_capacity.csv",
+        generation_capacity=SDIR + "/csvs/mga/generation_capacity.csv",
+#         line_capacity=SDIR + "/csvs/mga/line_capacity.csv",
+        link_capacity=SDIR + "/csvs/mga/link_capacity.csv",
+#         line_volume=SDIR + "/csvs/mga/line_volume.csv",
+        link_volume=SDIR + "/csvs/mga/link_volume.csv",
+#         line_energy_balance=SDIR + "/csvs/mga/line_energy_balance.csv",
+        link_energy_balance=SDIR + "/csvs/mga/link_energy_balance.csv",
+        curtailment=SDIR + "/csvs/mga/curtailment.csv",
+        gini=SDIR + "/csvs/mga/gini.csv",
+#         maps=directory("graphics/{clusters}/networks")
+    script: "scripts/mga/extract_results.py"
+
+
+rule extract_all_results:
+    input: SDIR + "/csvs/mga/investments.csv" #, clusters=config["scenario"]["clusters"])
