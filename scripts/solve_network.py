@@ -277,16 +277,22 @@ def add_biofuel_constraint(n):
     # print(landtrans)
 
     total_oil_load = napkership+landtrans
-    liqfuelloadlimit = liquid_biofuel_limit * total_oil_load
+    limit = liquid_biofuel_limit * total_oil_load
 
     lhs = linexpr((biofuel_vars_eta, biofuel_vars)).sum().sum()
 
+    name = 'liquid_biofuel_min'
     # print('Constraint type: ', biofuel_constraint_type)
-
+    sense = '>='
     if biofuel_constraint_type == 'Eq':
-        define_constraints(n, lhs, "==", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
+        sense = '=='
     elif biofuel_constraint_type == 'Lt':
-        define_constraints(n, lhs, ">=", liqfuelloadlimit, 'Link', 'liquid_biofuel_min')
+        sense = '>='
+
+    # n.add("GlobalConstraint", name, sense=sense, constant=limit,
+    #       type=np.nan, carrier_attribute=np.nan)
+
+    define_constraints(n, lhs, sense, limit, 'Link', spec=name)
 
 def extra_functionality(n, snapshots):
     add_battery_constraints(n)
