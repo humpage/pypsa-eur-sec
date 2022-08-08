@@ -21,6 +21,238 @@ pypsa.pf.logger.setLevel(logging.WARNING)
 
 
 
+def add_land_use_constraint(n):
+
+    if 'm' in snakemake.wildcards.clusters:
+        _add_land_use_constraint_m(n)
+    else:
+        _add_land_use_constraint(n)
+
+
+def _add_land_use_constraint(n):
+    #warning: this will miss existing offwind which is not classed AC-DC and has carrier 'offwind'
+
+    for carrier in ['solar', 'onwind', 'offwind-ac', 'offwind-dc']:
+        existing = n.generators.loc[n.generators.carrier==carrier,"p_nom"].groupby(n.generators.bus.map(n.buses.location)).sum()
+        existing.index += " " + carrier + "-" + snakemake.wildcards.planning_horizons
+        n.generators.loc[existing.index,"p_nom_max"] -= existing
+
+    n.generators.p_nom_max.clip(lower=0, inplace=True)
+
+
+def _add_land_use_constraint_m(n):
+    # if generators clustering is lower than network clustering, land_use accounting is at generators clusters
+
+    planning_horizons = snakemake.config["scenario"]["planning_horizons"]
+    grouping_years = snakemake.config["existing_capacities"]["grouping_years"]
+    current_horizon = snakemake.wildcards.planning_horizons
+
+    for carrier in ['solar', 'onwind', 'offwind-ac', 'offwind-dc']:
+
+        existing = n.generators.loc[n.generators.carrier==carrier,"p_nom"]
+        ind = list(set([i.split(sep=" ")[0] + ' ' + i.split(sep=" ")[1] for i in existing.index]))
+
+        previous_years = [
+            str(y) for y in
+            planning_horizons + grouping_years
+            if y < int(snakemake.wildcards.planning_horizons)
+        ]
+
+        for p_year in previous_years:
+            ind2 = [i for i in ind if i + " " + carrier + "-" + p_year in existing.index]
+            sel_current = [i + " " + carrier + "-" + current_horizon for i in ind2]
+            sel_p_year = [i + " " + carrier + "-" + p_year for i in ind2]
+            n.generators.loc[sel_current, "p_nom_max"] -= existing.loc[sel_p_year].rename(lambda x: x[:-4] + current_horizon)
+
+    n.generators.p_nom_max.clip(lower=0, inplace=True)
+
+
+def add_battery_constraints(n):
+
+    chargers_b = n.links.carrier.str.contains("battery charger")
+    chargers = n.links.index[chargers_b & n.links.p_nom_extendable]
+    dischargers = chargers.str.replace("charger", "discharger")
+
+    if chargers.empty or ('Link', 'p_nom') not in n.variables.index:
+        return
+
+    link_p_nom = get_var(n, "Link", "p_nom")
+
+    lhs = linexpr((1,link_p_nom[chargers]),
+                  (-n.links.loc[dischargers, "efficiency"].values,
+                   link_p_nom[dischargers].values))
+
+    define_constraints(n, lhs, "=", 0, 'Link', 'charger_ratio')
+
+
+def add_chp_constraints(n):
+
+    electric_bool = (n.links.index.str.contains("urban central")
+                     & n.links.index.str.contains("CHP")
+                     & n.links.index.str.contains("electric"))
+    heat_bool = (n.links.index.str.contains("urban central")
+                 & n.links.index.str.contains("CHP")
+                 & n.links.index.str.contains("heat"))
+
+    electric = n.links.index[electric_bool]
+    heat = n.links.index[heat_bool]
+
+    electric_ext = n.links.index[electric_bool & n.links.p_nom_extendable]
+    heat_ext = n.links.index[heat_bool & n.links.p_nom_extendable]
+
+    electric_fix = n.links.index[electric_bool & ~n.links.p_nom_extendable]
+    heat_fix = n.links.index[heat_bool & ~n.links.p_nom_extendable]
+
+    link_p = get_var(n, "Link", "p")
+
+    if not electric_ext.empty:
+
+        link_p_nom = get_var(n, "Link", "p_nom")
+
+        #ratio of output heat to electricity set by p_nom_ratio
+        lhs = linexpr((n.links.loc[electric_ext, "efficiency"]
+                       *n.links.loc[electric_ext, "p_nom_ratio"],
+                       link_p_nom[electric_ext]),
+                      (-n.links.loc[heat_ext, "efficiency"].values,
+                       link_p_nom[heat_ext].values))
+
+        define_constraints(n, lhs, "=", 0, 'chplink', 'fix_p_nom_ratio')
+
+        #top_iso_fuel_line for extendable
+        lhs = linexpr((1,link_p[heat_ext]),
+                      (1,link_p[electric_ext].values),
+                      (-1,link_p_nom[electric_ext].values))
+
+        define_constraints(n, lhs, "<=", 0, 'chplink', 'top_iso_fuel_line_ext')
+
+    if not electric_fix.empty:
+
+        #top_iso_fuel_line for fixed
+        lhs = linexpr((1,link_p[heat_fix]),
+                      (1,link_p[electric_fix].values))
+
+        rhs = n.links.loc[electric_fix, "p_nom"].values
+
+        define_constraints(n, lhs, "<=", rhs, 'chplink', 'top_iso_fuel_line_fix')
+
+    if not electric.empty:
+
+        #backpressure
+        lhs = linexpr((n.links.loc[electric, "c_b"].values
+                       *n.links.loc[heat, "efficiency"],
+                       link_p[heat]),
+                      (-n.links.loc[electric, "efficiency"].values,
+                       link_p[electric].values))
+
+        define_constraints(n, lhs, "<=", 0, 'chplink', 'backpressure')
+
+
+def add_pipe_retrofit_constraint(n):
+    """Add constraint for retrofitting existing CH4 pipelines to H2 pipelines."""
+
+    gas_pipes_i = n.links.query("carrier == 'gas pipeline' and p_nom_extendable").index
+    h2_retrofitted_i = n.links.query("carrier == 'H2 pipeline retrofitted' and p_nom_extendable").index
+
+    if h2_retrofitted_i.empty or gas_pipes_i.empty: return
+
+    link_p_nom = get_var(n, "Link", "p_nom")
+
+    CH4_per_H2 = 1 / n.config["sector"]["H2_retrofit_capacity_per_CH4"]
+    fr = "H2 pipeline retrofitted"
+    to = "gas pipeline"
+
+    pipe_capacity = n.links.loc[gas_pipes_i, 'p_nom'].rename(basename)
+
+    lhs = linexpr(
+        (CH4_per_H2, link_p_nom.loc[h2_retrofitted_i].rename(index=lambda x: x.replace(fr, to))),
+        (1, link_p_nom.loc[gas_pipes_i])
+    )
+
+    lhs.rename(basename, inplace=True)
+    define_constraints(n, lhs, "=", pipe_capacity, 'Link', 'pipe_retrofit')
+
+
+def add_co2_sequestration_limit(n, sns):
+
+    co2_stores = n.stores.loc[n.stores.carrier=='co2 stored'].index
+
+    if co2_stores.empty or ('Store', 'e') not in n.variables.index:
+        return
+
+    vars_final_co2_stored = get_var(n, 'Store', 'e').loc[sns[-1], co2_stores]
+
+    lhs = linexpr((1, vars_final_co2_stored)).sum()
+
+    limit = n.config["sector"].get("co2_sequestration_potential", 200) * 1e6
+    # for o in opts:
+    #     if not "seq" in o: continue
+    #     limit = float(o[o.find("seq")+3:]) * 1e6
+    #     print(float(o[o.find("seq")+3:]))
+    #     break
+
+    opts = snakemake.wildcards.sector_opts.split('-')
+    for o in opts:
+        if "seq" in o:
+            limit = float(o[o.find("seq") + 3:]) * 1e6
+
+    print('CO2 sequestration limit: ', limit)
+
+    name = 'co2_sequestration_limit'
+    sense = "<="
+
+    n.add("GlobalConstraint", name, sense=sense, constant=limit,
+          type=np.nan, carrier_attribute=np.nan)
+
+    define_constraints(n, lhs, sense, limit, 'GlobalConstraint',
+                       'mu', axes=pd.Index([name]), spec=name)
+
+def add_biofuel_constraint(n):
+
+    options = snakemake.wildcards.sector_opts.split('-')
+    # print('options: ', options)
+    liquid_biofuel_limit = 0
+    biofuel_constraint_type = 'Lt'
+    for o in options:
+        if "B" in o:
+            liquid_biofuel_limit = o[o.find("B") + 1:o.find("B") + 4]
+            liquid_biofuel_limit = float(liquid_biofuel_limit.replace("p", "."))
+            print('Length of o: ', len(o))
+            if len(o) > 7:
+                biofuel_constraint_type = o[o.find("B") + 6:o.find("B") + 8]
+
+    print('Liq biofuel minimum constraint: ', liquid_biofuel_limit, ' ', type(liquid_biofuel_limit))
+
+    biofuel_i = n.links.query('carrier == "biomass to liquid"').index
+    biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
+    # print('Biofuel p', biofuel_vars)
+    biofuel_vars_eta = n.links.query('carrier == "biomass to liquid"').efficiency
+    biofuel_vars_eta = n.links.query('carrier == "biomass to liquid"').efficiency
+    # print('Eta', biofuel_vars_eta)
+    # print('biofuel vars*eta', biofuel_vars*biofuel_vars_eta)
+
+    napkership = n.loads.p_set.filter(regex='naphtha for industry|kerosene for aviation|shipping oil$').sum() * len(n.snapshots)
+    # print(napkership)
+    landtrans = n.loads_t.p_set.filter(regex='land transport oil$').sum().sum()
+    # print(landtrans)
+
+    total_oil_load = napkership+landtrans
+    limit = liquid_biofuel_limit * total_oil_load
+
+    lhs = linexpr((biofuel_vars_eta, biofuel_vars)).sum().sum()
+
+    name = 'liquid_biofuel_min'
+    # print('Constraint type: ', biofuel_constraint_type)
+    sense = '>='
+    if biofuel_constraint_type == 'Eq':
+        sense = '=='
+    elif biofuel_constraint_type == 'Lt':
+        sense = '>='
+
+    # n.add("GlobalConstraint", name, sense=sense, constant=limit,
+    #       type=np.nan, carrier_attribute=np.nan)
+
+    define_constraints(n, lhs, sense, limit, 'Link', spec=name)
+
 
 def to_regex(pattern):
     """[summary]
@@ -70,7 +302,6 @@ def prepare_network(n, solve_opts=None):
     return n
 
 
-
 def solve_network(n, config, opts='', **kwargs):
     solver_options = config['solving']['solver'].copy()
     solver_name = solver_options.pop('name')
@@ -105,33 +336,34 @@ def solve_network(n, config, opts='', **kwargs):
 
 
 def extra_functionality(n, snapshots):
-    #add_battery_constraints(n)
-    #add_pipe_retrofit_constraint(n)
-    #add_co2_sequestration_limit(n, snapshots)
 
-    # options = snakemake.wildcards.sector_opts.split('-')
-    # for o in options:
-    #     if "B" in o:
-    #         print('adding biofuel constraints')
-    #         add_biofuel_constraint(n)
-    #     if 'CCL' in o:
-    #         print('adding ccl constraints')
-    #         add_ccl_constraints(n)
-    #     if 'convCCL' in o:
-    #         print('adding conventional ccl constraints')
-    #         add_ccl_constraints_conventional(n)
+    add_battery_constraints(n)
+    add_pipe_retrofit_constraint(n)
+    add_co2_sequestration_limit(n, snapshots)
 
-    #MGA
-    # wc = snakemake.wildcards.objective.split("+")
-    var_type = snakemake.wildcards.tech_type
-    pattern = snakemake.wildcards.mga_tech
+    options = snakemake.wildcards.sector_opts.split('-')
+    for o in options:
+        if "B" in o:
+            print('adding biofuel constraints')
+            add_biofuel_constraint(n)
+        if 'CCL' in o:
+            print('adding ccl constraints')
+            add_ccl_constraints(n)
+        if 'convCCL' in o:
+            print('adding conventional ccl constraints')
+            add_ccl_constraints_conventional(n)
+
+    wc = snakemake.wildcards.mga_tech.split("-")
+    print('wc', wc)
+    var_type = wc[0]
+    pattern = wc[1]
     sense = snakemake.wildcards.sense
     process_objective_wildcard(n, var_type, pattern, sense)
-    define_mga_objective(n)
     define_mga_constraint(n, snapshots)
-
+    define_mga_objective(n)
 
 def process_objective_wildcard(n, var_type, pattern, sense):
+    """[summary]
     """[summary]
 
     Parameters
@@ -143,13 +375,13 @@ def process_objective_wildcard(n, var_type, pattern, sense):
 
     mga_obj = [var_type, pattern, sense]
 
-    lookup = {
-        "Line": ["Line"],
-        "Transmission": ["Link", "Line"],
-    }
-    if var_type in lookup.keys():
-        mga_obj[0] = lookup[var_type] #lookup[mga_obj[0]]
-        mga_obj[1] = transmission_countries_to_index(n, pattern, var_type)
+    # lookup = {
+    #     "Line": ["Line"],
+    #     "Transmission": ["Link", "Line"],
+    # }
+    # if var_type in lookup.keys():
+    #     mga_obj[0] = lookup[var_type] #lookup[mga_obj[0]]
+    #     mga_obj[1] = transmission_countries_to_index(n, pattern, var_type)
 
     lookup = {"max": -1, "min": 1}
     mga_obj[2] = lookup[sense]
@@ -177,24 +409,19 @@ def define_mga_constraint(n, snapshots, epsilon=None, with_fix=None):
 
     if epsilon is None:
         epsilon = float(snakemake.wildcards.epsilon)
+    print('epsilon: ', epsilon)
 
     if with_fix is None:
         with_fix = snakemake.config.get("include_non_extendable", True)
 
     expr = []
-    # print(8760. / len(n.snapshots))
-    weight = 8760. / len(n.snapshots)
-    # n.set_snapshots(n.snapshots[:nhours])
-    # n.snapshot_weightings[:] = 8760. / len(n.snapshots)
 
-    # print(n.snapshot_weightings.loc[snapshots])
-    # print(snapshots)
     # operation
     for c, attr in lookup.query("marginal_cost").index:
         cost = (
             get_as_dense(n, c, "marginal_cost", snapshots)
             .loc[:, lambda ds: (ds != 0).all()]
-            .mul(weight)#n.snapshot_weightings[snapshots], axis=0)
+            .mul(n.snapshot_weightings.generators, axis=0)
         )
         if cost.empty:
             continue
@@ -212,12 +439,18 @@ def define_mga_constraint(n, snapshots, epsilon=None, with_fix=None):
     if with_fix:
         ext_const = objective_constant(n, ext=True, nonext=False)
         nonext_const = objective_constant(n, ext=False, nonext=True)
-        rhs = (1 + epsilon) * (n.objective + ext_const + nonext_const) - nonext_const
+        limit = (1 + epsilon) * (n.objective + ext_const + nonext_const) - nonext_const
     else:
         ext_const = objective_constant(n)
-        rhs = (1 + epsilon) * (n.objective + ext_const)
+        limit = (1 + epsilon) * (n.objective + ext_const)
 
-    define_constraints(n, lhs, "<=", rhs, "GlobalConstraint", "mu_epsilon")
+    name = 'CostMax'
+    sense = '<='
+
+    n.add("GlobalConstraint", name, sense=sense, constant=limit,
+          type=np.nan, carrier_attribute=np.nan)
+
+    define_constraints(n, lhs, sense, limit, "GlobalConstraint", 'mu_epsilon', spec=name)
 
 
 def objective_constant(n, ext=True, nonext=True):
@@ -239,7 +472,6 @@ def objective_constant(n, ext=True, nonext=True):
     return constant
 
 
-
 def define_mga_objective(n):
 
     components, pattern, sense = n.mga_obj
@@ -250,9 +482,6 @@ def define_mga_objective(n):
 
     terms = []
     for c in components:
-        # print('TEST: ', c, nominal_attrs[c])
-        # if c in ["StorageUnit"]:
-        #     break
 
         variables = get_var(n, c, nominal_attrs[c]).filter(regex=to_regex(pattern))
         print(variables)
@@ -305,7 +534,8 @@ if __name__ == "__main__":
 
         n = solve_network(n, config=snakemake.config, opts=opts,
                           solver_dir=tmpdir,
-                          solver_logfile=snakemake.log.solver)
+                          solver_logfile=snakemake.log.solver,
+                          skip_objective=True)
 
         if "lv_limit" in n.global_constraints.index:
             n.line_volume_limit = n.global_constraints.at["lv_limit", "constant"]

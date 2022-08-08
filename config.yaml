@@ -5,30 +5,9 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: testMGA # use this to keep track of runs with different settings
-foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
+run: testMGA_2 # use this to keep track of runs with different settings
+foresight: myopic # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
-
-##-------------Modelling to Generate Alternatives
-#alternative-totals:
-#  epsilon: [0.01, 0.05, 0.1]
-#  category: ['totals']
-#
-#scenario-totals:
-#  simpl: []
-#  lv: [1.5]
-#  clusters: [37]
-#  opts: []
-#  sector_opts: [431H-H-I-T-A-B0p0Im-High-seq500]
-#  planning_horizons: [2050]
-#
-#scenario-groups:
-#  clusters: [37]
-#  opts: [431H]
-#
-#alternative-groups:
-#  epsilon: [0.05]
-#  category: ['groups']
 
 lines_and_links_separate: false
 include_groups: false
@@ -47,7 +26,7 @@ scenario:
   opts: # only relevant for PyPSA-Eur
     - ''
   sector_opts: # this is where the main scenario settings are
-    - 431H-H-I-T-A-B0p0Im-High-seq500
+    - 631H-H-I-T-A-B0p0Im-High-seq500
   # to really understand the options here, look in scripts/prepare_sector_network.py
   # Co2Lx specifies the CO2 target in x% of the 1990 values; default will give default (5%);
   # Co2L0p25 will give 25% CO2 emissions; Co2Lm0p05 will give 5% negative emissions
@@ -67,18 +46,22 @@ scenario:
   planning_horizons: # investment years for myopic and perfect; or costs year for overnight
     - 2050
 
-  tech_type:
-    - Generator
   mga_tech:
-    - onwind
-    - solar
-    - offwind
-    - wind
+    - Generator-onwind
+    - Generator-wind
+    - Generator-solar
+    - Generator-solid biomass
+    - Link-biogas
+    - Link-biomass CHP
+    - Link-biomass to liquid
+    - Link-BioSNG
+    - Link-biomass boiler
   sense:
     - min
     - max
   epsilon:
     - 0.01
+    - 0.02
     - 0.05
     - 0.1
 
@@ -467,7 +450,7 @@ plotting:
     color_geomap:
       ocean: white
       land: whitesmoke
-  costs_max: 1000
+  costs_max: 1500
   costs_threshold: 1
   energy_max: 20000
   energy_min: -20000

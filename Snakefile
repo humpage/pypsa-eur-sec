@@ -19,6 +19,7 @@ wildcard_constraints:
     sector_opts="[-+a-zA-Z0-9\.\s]*",
     planning_horizons="[0-9]+m?",
     epsilon="[0-9\.]*",
+    mga_tech="[-+a-zA-Z0-9\.\s]*",
 
 
 SDIR = config['summary_dir'] + '/' + config['run']
@@ -33,8 +34,12 @@ subworkflow pypsaeur:
 
 
 rule all:
-#     input: SDIR + '/graphs/costs.pdf'
-    input: SDIR + "/csvs/mga/investments.csv"
+    input: SDIR + '/graphs/mga/costs.pdf'
+#     input: SDIR + "/csvs/mga/investments.csv"
+
+
+rule base:
+    input: SDIR + '/graphs/costs.pdf'
 
 
 rule solve_all_networks:
@@ -685,7 +690,7 @@ if config["foresight"] == "myopic":
 
 rule solve_all_alternatives:
     input:
-        expand(RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}+{sense}.nc",
+        expand(RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}.nc",
                **config['scenario'])
 
 
@@ -695,40 +700,102 @@ rule generate_alternative:
         network=RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
         costs=CDIR + "costs_{planning_horizons}.csv",
         config=SDIR + '/configs/config.yaml'
-    output: RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}+{sense}.nc"
-    benchmark: RDIR + "/benchmarks/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}+{sense}_time"
+    output: RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}.nc"
+    benchmark: RDIR + "/benchmarks/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}_time"
 
     log:
-        solver=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}+{sense}_solver.log",
-        python=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}+{sense}_python.log",
-        memory=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}+{sense}_memory.log"
+        solver=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}_solver.log",
+        python=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}_python.log",
+        memory=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}_memory.log"
     threads: config['solving']['solver'].get('threads', 4)
     resources: mem_mb=config['solving']['mem']
     script: "scripts/solve_network_mga.py"
 
-# EVALUATION
 
-rule extract_results:
-    input: #input_generate_clusters_alternatives
+# EVALUATION
+# rule extract_results:
+#     input: #input_generate_clusters_alternatives
+#         networks=expand(
+#             RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}_{sense}.nc",
+#             **config['scenario']
+#         ),
+#     output:
+#         investments=SDIR + "/csvs/mga/investments.csv",
+#         energy=SDIR + "/csvs/mga/energy.csv",
+#         storage_capacity=SDIR + "/csvs/mga/storage_capacity.csv",
+#         generation_capacity=SDIR + "/csvs/mga/generation_capacity.csv",
+# #         line_capacity=SDIR + "/csvs/mga/line_capacity.csv",
+#         link_capacity=SDIR + "/csvs/mga/link_capacity.csv",
+# #         line_volume=SDIR + "/csvs/mga/line_volume.csv",
+#         link_volume=SDIR + "/csvs/mga/link_volume.csv",
+# #         line_energy_balance=SDIR + "/csvs/mga/line_energy_balance.csv",
+#         link_energy_balance=SDIR + "/csvs/mga/link_energy_balance.csv",
+#         curtailment=SDIR + "/csvs/mga/curtailment.csv",
+#         gini=SDIR + "/csvs/mga/gini.csv",
+# #         maps=directory("graphics/{clusters}/networks")
+#     script: "scripts/mga/extract_results.py"
+
+
+rule make_summary_alternatives:
+    input:
+        overrides="data/override_component_attrs",
         networks=expand(
-            RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}+{sense}.nc",
+            RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}.nc",
             **config['scenario']
         ),
+        costs=CDIR + "costs_{}.csv".format(config['scenario']['planning_horizons'][0]),
+        plots=expand(
+            RDIR + "/maps/mga/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}.pdf",
+            **config['scenario']
+        )
     output:
-        investments=SDIR + "/csvs/mga/investments.csv",
-        energy=SDIR + "/csvs/mga/energy.csv",
-        storage_capacity=SDIR + "/csvs/mga/storage_capacity.csv",
-        generation_capacity=SDIR + "/csvs/mga/generation_capacity.csv",
-#         line_capacity=SDIR + "/csvs/mga/line_capacity.csv",
-        link_capacity=SDIR + "/csvs/mga/link_capacity.csv",
-#         line_volume=SDIR + "/csvs/mga/line_volume.csv",
-        link_volume=SDIR + "/csvs/mga/link_volume.csv",
-#         line_energy_balance=SDIR + "/csvs/mga/line_energy_balance.csv",
-        link_energy_balance=SDIR + "/csvs/mga/link_energy_balance.csv",
-        curtailment=SDIR + "/csvs/mga/curtailment.csv",
-        gini=SDIR + "/csvs/mga/gini.csv",
-#         maps=directory("graphics/{clusters}/networks")
-    script: "scripts/mga/extract_results.py"
+        nodal_costs=SDIR + '/csvs/mga/nodal_costs.csv',
+        nodal_capacities=SDIR + '/csvs/mga/nodal_capacities.csv',
+        nodal_cfs=SDIR + '/csvs/mga/nodal_cfs.csv',
+        cfs=SDIR + '/csvs/mga/cfs.csv',
+        costs=SDIR + '/csvs/mga/costs.csv',
+        capacities=SDIR + '/csvs/mga/capacities.csv',
+        curtailment=SDIR + '/csvs/mga/curtailment.csv',
+        energy=SDIR + '/csvs/mga/energy.csv',
+        supply=SDIR + '/csvs/mga/supply.csv',
+        supply_energy=SDIR + '/csvs/mga/supply_energy.csv',
+        prices=SDIR + '/csvs/mga/prices.csv',
+        weighted_prices=SDIR + '/csvs/mga/weighted_prices.csv',
+        market_values=SDIR + '/csvs/mga/market_values.csv',
+        price_statistics=SDIR + '/csvs/mga/price_statistics.csv',
+        metrics=SDIR + '/csvs/mga/metrics.csv'
+    threads: 2
+    resources: mem_mb=10000
+    benchmark: SDIR + "/benchmarks/make_summary_alternatives"
+    script: "scripts/make_summary_alternatives.py"
+
+
+rule plot_summary_alternatives:
+    input:
+        costs=SDIR + '/csvs/mga/costs.csv',
+        energy=SDIR + '/csvs/mga/energy.csv',
+        balances=SDIR + '/csvs/mga/supply_energy.csv'
+    output:
+        costs=SDIR + '/graphs/mga/costs.pdf',
+        energy=SDIR + '/graphs/mga/energy.pdf',
+        balances=SDIR + '/graphs/mga/balances-energy.pdf'
+    threads: 2
+    resources: mem_mb=10000
+    benchmark: SDIR + "/benchmarks/plot_summary_alternatives"
+    script: "scripts/plot_summary_alternatives.py"
+
+
+rule plot_network_alternatives:
+    input:
+        overrides="data/override_component_attrs",
+        network=RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}.nc"
+    output:
+        map=RDIR + "/maps/mga/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}.pdf",
+        today=RDIR + "/maps/mga/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}-today.pdf"
+    threads: 2
+    resources: mem_mb=10000
+    benchmark: RDIR + "/benchmarks/mga/plot_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}"
+    script: "scripts/plot_network.py"
 
 
 rule extract_all_results:
