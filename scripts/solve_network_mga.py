@@ -200,8 +200,8 @@ def add_co2_sequestration_limit(n, sns):
     name = 'co2_sequestration_limit'
     sense = "<="
 
-    n.add("GlobalConstraint", name, sense=sense, constant=limit,
-          type=np.nan, carrier_attribute=np.nan)
+    # n.add("GlobalConstraint", name, sense=sense, constant=limit,
+    #       type=np.nan, carrier_attribute=np.nan)
 
     define_constraints(n, lhs, sense, limit, 'GlobalConstraint',
                        'mu', axes=pd.Index([name]), spec=name)
@@ -363,7 +363,7 @@ def extra_functionality(n, snapshots):
     define_mga_objective(n)
 
 def process_objective_wildcard(n, var_type, pattern, sense):
-    """[summary]
+    # """[summary]
     """[summary]
 
     Parameters

@@ -1741,7 +1741,7 @@ def create_nodes_for_heat_sector():
 
 def add_biomass(n, costs, beccs, biomass_import_price):
 
-    print("Add biomass")
+    logger.info("Add biomass")
 
     nodes = pop_layout.index
 
