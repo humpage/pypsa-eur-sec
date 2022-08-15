@@ -1516,6 +1516,7 @@ def add_heat(n, costs):
                        efficiency=costs.at['biomass boiler', 'efficiency'],
                        efficiency2=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
                        capital_cost=costs.at['biomass boiler', 'efficiency'] * costs.at['biomass boiler', 'fixed'],
+                       marginal_cost=costs.at['biomass boiler', 'pelletizing cost'],
                        lifetime=costs.at['biomass boiler', 'lifetime']
                 )
 
