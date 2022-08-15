@@ -2628,10 +2628,10 @@ def add_waste_heat(n):
             if "B" in o:
                 if options['use_biofuel_waste_heat']:
                     n.links.loc[urban_central + " biomass to liquid", "bus4"] = urban_central + " urban central heat"
-                    n.links.loc[urban_central + " biomass to liquid", "efficiency4"] = 0.95 - n.links.loc[
+                    n.links.loc[urban_central + " biomass to liquid", "efficiency4"] = 0.6 - n.links.loc[
                         urban_central + " biomass to liquid", "efficiency"]
                     n.links.loc[urban_central + " solid biomass to gas", "bus4"] = urban_central + " urban central heat"
-                    n.links.loc[urban_central + " solid biomass to gas", "efficiency4"] = 0.95 - n.links.loc[
+                    n.links.loc[urban_central + " solid biomass to gas", "efficiency4"] = 0.8 - n.links.loc[
                         urban_central + " solid biomass to gas", "efficiency"]
 
         if options['use_fuel_cell_waste_heat']:
