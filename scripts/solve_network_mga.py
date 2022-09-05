@@ -436,6 +436,7 @@ def define_mga_constraint(n, snapshots, epsilon=None, with_fix=None):
 
     lhs = pd.concat(expr).sum()
 
+    #n.objective_constant?
     if with_fix:
         ext_const = objective_constant(n, ext=True, nonext=False)
         nonext_const = objective_constant(n, ext=False, nonext=True)

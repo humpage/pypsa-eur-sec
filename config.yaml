@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: testMGA_all_again # use this to keep track of runs with different settings
+run: testpelletization # use this to keep track of runs with different settings
 foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
@@ -26,9 +26,9 @@ scenario:
   opts: # only relevant for PyPSA-Eur
     - ''
   sector_opts: # this is where the main scenario settings are
-    - Co2Lm0p1-631H-H-I-T-A-B0p0Im-High-seq650
+#    - Co2Lm0p1-631H-H-I-T-A-B0p0Im-High-seq650
     - Co2L0p9-631H-H-I-T-A-B0p0Im-High-seq0
-    - Co2L1p0-631H-H-I-T-A-B0p0Im-High-seq0
+#    - Co2L1p0-631H-H-I-T-A-B0p0Im-High-seq0
   # to really understand the options here, look in scripts/prepare_sector_network.py
   # Co2Lx specifies the CO2 target in x% of the 1990 values; default will give default (5%);
   # Co2L0p25 will give 25% CO2 emissions; Co2Lm0p05 will give 5% negative emissions
@@ -46,18 +46,18 @@ scenario:
   # decay with initial growth rate 0
 
   planning_horizons: # investment years for myopic and perfect; or costs year for overnight
-    - 2030
+    - 2050
 
   mga_tech:
-    - Generator-onwind
-    - Generator-wind
-    - Generator-solar
-    - Generator-solid biomass
-    - Link-biogas
-    - Link-biomass CHP
-    - Link-biomass to liquid
+#    - Generator-onwind
+#    - Generator-wind
+#    - Generator-solar
+#    - Generator-solid biomass
+#    - Link-biogas
+#    - Link-biomass CHP
+#    - Link-biomass to liquid
     - Link-biomass boiler
-    - Link-CC
+#    - Link-CC
   sense:
     - min
     - max
@@ -309,9 +309,9 @@ sector:
     # - onshore  # more than 50 km from sea
     - nearshore  # within 50 km of sea
     # - offshore
-  use_fischer_tropsch_waste_heat: true
+  use_fischer_tropsch_waste_heat: false
   use_fuel_cell_waste_heat: true
-  use_biofuel_waste_heat: true
+  use_biofuel_waste_heat: false
   electricity_distribution_grid: false
   electricity_distribution_grid_cost_factor: 1.0  #multiplies cost in data/costs.csv
   electricity_grid_connection: true  # only applies to onshore wind and utility PV
