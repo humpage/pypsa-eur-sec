@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 plotly.io.kaleido.scope.mathjax = None
 
-year = '2060'
-scenario = 'serverResults/mainScenarios{}_update'.format(year) #'serverResults/test'
+year = '2040'
+scenario = 'serverResults/mainScenarios{}_final'.format(year) #'serverResults/test'
 sdir = '../results/{}/csvs/costs.csv'.format(scenario)
 output = '../results/1h_{}_fuelSankey'.format(year)
 balances = '../results/{}/csvs/supply_energy.csv'.format(scenario)
@@ -86,7 +86,7 @@ def plot_balances(balances,columnin):
 
 
         # Remove flows less than limit
-        limit2 = 5 #TWh
+        limit2 = 2 #TWh
         dfTemp['count'] = abs(dfTemp['count'])
         dfTemp[dfTemp['count'] < limit2] = np.nan
 

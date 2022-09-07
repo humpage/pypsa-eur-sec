@@ -18,11 +18,10 @@ metrics2040 = '../results/{}/csvs/metrics.csv'.format(scenario2040)
 metrics2060 = '../results/{}/csvs/metrics.csv'.format(scenario2060)
 
 scenarioMain = 'serverResults/mainScenarios'
-sdir2060 = '../results/serverResults/mainScenarios2060_update/csvs/costs.csv'
-sdir2040 = '../results/serverResults/mainScenarios2040_update/csvs/costs.csv'
-balances2040 = '../results/{}2040_update/csvs/supply_energy.csv'.format(scenarioMain)
-balances2060 = '../results/{}2060_update/csvs/supply_energy.csv'.format(scenarioMain)
-
+sdir2060 = '../results/serverResults/mainScenarios2060_final/csvs/costs.csv'
+sdir2040 = '../results/serverResults/mainScenarios2040_final/csvs/costs.csv'
+balances2040 = '../results/{}2040_final/csvs/supply_energy.csv'.format(scenarioMain)
+balances2060 = '../results/{}2060_final/csvs/supply_energy.csv'.format(scenarioMain)
 
 
 def rename_techs_balances(label):
@@ -665,7 +664,7 @@ df5 = df2060.filter(regex='Med.*S1500')
 df6 = df2040.filter(regex='High.*S0')
 df7 = df2040.filter(regex='High.*S1500')
 df8 = df2040.filter(regex='Med.*S0')
-print(df8)
+# print(df8)
 df9 = df2040.filter(regex='Med.*S1500')
 
 order=['0%','Opt','20%','50%','100%']
@@ -681,8 +680,8 @@ df9 = rename_cols(df9, order)
 
 fig3, ((ax98_2,ax99_2),(ax98,ax99)) = plt.subplots(2,2,figsize=(12,5), gridspec_kw={'height_ratios': [1, 8]})
 
-print('DF4: ',df4)
-print(df4['Opt'].sum())
+# print('DF4: ',df4)
+# print(df4['Opt'].sum())
 # ax98.plot([0,BtLshare2040.filter(regex='B0p0Im-High.*S0')[0]*100,20,50,100],(df6.sum().values - df6['Opt'].sum()), label = 'High bio, low CS', linewidth = 1.5, color='#E30B5C')
 # ax98.plot([0,BtLshare2040.filter(regex='B0p0Im-High.*S1500')[0]*100,20,50,100],(df7.sum().values - df7['Opt'].sum()), label = 'High bio, high CS', linewidth = 1.5, color='#6495ED')
 # ax98.plot([0,BtLshare2040.filter(regex='B0p0Im-Med.*S0')[0]*100,20,50,100],(df8.sum().values - df8['Opt'].sum()), label = 'Low bio, low CS', linewidth = 1.5, color='#C2B280')
@@ -699,10 +698,10 @@ mandateTemp = ['B0p0ImEq', 'B0p0Im', 'B0p2Im', 'B0p5Im']
 sample_dfDiff2040.to_csv('../temp13247.csv')
 
 # print('fullsample: ', sample_dfDiff2040)
-print('main value: ', df5.abs().sum())
-print('error: ', errorbars('Med','S0',mandate,sample_dfDiff2040))
-print('error-main: ', errorbars('Med','S0',mandate,sample_dfDiff2040)-df4.abs().sum().values)
-
+# print('main value: ', df5.abs().sum())
+# print('error: ', errorbars('Med','S0',mandate,sample_dfDiff2040))
+# print('error-main: ', errorbars('Med','S0',mandate,sample_dfDiff2040)-df4.abs().sum().values)
+#
 # Error bar
 # ax98.errorbar([0,BtLshare2040.filter(regex='B0p0Im-High.*S0')[0]*100,20,50,100],(df6.abs().sum().values - df6['Opt'].sum()),
 #               label = 'High bio, low CS', yerr=abs(errorbars('High','S0',mandate,sample_dfDiff2040)-(df6.abs().sum().values - df6['Opt'].sum())), elinewidth=errorlinewidth, linewidth = 1.5, color='#E30B5C')
@@ -812,6 +811,8 @@ data5 = [sample_dfDiff2060.loc[:, ('B0p0ImEq', 'High', 'S400')], sample_dfDiff20
 data6 = [sample_dfDiff2060.loc[:, ('B0p0ImEq', 'High', 'S1500')], sample_dfDiff2060.loc[:, ('B0p2Im', 'High', 'S1500')], sample_dfDiff2060.loc[:, ('B0p5Im', 'High', 'S1500')], sample_dfDiff2060.loc[:, ('B1p0Im', 'High', 'S1500')]]
 data7 = [sample_dfDiff2060.loc[:, ('B0p0ImEq', 'Med', 'S400')], sample_dfDiff2060.loc[:, ('B0p2Im', 'Med', 'S400')], sample_dfDiff2060.loc[:, ('B0p5Im', 'Med', 'S400')], sample_dfDiff2060.loc[:, ('B1p0Im', 'Med', 'S400')]]
 data8 = [sample_dfDiff2060.loc[:, ('B0p0ImEq', 'Med', 'S1500')], sample_dfDiff2060.loc[:, ('B0p2Im', 'Med', 'S1500')], sample_dfDiff2060.loc[:, ('B0p5Im', 'Med', 'S1500')], sample_dfDiff2060.loc[:, ('B1p0Im', 'Med', 'S1500')]]
+
+# print('error: ', errorbars('Med','S400',mandate,sample_dfDiff2060))
 
 #Violin plots
 vplot9 = ax99.violinplot(data5, widths=w, positions=[0-3*a,20-3*a,50-3*a,100-3*a])

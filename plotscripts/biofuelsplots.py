@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
 scenario = 'serverResults/mainScenarios'
-sdir2060 = '../results/serverResults/mainScenarios2060_update/csvs/costs.csv'
-sdir2040 = '../results/serverResults/mainScenarios2040_update/csvs/costs.csv'
+sdir2060 = '../results/serverResults/mainScenarios2060_final/csvs/costs.csv'
+sdir2040 = '../results/serverResults/mainScenarios2040_final/csvs/costs.csv'
 output = '../results/1h_2060'
-metrics2040 = '../results/{}2040_update/csvs/metrics.csv'.format(scenario)
-metrics2060 = '../results/{}2060_update/csvs/metrics.csv'.format(scenario)
-balances2040 = '../results/{}2040_update/csvs/supply_energy.csv'.format(scenario)
-balances2060 = '../results/{}2060_update/csvs/supply_energy.csv'.format(scenario)
+metrics2040 = '../results/{}2040_final/csvs/metrics.csv'.format(scenario)
+metrics2060 = '../results/{}2060_final/csvs/metrics.csv'.format(scenario)
+balances2040 = '../results/{}2040_final/csvs/supply_energy.csv'.format(scenario)
+balances2060 = '../results/{}2060_final/csvs/supply_energy.csv'.format(scenario)
 
 
 def plot_balances(balances):
@@ -790,8 +790,8 @@ rename_cols_onlyOptimal(dfOpt2040)
 # dfOpt2040 = reorder_df(dfOpt2040,order)
 
 fig2, (ax6, ax7) = plt.subplots(1,2,figsize=(12,5))
-place_subplot(dfOpt2060,ax7,'','',650,'2060', legend=True)
-place_subplot(dfOpt2040,ax6,'Total cost (billion EUR)','',650,'2040')
+place_subplot(dfOpt2060,ax7,'','',700,'2060', legend=True)
+place_subplot(dfOpt2040,ax6,'Total cost (billion EUR)','',700,'2040')
 
 fig2.tight_layout(pad=1.5)
 plt.show()

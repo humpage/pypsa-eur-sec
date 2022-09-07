@@ -10,7 +10,7 @@ import matplotlib.colors as mcolors
 plt.style.use('ggplot')
 
 year = 2060
-scenario = 'serverResults/mainScenarios{}_update'.format(year)
+scenario = 'serverResults/mainScenarios{}_final'.format(year)
 sdir = '../results/{}/csvs/costs.csv'.format(scenario)
 output = '../results/fuelSupply{}'.format(year)
 balances = '../results/{}/csvs/supply_energy.csv'.format(scenario)
@@ -591,8 +591,8 @@ def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, plottype, twoleg
 
         increase = round((total / totals[1]-1) * 100, 1)
         increaseAbs = round(total - totals[1],1)
-        if abs(increase) >= 1:
-            increase = int(increase)
+        # if abs(increase) >= 1:
+        #     increase = int(increase)
         # print('increase: ', increase)
 
         if ndf == 2:
@@ -645,10 +645,10 @@ def place_subplot(df, ax, ndf, position, ylabel, xlabel, title, plottype, twoleg
 
     if year == 2060:
         ymin = -50
-        ymax = 1050
+        ymax = 1100
     elif year == 2040:
         ymin = -50
-        ymax = 1050
+        ymax = 1100
 
     # if transportOnly:
     ax.set_ylim([ymin, ymax])  # snakemake.config['plotting']['costs_max']])
