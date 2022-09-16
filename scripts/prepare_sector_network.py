@@ -1505,20 +1505,22 @@ def add_heat(n, costs):
             )
 
             if name not in ["urban central"]:
-                # TODO: Add surcharge for pellets
-                n.madd("Link",
-                       nodes[name] + f" {name} biomass boiler",
-                       p_nom_extendable=True,
-                       bus0=spatial.biomass.df.loc[nodes[name], "nodes"].values,
-                       bus1=nodes[name] + f" {name} heat",
-                       bus2="co2 atmosphere",
-                       carrier=name + " biomass boiler",
-                       efficiency=costs.at['biomass boiler', 'efficiency'],
-                       efficiency2=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
-                       capital_cost=costs.at['biomass boiler', 'efficiency'] * costs.at['biomass boiler', 'fixed'],
-                       marginal_cost=costs.at['biomass boiler', 'pelletizing cost'],
-                       lifetime=costs.at['biomass boiler', 'lifetime']
-                )
+                for o in opts:
+                    if "B" in o:
+                        print('Add pellet boilers')
+                        n.madd("Link",
+                           nodes[name] + f" {name} biomass boiler",
+                           p_nom_extendable=True,
+                           bus0=spatial.biomass.df.loc[nodes[name], "nodes"].values,
+                           bus1=nodes[name] + f" {name} heat",
+                           bus2="co2 atmosphere",
+                           carrier=name + " biomass boiler",
+                           efficiency=costs.at['biomass boiler', 'efficiency'],
+                           efficiency2=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
+                           capital_cost=costs.at['biomass boiler', 'efficiency'] * costs.at['biomass boiler', 'fixed'],
+                           marginal_cost=costs.at['biomass boiler', 'pelletizing cost'],
+                           lifetime=costs.at['biomass boiler', 'lifetime']
+                    )
 
 
         if options["solar_thermal"]:
@@ -1823,7 +1825,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
 
     # TODO: gas grid cost added for biogas processes in insert_gas_distribution_costs, but demands refining! Also add CO2 transport cost!
     n.madd("Link",
-           nodes + " biogas",
+           nodes + " biomass biogas",
            bus0=nodes + " digestible biomass",
            bus1="EU gas",
            bus3="co2 atmosphere",
@@ -1837,7 +1839,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
     if beccs:
         #TODO: biogas plants are usually small scale and spread out, so check viability of CC cost assumptions
         n.madd("Link",
-               nodes + " biogas CC",
+               nodes + " biomass biogas CC",
                bus0=nodes + " digestible biomass",
                bus1="EU gas",
                bus2="co2 stored",
@@ -1848,9 +1850,9 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                # equivalent. Adding biomass CHP capture because biogas is often small-scale and decentral so further
                # from e.g. CO2 grid or buyers
                marginal_cost=costs.at["biogas upgrading", "VOM"] * costs.at["biogas","efficiency"],
-               efficiency=costs.at["biogas","efficiency"],
-               efficiency2=costs.at["biogas", "CO2 stored"] * (costs.at['biogas', 'capture rate']-1) - costs.at['gas', 'CO2 intensity'],
-               efficiency3=costs.at["biogas", "CO2 stored"] * (1 - costs.at['biogas', 'capture rate']),
+               efficiency=costs.at["biogas", "efficiency"],
+               efficiency2=costs.at["biogas", "CO2 stored"] * costs.at['biogas', 'capture rate'],
+               efficiency3=costs.at["biogas", "CO2 stored"] * (1 - costs.at['biogas', 'capture rate']) - costs.at['gas', 'CO2 intensity'],
                p_nom_extendable=True)
 
         n.madd("Link",
@@ -1863,10 +1865,8 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                capital_cost=costs.at['digestible biomass to hydrogen', 'fixed'] + costs.at['biomass CHP capture', 'fixed'] * costs.at["biogas", "CO2 stored"],
                marginal_cost=costs.at["biogas upgrading", "VOM"] * costs.at['digestible biomass to hydrogen', 'efficiency'],
                efficiency=costs.at['digestible biomass to hydrogen', 'efficiency'],
-               efficiency2=(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * (costs.at[
-                   'digestible biomass to hydrogen', 'capture rate'] - 1),
-               efficiency3=(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * (
-                           1 - costs.at['digestible biomass to hydrogen', 'capture rate']),
+               efficiency2=(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * costs.at['digestible biomass to hydrogen', 'capture rate'],
+               efficiency3=(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * (1 - costs.at['digestible biomass to hydrogen', 'capture rate']),
                p_nom_extendable=True)
 
 
