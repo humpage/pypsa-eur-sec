@@ -477,9 +477,9 @@ def define_mga_objective(n):
 
     components, pattern, sense = n.mga_obj
 
-    #Avoid capturing also CCGT when choosing CC as objective
+    #Avoid capturing also CCGT when choosing CC as objective, and add DAC
     if pattern == 'CC':
-        pattern = 'CC$'
+        pattern = 'CC$|DAC$'
 
     if isinstance(components, str):
         components = [components]
