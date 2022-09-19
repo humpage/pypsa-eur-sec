@@ -35,7 +35,6 @@ subworkflow pypsaeur:
 
 rule all:
     input: SDIR + '/graphs/mga/costs.pdf'
-#     input: SDIR + "/csvs/mga/investments.csv"
 
 
 rule base:
@@ -532,7 +531,7 @@ rule plot_network:
 
 
 rule copy_config:
-    output: SDIR + '/configs/config.yaml'
+    output: SDIR + '/configs/' + config['configfile']
     threads: 1
     resources: mem_mb=1000
     benchmark: SDIR + "/benchmarks/copy_config"
@@ -595,7 +594,7 @@ if config["foresight"] == "overnight":
             overrides="data/override_component_attrs",
             network=RDIR + "/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
             costs=CDIR + "costs_{planning_horizons}.csv",
-            config=SDIR + '/configs/config.yaml'
+            config=SDIR + '/configs/' + config['configfile']
         output: RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc"
         shadow: "shallow"
         log:
@@ -664,7 +663,7 @@ if config["foresight"] == "myopic":
             overrides="data/override_component_attrs",
             network=RDIR + "/prenetworks-brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
             costs=CDIR + "costs_{planning_horizons}.csv",
-            config=SDIR + '/configs/config.yaml'
+            config=SDIR + '/configs/' + config['configfile']
         output: RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc"
         shadow: "shallow"
         log:
@@ -699,7 +698,7 @@ rule generate_alternative:
         overrides="data/override_component_attrs",
         network=RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
         costs=CDIR + "costs_{planning_horizons}.csv",
-        config=SDIR + '/configs/config.yaml'
+        config=SDIR + '/configs/' + config['configfile']
     output: RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}.nc"
     benchmark: RDIR + "/benchmarks/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}_time"
 
@@ -744,6 +743,7 @@ rule make_summary_alternatives:
             **config['scenario']
         ),
         costs=CDIR + "costs_{}.csv".format(config['scenario']['planning_horizons'][0]),
+        maincost=SDIR + '/graphs/costs.pdf',
         plots=expand(
             RDIR + "/maps/mga/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}.pdf",
             **config['scenario']

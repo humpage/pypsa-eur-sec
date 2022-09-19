@@ -2,7 +2,7 @@
 from shutil import copy
 
 files = {
-    "config.yaml": "config.yaml",
+    "config.yaml": snakemake.config['configfile'],#"config.yaml",
     "Snakefile": "Snakefile",
     "scripts/solve_network.py": "solve_network.py",
     "scripts/prepare_sector_network.py": "prepare_sector_network.py",
@@ -14,5 +14,6 @@ if __name__ == '__main__':
         from helper import mock_snakemake
         snakemake = mock_snakemake('copy_config')
 
+    print(snakemake.config['configfile'])
     for f, name in files.items():
         copy(f,snakemake.config['summary_dir'] + '/' + snakemake.config['run'] + '/configs/' + name)
