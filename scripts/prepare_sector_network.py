@@ -1882,6 +1882,11 @@ def add_biomass(n, costs, beccs, biomass_import_price):
     #        p_nom_extendable=True)
 
     solid_biomass_types = ["forest residues", "industry wood residues", "landscape care"]
+    for o in opts:
+        if o[o.find("B") + 6:o.find("B") + 10] == "Crop":
+            solid_biomass_types = ["forest residues", "industry wood residues", "landscape care", "willow poplar"]
+            print('Adding perennial biomass crops willow and poplar')
+
     for name in solid_biomass_types:
         n.add("Carrier", name + " solid biomass")
 
