@@ -5,15 +5,16 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: testWithoutMGA # use this to keep track of runs with different settings
+run: testWithMGA # use this to keep track of runs with different settings
 foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 
-lines_and_links_separate: false
-include_groups: false
-include_hypercube: false
-include_non_extendable: true
-excluded_carriers: []#OCGT, CCGT, offwind-ac, offwind-dc]
+mga: true
+#lines_and_links_separate: false
+#include_groups: false
+#include_hypercube: false
+#include_non_extendable: true
+#excluded_carriers: []#OCGT, CCGT, offwind-ac, offwind-dc]
 ###---------------
 
 scenario:
@@ -49,7 +50,7 @@ scenario:
     - 2050
 
   mga_tech:
-#    - Generator-onwind
+    - Generator-VRE
 #    - Generator-wind
 #    - Generator-solar
 #    - Generator-solid biomass
@@ -60,13 +61,14 @@ scenario:
 #    - Link-CC
 #    - Store-co2 stored
   sense:
-#    - min
-#    - max
+    - min
+    - max
   epsilon:
 #    - 0.01
   #  - 0.02
   #  - 0.05
  #   - 0.5
+   - 0.2
 
 # CO2 budget as a fraction of 1990 emissions
 # this is over-ridden if CO2Lx is set in sector_opts

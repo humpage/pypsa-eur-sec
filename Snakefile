@@ -33,8 +33,12 @@ subworkflow pypsaeur:
     configfile: "../pypsa-eur/config.yaml"
 
 
-rule all:
-    input: SDIR + '/graphs/mga/costs.pdf'
+if config['mga']:
+    rule all:
+        input: SDIR + '/graphs/mga/costs.pdf'
+elif not config['mga']:
+    rule all:
+        input: SDIR + '/graphs/costs.pdf'
 
 
 rule base:
