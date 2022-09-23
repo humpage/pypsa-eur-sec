@@ -528,7 +528,7 @@ def make_summaries(networks_dict):
 
     columns = pd.MultiIndex.from_tuples(
         networks_dict.keys(),
-        names=["cluster", "lv", "opt", "planning_horizon", "mga_tech", "sense", "epsilon"]
+        names=["cluster", "lv", "opt", "planning_horizon", "ft_s", "efu_s", "h2_s", "cc_s", "cs_s", "fsl_s", "bm_s", "bmim_s", "mga_tech", "sense", "epsilon"]
     )
 
     df = {}
@@ -562,14 +562,22 @@ if __name__ == "__main__":
         snakemake = mock_snakemake('make_summary')
     
     networks_dict = {
-        (cluster, lv, opt+sector_opt, planning_horizon, mga_tech, sense, epsilon) :
-        snakemake.config['results_dir'] + snakemake.config['run'] + f'/alternatives/elec_s{simpl}_{cluster}_lv{lv}_{opt}_{sector_opt}_{planning_horizon}_tol{epsilon}_obj-{mga_tech}_{sense}.nc' \
+        (cluster, lv, opt+sector_opt, planning_horizon, ft_s, efu_s, h2_s, cc_s, cs_s, fsl_s, bm_s, bmim_s, mga_tech, sense, epsilon) :
+        snakemake.config['results_dir'] + snakemake.config['run'] + f'/alternatives/elec_s{simpl}_{cluster}_lv{lv}_{opt}_{sector_opt}_{planning_horizon}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}.nc' \
         for simpl in snakemake.config['scenario']['simpl'] \
         for cluster in snakemake.config['scenario']['clusters'] \
         for opt in snakemake.config['scenario']['opts'] \
         for sector_opt in snakemake.config['scenario']['sector_opts'] \
         for lv in snakemake.config['scenario']['lv'] \
         for planning_horizon in snakemake.config['scenario']['planning_horizons'] \
+        for ft_s in snakemake.config['scenario']['ft_s'] \
+        for efu_s in snakemake.config['scenario']['efu_s'] \
+        for h2_s in snakemake.config['scenario']['h2_s'] \
+        for cc_s in snakemake.config['scenario']['cc_s'] \
+        for cs_s in snakemake.config['scenario']['cs_s'] \
+        for fsl_s in snakemake.config['scenario']['fsl_s'] \
+        for bm_s in snakemake.config['scenario']['bm_s'] \
+        for bmim_s in snakemake.config['scenario']['bmim_s'] \
         for mga_tech in snakemake.config['scenario']['mga_tech'] \
         for sense in snakemake.config['scenario']['sense'] \
         for epsilon in snakemake.config['scenario']['epsilon'] \

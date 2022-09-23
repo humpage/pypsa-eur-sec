@@ -438,7 +438,7 @@ if __name__ == "__main__":
         from helper import mock_snakemake
         snakemake = mock_snakemake('plot_summary')
         
-    n_header = 7
+    n_header = 15
 
     plot_costs()
 

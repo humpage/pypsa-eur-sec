@@ -626,6 +626,118 @@ def prepare_costs(cost_file, USD_to_EUR, discount_rate, Nyears, lifetime):
     return costs
 
 
+def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
+
+    print('Adapting costs for sensitivity analysis')
+    print('Fischer-Tropsch sensitivity string: ', snakemake.wildcards.ft_s)
+    print('Electrofuel sensitivity string: ', snakemake.wildcards.efu_s)
+    print('Hydrogen sensitivity string: ', snakemake.wildcards.h2_s)
+    print('CC sensitivity string: ', snakemake.wildcards.cc_s)
+    print('CS sensitivity string: ', snakemake.wildcards.cs_s)
+    print('Fossil fuel sensitivity string: ', snakemake.wildcards.fsl_s)
+    print('Biomass sensitivity string: ', snakemake.wildcards.bm_s)
+    print('Biomass import sensitivity string: ', snakemake.wildcards.bmim_s)
+
+    c_in_char = 0.03
+    input_CO2_intensity = costs.at['solid biomass', 'CO2 intensity']
+
+    if 'FT0' in snakemake.wildcards.ft_s:
+        costs.at['BtL', 'efficiency'] = 0.5
+        costs.at['BtL', 'investment'] = 1500000
+        costs.at['Fischer-Tropsch', 'efficiency'] = 0.9
+        costs.at['Fischer-Tropsch', 'investment'] = 675000
+
+        costs.at['BtL', 'C in fuel'] = costs.at['BtL', 'efficiency'] * costs.at['oil', 'CO2 intensity'] / input_CO2_intensity
+        costs.at['BtL', 'C stored'] = 1 - costs.at['BtL', 'C in fuel'] - c_in_char
+        costs.at['BtL', 'CO2 stored'] = input_CO2_intensity * costs.at['BtL', 'C stored']
+
+    elif 'FT2' in snakemake.wildcards.ft_s:
+        costs.at['BtL', 'efficiency'] = 0.35
+        costs.at['BtL', 'investment'] = 2500000
+        costs.at['Fischer-Tropsch', 'efficiency'] = 0.6
+        costs.at['Fischer-Tropsch', 'investment'] = 1125000
+
+        costs.at['BtL', 'C in fuel'] = costs.at['BtL', 'efficiency'] * costs.at[
+            'oil', 'CO2 intensity'] / input_CO2_intensity
+        costs.at['BtL', 'C stored'] = 1 - costs.at['BtL', 'C in fuel'] - c_in_char
+        costs.at['BtL', 'CO2 stored'] = input_CO2_intensity * costs.at['BtL', 'C stored']
+
+    elif 'FT1' in snakemake.wildcards.ft_s:
+        pass
+
+    print('BtL CO2 stored: ', costs.at['BtL', 'CO2 stored'])
+    # input('Press ENTER to continue')
+
+    if 'EFU0' in snakemake.wildcards.efu_s:
+        pass
+    elif 'EFU2' in snakemake.wildcards.efu_s:
+        pass
+    elif 'EFU1' in snakemake.wildcards.efu_s:
+        pass
+
+
+    if 'H20' in snakemake.wildcards.h2_s:
+        costs.at['electrolysis', 'efficiency'] = 0.8
+        costs.at['electrolysis', 'investment'] = 150000
+    elif 'H22' in snakemake.wildcards.h2_s:
+        costs.at['electrolysis', 'efficiency'] = 0.7
+        costs.at['electrolysis', 'investment'] = 400000
+    elif 'H21' in snakemake.wildcards.h2_s:
+        pass
+
+    if 'CC0' in snakemake.wildcards.cc_s:
+        costs.at['biomass CHP capture', 'investment'] = 1600000
+        costs.at['cement capture', 'investment'] = 1400000
+        costs.at['DAC', 'investment'] = 3000000
+    elif 'CC2' in snakemake.wildcards.cc_s:
+        costs.at['biomass CHP capture', 'investment'] = 2800000
+        costs.at['cement capture', 'investment'] = 2400000
+        costs.at['DAC', 'investment'] = 7000000
+    elif 'CC1' in snakemake.wildcards.cc_s:
+        pass
+
+    if 'CS0' in snakemake.wildcards.cs_s:
+        carbon_sequestration_cost = 10
+    elif 'CS2' in snakemake.wildcards.cs_s:
+        carbon_sequestration_cost = 50
+    elif 'CS1' in snakemake.wildcards.cs_s:
+        pass
+
+    if 'FSL0' in snakemake.wildcards.fsl_s:
+        costs.at["oil", 'fuel'] = 37.5
+        costs.at["gas", 'fuel'] = 15
+    elif 'FSL2' in snakemake.wildcards.fsl_s:
+        costs.at["oil", 'fuel'] = 62.5
+        costs.at["gas", 'fuel'] = 25
+    elif 'FSL1' in snakemake.wildcards.fsl_s:
+        pass
+
+    if 'BM0' in snakemake.wildcards.bm_s:
+        pass
+    elif 'BM2' in snakemake.wildcards.bm_s:
+        pass
+    elif 'BM1' in snakemake.wildcards.bm_s:
+        pass
+
+    if 'BMIM0' in snakemake.wildcards.bmim_s:
+        biomass_import_price = 10 * 3.6
+    elif 'BMIM2' in snakemake.wildcards.bmim_s:
+        biomass_import_price = 20 * 3.6
+    elif 'BMIM1' in snakemake.wildcards.bmim_s:
+        pass
+
+    #Update fixed costs
+    annuity_factor = lambda v: annuity(v["lifetime"], v["discount rate"]) + v["FOM"] / 100
+    costs["fixed"] = [annuity_factor(v) * v["investment"] * Nyears for i, v in costs.iterrows()]
+
+    print('BtL investment: ', costs.at['BtL', 'investment'])
+    print('Electrofuel investment: ', costs.at['Fischer-Tropsch', 'investment'])
+    print('Biomass import price: ', biomass_import_price)
+
+    return costs, biomass_import_price, carbon_sequestration_cost
+
+
+
 def add_generation(n, costs):
 
     logger.info("adding electricity generation")
@@ -2856,7 +2968,7 @@ if __name__ == "__main__":
 
     biomass_import_price = snakemake.config['biomass']['import price'] * 3.6  # EUR/MWh
     carbon_sequestration_cost = options["co2_sequestration_cost"]
-    # costs, biomass_import_price, carbon_sequestration_cost = sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost)
+    costs, biomass_import_price, carbon_sequestration_cost = sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost)
 
     print('Updated biomass import price: ', biomass_import_price)
     print('Updated CO2 sequestration cost: ', carbon_sequestration_cost)

@@ -18,6 +18,14 @@ wildcard_constraints:
     opts="[-+a-zA-Z0-9]*",
     sector_opts="[-+a-zA-Z0-9\.\s]*",
     planning_horizons="[0-9]+m?",
+    ft_s="[FT(0|1|2|3|4|5)]+",
+    efu_s="EFU(0|1|2|3|4|5)+",
+    h2_s="H2(0|1|2|3|4|5)+",
+    cc_s="CC(0|1|2|3|4|5)+",
+    cs_s="CS(0|1|2|3|4|5)+",
+    fsl_s="[FSL(0|1|2|3|4|5)]+",
+    bm_s="[BM(0|1|2|3|4|5)]+",
+    bmim_s="[BMIM(0|1|2|3|4|5)]+",
     epsilon="[0-9\.]*",
     mga_tech="[-+a-zA-Z0-9\.\s]*",
 
@@ -47,13 +55,13 @@ rule base:
 
 rule solve_all_networks:
     input:
-        expand(RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
+        expand(RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc",
                **config['scenario'])
 
 
 rule prepare_sector_networks:
     input:
-        expand(RDIR + "/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
+        expand(RDIR + "/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc",
                **config['scenario'])
 
 datafiles = [
@@ -514,23 +522,23 @@ rule prepare_sector_network:
         **build_retro_cost_output,
         **build_biomass_transport_costs_output,
         **gas_infrastructure
-    output: RDIR + '/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc'
+    output: RDIR + '/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc'
     threads: 1
     resources: mem_mb=2000
-    benchmark: RDIR + "/benchmarks/prepare_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}"
+    benchmark: RDIR + "/benchmarks/prepare_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}"
     script: "scripts/prepare_sector_network.py"
 
 
 rule plot_network:
     input:
         overrides="data/override_component_attrs",
-        network=RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc"
+        network=RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc"
     output:
-        map=RDIR + "/maps/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}.pdf",
-        today=RDIR + "/maps/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}-today.pdf"
+        map=RDIR + "/maps/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.pdf",
+        today=RDIR + "/maps/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}-today.pdf"
     threads: 2
     resources: mem_mb=10000
-    benchmark: RDIR + "/benchmarks/plot_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}"
+    benchmark: RDIR + "/benchmarks/plot_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}"
     script: "scripts/plot_network.py"
 
 
@@ -546,12 +554,12 @@ rule make_summary:
     input:
         overrides="data/override_component_attrs",
         networks=expand(
-            RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
+            RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc",
             **config['scenario']
         ),
         costs=CDIR + "costs_{}.csv".format(config['scenario']['planning_horizons'][0]),
         plots=expand(
-            RDIR + "/maps/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}.pdf",
+            RDIR + "/maps/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.pdf",
             **config['scenario']
         )
     output:
@@ -596,18 +604,18 @@ if config["foresight"] == "overnight":
     rule solve_network:
         input:
             overrides="data/override_component_attrs",
-            network=RDIR + "/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
+            network=RDIR + "/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc",
             costs=CDIR + "costs_{planning_horizons}.csv",
             config=SDIR + '/configs/' + config['configfile']
-        output: RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc"
+        output: RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc"
         shadow: "shallow"
         log:
-            solver=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_solver.log",
-            python=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_python.log",
-            memory=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_memory.log"
+            solver=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_solver.log",
+            python=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_python.log",
+            memory=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_memory.log"
         threads: config['solving']['solver'].get('threads', 4)
         resources: mem_mb=config['solving']['mem']
-        benchmark: RDIR + "/benchmarks/solve_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}"
+        benchmark: RDIR + "/benchmarks/solve_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}"
         script: "scripts/solve_network.py"
 
 
@@ -616,7 +624,7 @@ if config["foresight"] == "myopic":
     rule add_existing_baseyear:
         input:
             overrides="data/override_component_attrs",
-            network=RDIR + '/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc',
+            network=RDIR + '/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc',
             powerplants=pypsaeur('resources/powerplants.csv'),
             busmap_s=pypsaeur("resources/busmap_elec_s{simpl}.csv"),
             busmap=pypsaeur("resources/busmap_elec_s{simpl}_{clusters}.csv"),
@@ -629,12 +637,12 @@ if config["foresight"] == "myopic":
             existing_solar='data/existing_infrastructure/solar_capacity_IRENA.csv',
             existing_onwind='data/existing_infrastructure/onwind_capacity_IRENA.csv',
             existing_offwind='data/existing_infrastructure/offwind_capacity_IRENA.csv',
-        output: RDIR + '/prenetworks-brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc'
+        output: RDIR + '/prenetworks-brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc'
         wildcard_constraints:
             planning_horizons=config['scenario']['planning_horizons'][0] #only applies to baseyear
         threads: 1
         resources: mem_mb=2000
-        benchmark: RDIR + '/benchmarks/add_existing_baseyear/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}'
+        benchmark: RDIR + '/benchmarks/add_existing_baseyear/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}'
         script: "scripts/add_existing_baseyear.py"
         
 
@@ -642,21 +650,21 @@ if config["foresight"] == "myopic":
         planning_horizons = config["scenario"]["planning_horizons"]
         i = planning_horizons.index(int(wildcards.planning_horizons))
         planning_horizon_p = str(planning_horizons[i-1])
-        return RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_" + planning_horizon_p + ".nc"
+        return RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_" + planning_horizon_p + "_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc"
 
             
     rule add_brownfield:
         input:
             overrides="data/override_component_attrs",
-            network=RDIR + '/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc',
+            network=RDIR + '/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc',
             network_p=solved_previous_horizon, #solved network at previous time step
             costs=CDIR + "costs_{planning_horizons}.csv",
             cop_soil_total="resources/cop_soil_total_elec_s{simpl}_{clusters}.nc",
             cop_air_total="resources/cop_air_total_elec_s{simpl}_{clusters}.nc"
-        output: RDIR + "/prenetworks-brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc"
+        output: RDIR + "/prenetworks-brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc"
         threads: 4
         resources: mem_mb=10000
-        benchmark: RDIR + '/benchmarks/add_brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}'
+        benchmark: RDIR + '/benchmarks/add_brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}'
         script: "scripts/add_brownfield.py"
 
     ruleorder: add_existing_baseyear > add_brownfield
@@ -665,91 +673,58 @@ if config["foresight"] == "myopic":
     rule solve_network_myopic:
         input:
             overrides="data/override_component_attrs",
-            network=RDIR + "/prenetworks-brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
+            network=RDIR + "/prenetworks-brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc",
             costs=CDIR + "costs_{planning_horizons}.csv",
             config=SDIR + '/configs/' + config['configfile']
-        output: RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc"
+        output: RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc"
         shadow: "shallow"
         log:
-            solver=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_solver.log",
-            python=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_python.log",
-            memory=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_memory.log"
+            solver=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_solver.log",
+            python=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_python.log",
+            memory=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_memory.log"
         threads: config['solving']['solver'].get('threads', 4)
         resources: mem_mb=config['solving']['mem']
-        benchmark: RDIR + "/benchmarks/solve_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}"
+        benchmark: RDIR + "/benchmarks/solve_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}"
         script: "scripts/solve_network.py"
 
 
 # MODELLING TO GENERATE ALTERNATIVES
 
-# At this checkpoint (https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#data-dependent-conditional-execution)
-# based on the variables of the original problem the search directions of the MGA iterations are inferred.
-
-# checkpoint generate_list_of_alternatives:
-#     input: RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc"
-#     output: RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_cat-{category}.txt"
-#     script: "scripts/mga/generate_list_of_alternatives.py"
-
-
 rule solve_all_alternatives:
     input:
-        expand(RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}.nc",
+        expand(RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}.nc",
                **config['scenario'])
 
 
 rule generate_alternative:
     input:
         overrides="data/override_component_attrs",
-        network=RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc",
+        network=RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc",
         costs=CDIR + "costs_{planning_horizons}.csv",
         config=SDIR + '/configs/' + config['configfile']
-    output: RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}.nc"
-    benchmark: RDIR + "/benchmarks/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}_time"
+    output: RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}.nc"
+    benchmark: RDIR + "/benchmarks/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}_time"
 
     log:
-        solver=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}_solver.log",
-        python=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}_python.log",
-        memory=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}_memory.log"
+        solver=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}_solver.log",
+        python=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}_python.log",
+        memory=RDIR + "/logs/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}_memory.log"
     threads: config['solving']['solver'].get('threads', 4)
     resources: mem_mb=config['solving']['mem']
     script: "scripts/solve_network_mga.py"
-
-
-# EVALUATION
-# rule extract_results:
-#     input: #input_generate_clusters_alternatives
-#         networks=expand(
-#             RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{tech_type}+{mga_tech}_{sense}.nc",
-#             **config['scenario']
-#         ),
-#     output:
-#         investments=SDIR + "/csvs/mga/investments.csv",
-#         energy=SDIR + "/csvs/mga/energy.csv",
-#         storage_capacity=SDIR + "/csvs/mga/storage_capacity.csv",
-#         generation_capacity=SDIR + "/csvs/mga/generation_capacity.csv",
-# #         line_capacity=SDIR + "/csvs/mga/line_capacity.csv",
-#         link_capacity=SDIR + "/csvs/mga/link_capacity.csv",
-# #         line_volume=SDIR + "/csvs/mga/line_volume.csv",
-#         link_volume=SDIR + "/csvs/mga/link_volume.csv",
-# #         line_energy_balance=SDIR + "/csvs/mga/line_energy_balance.csv",
-#         link_energy_balance=SDIR + "/csvs/mga/link_energy_balance.csv",
-#         curtailment=SDIR + "/csvs/mga/curtailment.csv",
-#         gini=SDIR + "/csvs/mga/gini.csv",
-# #         maps=directory("graphics/{clusters}/networks")
-#     script: "scripts/mga/extract_results.py"
 
 
 rule make_summary_alternatives:
     input:
         overrides="data/override_component_attrs",
         networks=expand(
-            RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}.nc",
+            RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}.nc",
             **config['scenario']
         ),
         costs=CDIR + "costs_{}.csv".format(config['scenario']['planning_horizons'][0]),
         maincost=SDIR + '/graphs/costs.pdf',
         plots=expand(
-            RDIR + "/maps/mga/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}.pdf",
+            RDIR + "/maps/mga/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}.pdf",
             **config['scenario']
         )
     output:
@@ -792,15 +767,11 @@ rule plot_summary_alternatives:
 rule plot_network_alternatives:
     input:
         overrides="data/override_component_attrs",
-        network=RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}.nc"
+        network=RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}.nc"
     output:
-        map=RDIR + "/maps/mga/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}.pdf",
-        today=RDIR + "/maps/mga/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}-today.pdf"
+        map=RDIR + "/maps/mga/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}-costs-all_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}.pdf",
+        today=RDIR + "/maps/mga/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}-today.pdf"
     threads: 2
     resources: mem_mb=10000
-    benchmark: RDIR + "/benchmarks/mga/plot_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_tol{epsilon}_obj-{mga_tech}_{sense}"
+    benchmark: RDIR + "/benchmarks/mga/plot_network/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}"
     script: "scripts/plot_network.py"
-
-
-rule extract_all_results:
-    input: SDIR + "/csvs/mga/investments.csv" #, clusters=config["scenario"]["clusters"])
