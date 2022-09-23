@@ -480,6 +480,8 @@ def define_mga_objective(n):
     #Avoid capturing also CCGT when choosing CC as objective, and add DAC
     if pattern == 'CC':
         pattern = 'CC$|DAC$'
+    elif pattern == 'VRE':
+        pattern = 'solar|wind'
 
     if isinstance(components, str):
         components = [components]
