@@ -677,11 +677,17 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
 
 
     if 'H20' in snakemake.wildcards.h2_s:
-        costs.at['electrolysis', 'efficiency'] = 0.8
+        # costs.at['electrolysis', 'efficiency'] = 0.8
         costs.at['electrolysis', 'investment'] = 150000
     elif 'H22' in snakemake.wildcards.h2_s:
-        costs.at['electrolysis', 'efficiency'] = 0.7
+        # costs.at['electrolysis', 'efficiency'] = 0.7
         costs.at['electrolysis', 'investment'] = 400000
+    elif 'H23' in snakemake.wildcards.h2_s:
+        # costs.at['electrolysis', 'efficiency'] = 0.7
+        costs.at['electrolysis', 'investment'] = 600000
+    elif 'H24' in snakemake.wildcards.h2_s:
+        # costs.at['electrolysis', 'efficiency'] = 0.7
+        costs.at['electrolysis', 'investment'] = 800000
     elif 'H21' in snakemake.wildcards.h2_s:
         pass
 
@@ -2002,8 +2008,19 @@ def add_biomass(n, costs, beccs, biomass_import_price):
 
         biomass_potential[name] = biomass_pot_node[name].values
         biomass_costs[name] = ((biomass_costs_node[name].values * biomass_pot_node[name].values).sum() / biomass_pot_node[name].values.sum()).round(3)
-        print(name, ' cost: ', biomass_costs[name])
         # print(name, ' comp. avg. cost: ', biomass_costs_node[name].values.mean())
+        if 'BM0' in snakemake.wildcards.bm_s:
+            pass
+        elif 'BM2' in snakemake.wildcards.bm_s:
+            biomass_costs[name] = biomass_costs[name] + (biomass_import_price - biomass_costs[name]) / 3
+        elif 'BM3' in snakemake.wildcards.bm_s:
+            biomass_costs[name] = biomass_costs[name] + (biomass_import_price - biomass_costs[name]) * 2 / 3
+        elif 'BM4' in snakemake.wildcards.bm_s:
+            biomass_costs[name] = biomass_import_price
+        elif 'BM1' in snakemake.wildcards.bm_s:
+            pass
+        
+        print(name, ' cost: ', biomass_costs[name])
 
         n.madd("Generator",
                nodes + " " + name + " solid biomass",
