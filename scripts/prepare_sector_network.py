@@ -2019,7 +2019,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
             biomass_costs[name] = biomass_import_price
         elif 'BM1' in snakemake.wildcards.bm_s:
             pass
-        
+
         print(name, ' cost: ', biomass_costs[name])
 
         n.madd("Generator",
@@ -2084,7 +2084,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                        nodes + " " + import_name[num] + " solid biomass",
                        bus0="solid biomass import",
                        bus1=nodes + " solid biomass",
-                       carrier="solid biomass",
+                       carrier="solid biomass import",
                        efficiency=1.,
                        p_nom_extendable=True)
 
