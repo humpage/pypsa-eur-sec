@@ -696,6 +696,10 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
         costs.at['cement capture', 'investment'] = 1400000
         costs.at['DAC', 'investment'] = 3000000
     elif 'CC2' in snakemake.wildcards.cc_s:
+        costs.at['biomass CHP capture', 'investment'] = 2200000
+        costs.at['cement capture', 'investment'] = 1900000
+        costs.at['DAC', 'investment'] = 5000000
+    elif 'CC3' in snakemake.wildcards.cc_s:
         costs.at['biomass CHP capture', 'investment'] = 2800000
         costs.at['cement capture', 'investment'] = 2400000
         costs.at['DAC', 'investment'] = 7000000
