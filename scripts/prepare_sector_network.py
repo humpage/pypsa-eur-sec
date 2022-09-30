@@ -729,11 +729,11 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
     elif 'BM1' in snakemake.wildcards.bm_s:
         pass
 
-    if 'BMIM0' in snakemake.wildcards.bmim_s:
+    if 'IM0' in snakemake.wildcards.bmim_s:
         biomass_import_price = 10 * 3.6
-    elif 'BMIM2' in snakemake.wildcards.bmim_s:
+    elif 'IM2' in snakemake.wildcards.bmim_s:
         biomass_import_price = 20 * 3.6
-    elif 'BMIM1' in snakemake.wildcards.bmim_s:
+    elif 'IM1' in snakemake.wildcards.bmim_s:
         pass
 
     #Update fixed costs

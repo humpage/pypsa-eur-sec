@@ -5,10 +5,10 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: testSensitivityWithMGA # use this to keep track of runs with different settings
+run: testSensIm # use this to keep track of runs with different settings
 foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
-mga: true #Turn modelling to generate alternatives on/off
+mga: false #Turn modelling to generate alternatives on/off
 
 ###---------------
 
@@ -23,7 +23,8 @@ scenario:
     - ''
   sector_opts: # this is where the main scenario settings are
 #    - Co2Lm0p1-631H-H-I-T-A-B0p0Im-High-seq650
-    - Co2L0p0-631H-H-I-T-A-B0p0Im-High-seq130
+    - Co2L1p0-631H-H-I-T-A-B0p0Im-High-seq650
+    - Co2L0p0-631H-H-I-T-A-B0p0Im-High-seq650
 #    - Co2L1p0-631H-H-I-T-A-B0p0Im-High-seq0
   # to really understand the options here, look in scripts/prepare_sector_network.py
   # Co2Lx specifies the CO2 target in x% of the 1990 values; default will give default (5%);
@@ -45,25 +46,25 @@ scenario:
     - 2050
 
   ft_s:
-    - FT0
+    - FT1
   efu_s:
-    - EFU0
+    - EFU1
   h2_s:
-    - H20
+    - H21
   cc_s:
-    - CC0
+    - CC1
   cs_s:
-    - CS0
+    - CS1
   fsl_s:
-    - FSL0
+    - FSL1
   bm_s:
-    - BM0
+    - BM1
   bmim_s:
-    - BMIM0
+    - IM1
     
 ###----------- For MGA
   mga_tech:
-    - Generator-VRE
+#    - Generator-VRE
 #    - Generator-wind
 #    - Generator-solar
 #    - Generator-solid biomass
@@ -74,14 +75,14 @@ scenario:
 #    - Link-CC
 #    - Store-co2 stored
   sense:
-    - min
+#    - min
 #    - max
   epsilon:
 #    - 0.01
   #  - 0.02
   #  - 0.05
  #   - 0.5
-   - 0.2
+#   - 0.2
 ###-----------------
 
 # CO2 budget as a fraction of 1990 emissions
