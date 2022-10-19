@@ -2352,8 +2352,8 @@ def add_industry(n, costs):
                            p_min_pu=0.8,
                            efficiency=costs.at['solid biomass boiler steam', 'efficiency'] - costs.at[
                                'solid biomass', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'],
-                           capital_cost=costs.at['solid biomass boiler steam', 'fixed'] * costs.at['solid biomass boiler steam', 'efficiency'] - costs.at[
-                               'solid biomass', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'] + costs.at[
+                           capital_cost=costs.at['solid biomass boiler steam', 'fixed'] * (costs.at['solid biomass boiler steam', 'efficiency'] - costs.at[
+                               'solid biomass', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input']) + costs.at[
                                "biomass CHP capture", "fixed"] * costs.at['solid biomass', 'CO2 intensity'],
                            marginal_cost=costs.at['solid biomass boiler steam', 'VOM'],
                            efficiency2=costs.at['solid biomass', 'CO2 intensity'] * (
@@ -2378,8 +2378,7 @@ def add_industry(n, costs):
                                    1 - costs.at["biomass CHP capture", "capture_rate"])-costs.at['solid biomass', 'CO2 intensity'],
                            efficiency3=costs.at['solid biomass', 'CO2 intensity'] * costs.at[
                                "biomass CHP capture", "capture_rate"],
-                           #TODO: change to medium T investment!
-                           capital_cost=costs.at['solid biomass boiler steam', 'fixed'] * 0.8 - costs.at['solid biomass', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'] + costs.at[
+                           capital_cost=costs.at['solid biomass boiler steam', 'fixed'] * (0.8 - costs.at['solid biomass', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input']) + costs.at[
                                "biomass CHP capture", "fixed"] * costs.at['solid biomass', 'CO2 intensity'],
                            marginal_cost=costs.at['solid biomass boiler steam', 'VOM'],)
 
