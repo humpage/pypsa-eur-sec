@@ -2348,7 +2348,8 @@ def add_industry(n, costs):
                            carrier="lowT process steam solid biomass CC",
                            p_nom_extendable=True,
                            p_min_pu=0.8,
-                           efficiency=costs.at['solid biomass boiler steam', 'efficiency'],
+                           efficiency=costs.at['solid biomass boiler steam', 'efficiency'] - costs.at[
+                               'solid biomass', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'],
                            capital_cost=costs.at['solid biomass boiler steam', 'fixed'] + costs.at[
                                "biomass CHP capture", "fixed"] * costs.at['solid biomass', 'CO2 intensity'],
                            marginal_cost=costs.at['solid biomass boiler steam', 'VOM'],
@@ -2369,7 +2370,7 @@ def add_industry(n, costs):
                            carrier="solid biomass for mediumT industry CC",
                            p_nom_extendable=True,
                            p_min_pu=0.8,
-                           efficiency=0.8,
+                           efficiency=0.8 - costs.at['solid biomass', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'],
                            efficiency2=costs.at['solid biomass', 'CO2 intensity'] * (
                                    1 - costs.at["biomass CHP capture", "capture_rate"])-costs.at['solid biomass', 'CO2 intensity'],
                            efficiency3=costs.at['solid biomass', 'CO2 intensity'] * costs.at[
@@ -2404,7 +2405,7 @@ def add_industry(n, costs):
                carrier="lowT process steam methane CC",
                p_nom_extendable=True,
                p_min_pu=0.8,
-               efficiency=0.9 * costs.at['gas boiler steam', 'efficiency'],
+               efficiency=costs.at['gas boiler steam', 'efficiency'] - costs.at['gas', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'],
                capital_cost=costs.at['gas boiler steam', 'fixed'] + costs.at["biomass CHP capture", "fixed"] * costs.at[
                    'gas', 'CO2 intensity'],
                marginal_cost=costs.at['gas boiler steam', 'VOM'],
@@ -2464,7 +2465,7 @@ def add_industry(n, costs):
                p_nom_extendable=True,
                p_min_pu=0.8,
                capital_cost=costs.at["biomass CHP capture", "fixed"] * costs.at['gas', 'CO2 intensity'],
-               efficiency=0.9,
+               efficiency=1 - costs.at['gas', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'],
                efficiency2=costs.at['gas', 'CO2 intensity'] * (1 - costs.at["biomass CHP capture", "capture_rate"]),
                efficiency3=costs.at['gas', 'CO2 intensity'] * costs.at["biomass CHP capture", "capture_rate"])
 
@@ -2491,7 +2492,7 @@ def add_industry(n, costs):
            p_nom_extendable=True,
            p_min_pu=0.8,
            capital_cost=costs.at["biomass CHP capture", "fixed"] * costs.at['gas', 'CO2 intensity'],
-           efficiency=0.9,
+           efficiency=1 - costs.at['gas', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'],
            efficiency2=costs.at['gas', 'CO2 intensity'] * (1 - costs.at["biomass CHP capture", "capture_rate"]),
            efficiency3=costs.at['gas', 'CO2 intensity'] * costs.at["biomass CHP capture", "capture_rate"])
 
