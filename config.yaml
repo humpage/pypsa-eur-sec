@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: testSensIm # use this to keep track of runs with different settings
+run: testWasteCHP_DHhi # use this to keep track of runs with different settings
 foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 mga: false #Turn modelling to generate alternatives on/off
@@ -23,8 +23,8 @@ scenario:
     - ''
   sector_opts: # this is where the main scenario settings are
 #    - Co2Lm0p1-631H-H-I-T-A-B0p0Im-High-seq650
-    - Co2L1p0-631H-H-I-T-A-B0p0Im-High-seq650
-    - Co2L0p0-631H-H-I-T-A-B0p0Im-High-seq650
+    - Co2Lm0p1-631H-H-I-T-A-B0p0Im-Med-seq650
+#    - Co2L0p0-631H-H-I-T-A-B0p0Im-High-seq650
 #    - Co2L1p0-631H-H-I-T-A-B0p0Im-High-seq0
   # to really understand the options here, look in scripts/prepare_sector_network.py
   # Co2Lx specifies the CO2 target in x% of the 1990 values; default will give default (5%);
@@ -67,22 +67,22 @@ scenario:
 #    - Generator-VRE
 #    - Generator-wind
 #    - Generator-solar
-#    - Generator-solid biomass
-#    - Link-biogas
+    - Generator-biomass
+#    - Link-H2 Electrolysis
 #    - Link-biomass CHP
-#    - Link-biomass to liquid
+    - Link-biomass to liquid
 #    - Link-biomass industry
 #    - Link-CC
 #    - Store-co2 stored
   sense:
-#    - min
-#    - max
+ #   - min
+    - max
   epsilon:
 #    - 0.01
   #  - 0.02
-  #  - 0.05
+ #   - 0.05
  #   - 0.5
-#   - 0.2
+    - 0.2
 ###-----------------
 
 # CO2 budget as a fraction of 1990 emissions
@@ -147,7 +147,7 @@ biomass:
   classes:
     manureslurry:
       - Manure solid, liquid
-    municipal biowaste:
+    municipal solid waste:
       - Municipal waste
     sewage sludge:
       - Sludge
@@ -202,7 +202,7 @@ sector:
     potential: 0.6  # maximum fraction of urban demand which can be supplied by district heating
      # increase of today's district heating demand to potential maximum district heating share
      # progress = 0 means today's district heating share, progress = 1 means maximum fraction of urban demand is supplied by district heating
-    progress: 0
+    progress: 1
       # 2020: 0.0
       # 2030: 0.3
       # 2040: 0.6
@@ -304,6 +304,7 @@ sector:
   chp: true
   micro_chp: false
   hydrogen_chp: true
+  waste_chp: true
   solar_thermal: false
   solar_cf_correction: 0.788457  # =  >>> 1/1.2683
   marginal_cost_storage: 0. #1e-4
@@ -349,7 +350,7 @@ sector:
     coal: coal
     oil: oil
     lignite: lignite
-    nuclear_new: uranium
+    nuclear: uranium
   biomass_transport: false
   hvdc: true
 
@@ -733,3 +734,6 @@ plotting:
     highT industry: "brown"
     landscape care solid biomass: "#9FE2BF"
     biomass boiler: "#8A9A5B"
+    municipal solid waste: "pink"
+    waste incineration: "brown"
+    waste incineration CC: "grey"

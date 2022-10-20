@@ -76,7 +76,7 @@ def update_biomass_potentials():
                                         'MINBIOWOOW1': 'industry wood residues',
                                         'MINBIOWOOW1a': 'industry wood residues sawdust',
                                         'MINBIOFRSR1a': 'landscape care',
-                                        'MINBIOMUN1': 'municipal biowaste',
+                                        'MINBIOMUN1': 'municipal solid waste',
                                         'MINBIOGAS1': 'manureslurry',
                                         'MINBIOSLU1': 'sewage sludge'}).sort_index()
 
@@ -84,7 +84,7 @@ def update_biomass_potentials():
     scenario = 'ENS_Ref'
     # biomass_country_costs = {}
 
-    cropsToAdd = ['straw','forest residues','manureslurry','municipal biowaste','sewage sludge','industry wood residues', 'landscape care']
+    cropsToAdd = ['straw','forest residues','manureslurry','municipal solid waste','sewage sludge','industry wood residues', 'landscape care']
     for crop in cropsToAdd:
         biomass_country_costs[crop] = (excel_out.loc[(year, scenario, crop)].rename(index={'UK':'GB','EL':'GR'})*3.6).round(4)
         # print(type(biomass_country_costs[crop].values))

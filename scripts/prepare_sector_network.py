@@ -1903,6 +1903,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
     # print(biomass_costs_node)
     # print(biomass_pot_node)
 
+    # Digestible biomass
     n.add("Carrier", "digestible biomass")
 
     n.madd("Bus",
@@ -1916,6 +1917,21 @@ def add_biomass(n, costs, beccs, biomass_import_price):
            carrier="digestible biomass",
            e_cyclic=True)
 
+    # Municipal solid waste
+    n.add("Carrier", "municipal solid waste")
+
+    n.madd("Bus",
+           nodes + " municipal solid waste",
+           location=nodes,
+           carrier="municipal solid waste")
+
+    n.madd("Store",
+           nodes + " municipal solid waste",
+           bus=nodes + " municipal solid waste",
+           carrier="municipal solid waste",
+           e_cyclic=True)
+
+    # Solid biomass
     n.add("Carrier", "solid biomass")
 
     n.madd("Bus",
@@ -1929,17 +1945,28 @@ def add_biomass(n, costs, beccs, biomass_import_price):
            carrier="solid biomass",
            e_cyclic=True)
 
-    digestible_biomass_types = ["manureslurry", "municipal biowaste", "sewage sludge", "straw"]
 
+    biomass_types =  ["manureslurry", "sewage sludge", "straw", "forest residues", "industry wood residues", "landscape care", "municipal solid waste"]
     biomass_potential = {}
     biomass_costs = {}
-
-    for name in digestible_biomass_types:
+    for name in biomass_types:
         biomass_potential[name] = biomass_pot_node[name].values
-
         biomass_costs[name] = ((biomass_costs_node[name].values * biomass_pot_node[name].values).sum() / biomass_pot_node[name].values.sum()).round(3)
+
+
+    print('municipal solid waste cost: ',biomass_costs['municipal solid waste'])
+    n.madd("Generator",
+           nodes + " municipal solid waste",
+           bus=nodes + " municipal solid waste",
+           carrier="municipal solid waste",
+           p_nom_extendable=True,
+           p_nom_max=biomass_potential['municipal solid waste'] / 8760,
+           marginal_cost=biomass_costs['municipal solid waste'])
+
+
+    digestible_biomass_types = ["manureslurry", "sewage sludge", "straw"]
+    for name in digestible_biomass_types:
         print(name,' cost: ',biomass_costs[name])
-        # print(name, ' comp. avg. cost: ', biomass_costs_node[name].values.mean())
 
         n.add("Carrier", name + " digestible biomass")
 
@@ -2012,13 +2039,12 @@ def add_biomass(n, costs, beccs, biomass_import_price):
     #        efficiency3=costs.at["biogas plus hydrogen", "CO2 stored"],
     #        p_nom_extendable=True)
 
+
     solid_biomass_types = ["forest residues", "industry wood residues", "landscape care"]
     for name in solid_biomass_types:
         n.add("Carrier", name + " solid biomass")
 
-        biomass_potential[name] = biomass_pot_node[name].values
-        biomass_costs[name] = ((biomass_costs_node[name].values * biomass_pot_node[name].values).sum() / biomass_pot_node[name].values.sum()).round(3)
-        # print(name, ' comp. avg. cost: ', biomass_costs_node[name].values.mean())
+        #Update solid biomass costs according to sensitivity settings
         if 'BM0' in snakemake.wildcards.bm_s:
             pass
         elif 'BM2' in snakemake.wildcards.bm_s:
@@ -2230,6 +2256,8 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                efficiency=costs.at['central solid biomass CHP', 'efficiency'],
                efficiency2=costs.at['central solid biomass CHP', 'efficiency-heat'],
                efficiency3=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
+               c_b=costs.at['central solid biomass CHP', 'c_b'],
+               c_v=costs.at['central solid biomass CHP', 'c_v'],
                lifetime=costs.at['central solid biomass CHP', 'lifetime'])
 
         if beccs:
@@ -2257,8 +2285,52 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                    efficiency4=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
                    c_b=costs.at['central solid biomass CHP', 'c_b'],
                    c_v=costs.at['central solid biomass CHP', 'c_v'],
-                   p_nom_ratio=costs.at['central solid biomass CHP', 'p_nom_ratio'],
                    lifetime=costs.at['central solid biomass CHP', 'lifetime'])
+
+        if options['waste_chp']:
+            print('Adding waste CHPs')
+            n.madd("Link",
+                   urban_central + " waste CHP",
+                   bus0=urban_central + " municipal solid waste",
+                   bus1=urban_central,
+                   bus2=urban_central + " urban central heat",
+                   bus3="co2 atmosphere",
+                   carrier="urban central waste incineration",
+                   p_nom_extendable=True,
+                   capital_cost=costs.at['waste CHP', 'fixed'] * costs.at['waste CHP', 'efficiency'],
+                   marginal_cost=costs.at['waste CHP', 'VOM'],
+                   efficiency=costs.at['waste CHP', 'efficiency'],
+                   efficiency2=costs.at['waste CHP', 'efficiency-heat'],
+                   efficiency3=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
+                   lifetime=costs.at['waste CHP', 'lifetime'])
+
+            if beccs:
+                #Take biomass usage for steam production for CC into account
+                scalingFactor = 1 / (1 + costs.at['solid biomass', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'])
+                n.madd("Link",
+                       urban_central + " waste CHP CC",
+                       bus0=urban_central + " municipal solid waste",
+                       bus1=urban_central,
+                       bus2=urban_central + " urban central heat",
+                       bus3="co2 atmosphere",
+                       bus4="co2 stored",
+                       carrier="urban central waste incineration CC",
+                       p_nom_extendable=True,
+                       capital_cost=costs.at['waste CHP', 'fixed'] * costs.at['waste CHP', 'efficiency'] * scalingFactor #Adapting investment share of CHP due to steam boiler addition
+                       #TODO: check assumption for waste to steam generation
+                                    + costs.at['solid biomass boiler steam', 'fixed'] * (1 - scalingFactor) #Adding steam boiler for CC
+                                    + costs.at['biomass CHP capture', 'fixed'] * costs.at['solid biomass', 'CO2 intensity'],
+                       marginal_cost=costs.at['waste CHP', 'VOM'],
+                       efficiency=costs.at['waste CHP', 'efficiency'] * scalingFactor,
+                       efficiency2=costs.at['waste CHP', 'efficiency-heat'] * scalingFactor + costs.at[
+                           'solid biomass', 'CO2 intensity'] * (costs.at['biomass CHP capture', 'heat-output'] + costs.at[
+                           'biomass CHP capture', 'compression-heat-output']),
+                       #Assuming same CO2 intensity as solid biomass
+                       efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (1 - options["cc_fraction"])-costs.at['solid biomass', 'CO2 intensity'],
+                       efficiency4=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
+                       c_b=costs.at['waste CHP', 'c_b'],
+                       c_v=costs.at['waste CHP', 'c_v'],
+                       lifetime=costs.at['waste CHP', 'lifetime'])
 
 
 def add_industry(n, costs):
