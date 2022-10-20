@@ -11,7 +11,7 @@ from pypsa.linopf import network_lopf, ilopf
 
 from vresutils.benchmark import memory_logger
 
-from helper import override_component_attrs
+from helper import override_component_attrs, update_config_with_sector_opts
 
 import logging
 logger = logging.getLogger(__name__)
@@ -233,10 +233,9 @@ def add_co2_sequestration_limit(n, sns):
 
     opts = snakemake.wildcards.sector_opts.split('-')
     for o in opts:
-        if "seq" in o:
-            limit = float(o[o.find("seq") + 3:]) * 1e6
-
-    print('CO2 sequestration limit: ', limit)
+        if not "seq" in o: continue
+        limit = float(o[o.find("seq")+3:]) * 1e6
+        break
 
     name = 'co2_sequestration_limit'
     sense = "<="
@@ -361,11 +360,13 @@ if __name__ == "__main__":
     logging.basicConfig(filename=snakemake.log.python,
                         level=snakemake.config['logging_level'])
 
+    update_config_with_sector_opts(snakemake.config, snakemake.wildcards.sector_opts)
+
     tmpdir = snakemake.config['solving'].get('tmpdir')
     if tmpdir is not None:
         from pathlib import Path
         Path(tmpdir).mkdir(parents=True, exist_ok=True)
-    opts = snakemake.wildcards.opts.split('-')
+    opts = snakemake.wildcards.sector_opts.split('-')
     solve_opts = snakemake.config['solving']['options']
 
     fn = getattr(snakemake.log, 'memory', None)
@@ -399,7 +400,7 @@ if __name__ == "__main__":
         #data.to_csv(biofuelConstraintFile, mode='a', header=False)
         ###
 
-
+        n.meta = dict(snakemake.config, **dict(wildcards=dict(snakemake.wildcards)))
         n.export_to_netcdf(snakemake.output[0])
 
     logger.info("Maximum memory usage: {}".format(mem.mem_usage))

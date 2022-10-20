@@ -54,3 +54,4 @@ jupyterAnalysis.ipynb
 *.xls
 .bashrc
 *temp.*
+*.geojson

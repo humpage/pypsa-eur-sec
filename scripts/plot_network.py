@@ -23,6 +23,8 @@ def rename_techs_tyndp(tech):
         return "power-to-gas"
     elif tech == "H2":
         return "H2 storage"
+    elif tech in ["NH3", "Haber-Bosch", "ammonia cracker", "ammonia store"]:
+        return "ammonia"
     elif tech in ["OCGT", "CHP", "gas boiler", "H2 Fuel Cell"]:
         return "gas-to-power/heat"
     elif "solar" in tech:
@@ -454,7 +456,6 @@ def plot_h2_map(network):
     )
 
     n.plot(
-        geomap=False,
         bus_sizes=0,
         link_colors='#72d3d6',
         link_widths=link_widths_retro,
@@ -588,7 +589,6 @@ def plot_ch4_map(network):
     )
 
     n.plot(
-        geomap=False,
         ax=ax,
         bus_sizes=0.,
         link_colors='#e8d1d1',
@@ -598,7 +598,6 @@ def plot_ch4_map(network):
     )
 
     n.plot(
-        geomap=False,
         ax=ax,
         bus_sizes=0.,
         link_colors=link_color_used,
