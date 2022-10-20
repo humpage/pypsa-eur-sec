@@ -3,7 +3,7 @@ from shutil import copy
 import yaml
 
 files = {
-    "config.yaml": snakemake.config['configfile'],#"config.yaml",
+    snakemake.config['configfile']: "config.yaml",
     "Snakefile": "Snakefile",
     "scripts/solve_network.py": "solve_network.py",
     "scripts/prepare_sector_network.py": "prepare_sector_network.py",
@@ -16,9 +16,13 @@ if __name__ == '__main__':
         snakemake = mock_snakemake('copy_config')
 
     basepath = snakemake.config['summary_dir'] + '/' + snakemake.config['run'] + '/configs/'
+    print(snakemake.config['configfile'])
 
     for f, name in files.items():
+        print(f)
+        print(basepath + name)
         copy(f, basepath + name)
+
 
     with open(basepath + 'config.snakemake.yaml', 'w') as yaml_file:
         yaml.dump(

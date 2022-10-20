@@ -5,8 +5,8 @@ from shutil import copyfile
 from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
 HTTP = HTTPRemoteProvider()
 
-if not exists("config.yaml"):
-    copyfile("config.default.yaml", "config.yaml")
+#if not exists("config.yaml"):
+#    copyfile("config.default.yaml", "config.yaml")
 
 configfile: config["configfile"] #"config.yaml"
 
@@ -545,7 +545,7 @@ rule plot_network:
 
 
 rule copy_config:
-    output: SDIR + '/configs/' + config['configfile']
+    output: SDIR + '/configs/config.yaml'# + config['configfile']
     threads: 1
     resources: mem_mb=1000
     benchmark: SDIR + "/benchmarks/copy_config"
@@ -611,7 +611,7 @@ if config["foresight"] == "overnight":
             network=RDIR + "/prenetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc",
 #            costs=CDIR + "costs_{planning_horizons}.csv",
             costs=CDIR + "costs_{}.csv".format(config['costs']['year']),
-            config=SDIR + '/configs/config.yaml'
+            config=SDIR + '/configs/config.yaml',
 #            config=SDIR + '/configs/' + config['configfile']
         output: RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc"
         shadow: "shallow"
@@ -681,7 +681,7 @@ if config["foresight"] == "myopic":
             overrides="data/override_component_attrs",
             network=RDIR + "/prenetworks-brownfield/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc",
             costs=CDIR + "costs_{planning_horizons}.csv",
-            config=SDIR + '/configs/' + config['configfile']
+            config=SDIR + '/configs/config.yaml'# + config['configfile']
         output: RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc"
         shadow: "shallow"
         log:
@@ -707,7 +707,7 @@ rule generate_alternative:
         overrides="data/override_component_attrs",
         network=RDIR + "/postnetworks/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}.nc",
         costs=CDIR + "costs_{planning_horizons}.csv",
-        config=SDIR + '/configs/' + config['configfile']
+        config=SDIR + '/configs/config.yaml'# + config['configfile']
     output: RDIR + "/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}.nc"
     benchmark: RDIR + "/benchmarks/alternatives/elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}_{ft_s}{efu_s}{h2_s}{cc_s}{cs_s}{fsl_s}{bm_s}{bmim_s}_tol{epsilon}_obj-{mga_tech}_{sense}_time"
 
