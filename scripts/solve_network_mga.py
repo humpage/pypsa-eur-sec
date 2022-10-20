@@ -302,8 +302,11 @@ def prepare_network(n, solve_opts=None):
     return n
 
 
-def solve_network(n, config, opts='', **kwargs):
-    solver_options = config['solving']['solver'].copy()
+def solve_network(n, config, solver_opts=False, opts='', **kwargs):
+    if not solver_opts:
+        solver_options = config['solving']['solver'].copy()
+    else:
+        solver_options = solver_opts
     solver_name = solver_options.pop('name')
     cf_solving = config['solving']['options']
     track_iterations = cf_solving.get('track_iterations', False)
@@ -316,7 +319,7 @@ def solve_network(n, config, opts='', **kwargs):
     n.opts = opts
 
     if cf_solving.get('skip_iterations', False):
-        network_lopf(n, solver_name=solver_name, solver_options=solver_options,
+        status, termination_condition = network_lopf(n, solver_name=solver_name, solver_options=solver_options,
                      extra_functionality=extra_functionality,
                      keep_shadowprices=keep_shadowprices,
                      keep_references=True,
@@ -332,7 +335,7 @@ def solve_network(n, config, opts='', **kwargs):
               keep_references=True,
               keep_files=True,
               **kwargs)
-    return n
+    return n, status, termination_condition
 
 
 def extra_functionality(n, snapshots):
@@ -479,7 +482,7 @@ def define_mga_objective(n):
 
     #Avoid capturing also CCGT when choosing CC as objective, and add DAC
     if pattern == 'CC':
-        pattern = 'CC$|DAC$'
+        pattern = 'CC(?!process emissions)$|DAC$'
     elif pattern == 'VRE':
         pattern = 'solar|wind'
 
@@ -491,7 +494,8 @@ def define_mga_objective(n):
     for c in components:
 
         variables = get_var(n, c, nominal_attrs[c]).filter(regex=to_regex(pattern))
-        print(variables)
+        print(variables.head(50))
+        variables.to_csv('temp.csv')
 
         if c in ["Link", "Line"] and pattern in ["", "LN|LK", "LK|LN"]:
             coeffs = sense * n.df(c).loc[variables.index, "length"]
@@ -539,10 +543,23 @@ if __name__ == "__main__":
 
         n = prepare_network(n, solve_opts)
 
-        n = solve_network(n, config=snakemake.config, opts=opts,
+        n, status, termination_condition = solve_network(n, config=snakemake.config, opts=opts,
                           solver_dir=tmpdir,
                           solver_logfile=snakemake.log.solver,
                           skip_objective=True)
+
+        if termination_condition == 'suboptimal':
+            solver_opts = snakemake.config['solving']['solver'].copy()
+            solver_opts['ScaleFlag'] = 2
+            solver_opts['ObjScale'] = -0.5
+            solver_opts['BarHomogeneous'] = 1
+            print('Sub-optimal - rerunning with ', solver_opts)
+
+            n, status, termination_condition = solve_network(n, config=snakemake.config, solver_opts=solver_opts, opts=opts,
+                              solver_dir=tmpdir,
+                              solver_logfile=snakemake.log.solver,
+                              skip_objective=True,
+                              solver_options=config['solving']['solver'].copy())#,'ScaleFlag':2,'ObjScale':-0.5, 'BarHomogeneous':1})
 
         if "lv_limit" in n.global_constraints.index:
             n.line_volume_limit = n.global_constraints.at["lv_limit", "constant"]
