@@ -541,9 +541,9 @@ if __name__ == "__main__":
         overrides = override_component_attrs(snakemake.input.overrides)
         n = pypsa.Network(snakemake.input.network, override_component_attrs=overrides)
 
-        n = prepare_network(n, solve_opts)
+        n1 = prepare_network(n, solve_opts)
 
-        n, status, termination_condition = solve_network(n, config=snakemake.config, opts=opts,
+        n, status, termination_condition = solve_network(n1, config=snakemake.config, opts=opts,
                           solver_dir=tmpdir,
                           solver_logfile=snakemake.log.solver,
                           skip_objective=True)
@@ -555,7 +555,7 @@ if __name__ == "__main__":
             solver_opts['BarHomogeneous'] = 1
             print('Sub-optimal - rerunning with ', solver_opts)
 
-            n, status, termination_condition = solve_network(n, config=snakemake.config, solver_opts=solver_opts, opts=opts,
+            n, status, termination_condition = solve_network(n1, config=snakemake.config, solver_opts=solver_opts, opts=opts,
                               solver_dir=tmpdir,
                               solver_logfile=snakemake.log.solver,
                               skip_objective=True)
