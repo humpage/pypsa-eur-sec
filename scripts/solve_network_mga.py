@@ -558,8 +558,7 @@ if __name__ == "__main__":
             n, status, termination_condition = solve_network(n, config=snakemake.config, solver_opts=solver_opts, opts=opts,
                               solver_dir=tmpdir,
                               solver_logfile=snakemake.log.solver,
-                              skip_objective=True,
-                              solver_options=config['solving']['solver'].copy())#,'ScaleFlag':2,'ObjScale':-0.5, 'BarHomogeneous':1})
+                              skip_objective=True)
 
         if "lv_limit" in n.global_constraints.index:
             n.line_volume_limit = n.global_constraints.at["lv_limit", "constant"]
