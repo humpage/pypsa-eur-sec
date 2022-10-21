@@ -543,10 +543,9 @@ if __name__ == "__main__":
         overrides = override_component_attrs(snakemake.input.overrides)
         n = pypsa.Network(snakemake.input.network, override_component_attrs=overrides)
 
-        n1 = prepare_network(n, solve_opts)
-        n2 = n1
+        n = prepare_network(n, solve_opts)
 
-        n3, status, termination_condition = solve_network(n1, config=snakemake.config, opts=opts,
+        n, status, termination_condition = solve_network(n, config=snakemake.config, opts=opts,
                           solver_dir=tmpdir,
                           solver_logfile=snakemake.log.solver,
                           skip_objective=True)
@@ -560,11 +559,10 @@ if __name__ == "__main__":
             solver_opts['BarHomogeneous'] = 1
             print('Sub-optimal - rerunning with new solver settings: ', solver_opts)
 
-            n4, status, termination_condition = solve_network(n2, config=snakemake.config, solver_opts=solver_opts, opts=opts,
+            n, status, termination_condition = solve_network(n, config=snakemake.config, solver_opts=solver_opts, opts=opts,
                               solver_dir=tmpdir,
                               solver_logfile=snakemake.log.solver,
                               skip_objective=True)
-            n = n4
 
         if "lv_limit" in n.global_constraints.index:
             n.line_volume_limit = n.global_constraints.at["lv_limit", "constant"]
