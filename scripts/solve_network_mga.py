@@ -362,7 +362,9 @@ def extra_functionality(n, snapshots):
     pattern = wc[1]
     sense = snakemake.wildcards.sense
     process_objective_wildcard(n, var_type, pattern, sense)
-    define_mga_constraint(n, snapshots)
+
+    if "CostMax" not in n.global_constraints.index:
+        define_mga_constraint(n, snapshots)
     define_mga_objective(n)
 
 def process_objective_wildcard(n, var_type, pattern, sense):
@@ -542,23 +544,27 @@ if __name__ == "__main__":
         n = pypsa.Network(snakemake.input.network, override_component_attrs=overrides)
 
         n1 = prepare_network(n, solve_opts)
+        n2 = n1
 
-        n, status, termination_condition = solve_network(n1, config=snakemake.config, opts=opts,
+        n3, status, termination_condition = solve_network(n1, config=snakemake.config, opts=opts,
                           solver_dir=tmpdir,
                           solver_logfile=snakemake.log.solver,
                           skip_objective=True)
+
+        print(status, termination_condition)
 
         if termination_condition == 'suboptimal':
             solver_opts = snakemake.config['solving']['solver'].copy()
             solver_opts['ScaleFlag'] = 2
             solver_opts['ObjScale'] = -0.5
             solver_opts['BarHomogeneous'] = 1
-            print('Sub-optimal - rerunning with ', solver_opts)
+            print('Sub-optimal - rerunning with new solver settings: ', solver_opts)
 
-            n, status, termination_condition = solve_network(n1, config=snakemake.config, solver_opts=solver_opts, opts=opts,
+            n4, status, termination_condition = solve_network(n2, config=snakemake.config, solver_opts=solver_opts, opts=opts,
                               solver_dir=tmpdir,
                               solver_logfile=snakemake.log.solver,
                               skip_objective=True)
+            n = n4
 
         if "lv_limit" in n.global_constraints.index:
             n.line_volume_limit = n.global_constraints.at["lv_limit", "constant"]
