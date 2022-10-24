@@ -2077,7 +2077,6 @@ def add_biomass(n, costs, beccs, biomass_import_price):
            p_nom_extendable=True)
 
     if beccs:
-        #TODO: biogas plants are usually small scale and spread out, so check viability of CC cost assumptions
         n.madd("Link",
                nodes + " biomass biogas CC",
                bus0=nodes + " digestible biomass",
@@ -2085,7 +2084,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                bus2="co2 stored",
                bus3="co2 atmosphere",
                carrier="biogas CC",
-               capital_cost=costs.at["biogas", "fixed"] + costs.at["biogas upgrading", "fixed"] + costs.at['biomass CHP capture', 'fixed'],
+               capital_cost=costs.at["biogas", "fixed"] + costs.at["biogas upgrading", "fixed"] + costs.at['biomass CHP capture', 'fixed'] * costs.at["biogas", "CO2 stored"],
                # Assuming that the CO2 from upgrading is pure, such as in amine scrubbing. I.e., with and without CC is
                # equivalent. Adding biomass CHP capture because biogas is often small-scale and decentral so further
                # from e.g. CO2 grid or buyers
@@ -2252,7 +2251,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                efficiency2=costs.at['solid biomass', 'CO2 intensity'] * costs.at['solid biomass to hydrogen', 'capture rate'],
                efficiency3=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['solid biomass', 'CO2 intensity'] * (1 - costs.at['solid biomass to hydrogen', 'capture rate']),
                p_nom_extendable=True,
-               capital_cost=costs.at['solid biomass to hydrogen', 'fixed'] + costs.at['biomass CHP capture', 'fixed'] + costs.at['solid biomass', 'CO2 intensity'],
+               capital_cost=costs.at['solid biomass to hydrogen', 'fixed'] + costs.at['biomass CHP capture', 'fixed'] * costs.at['solid biomass', 'CO2 intensity'],
                marginal_cost=0.,
                )
 
@@ -2478,7 +2477,6 @@ def add_biomass(n, costs, beccs, biomass_import_price):
             marginal_cost=costs.at['BioSNG', 'efficiency']*costs.loc["BioSNG", "VOM"]
         )
 
-        #TODO: Update with energy penalty for CC
         n.madd("Link",
             spatial.biomass.nodes,
             suffix=" solid biomass to gas CC",
