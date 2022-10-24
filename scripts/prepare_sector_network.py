@@ -2299,7 +2299,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
            capital_cost=0.7 * costs.at['central solid biomass CHP', 'fixed'] * costs.at[
                'central solid biomass CHP', 'efficiency'],
            marginal_cost=costs.at['central solid biomass CHP', 'VOM'],
-           efficiency=0.4,
+           efficiency=1.3 * costs.at['central solid biomass CHP', 'efficiency'],
            efficiency3=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
            lifetime=costs.at['central solid biomass CHP', 'lifetime'])
 
@@ -2312,15 +2312,15 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                bus3="co2 atmosphere",
                carrier="solid biomass to electricity CC",
                p_nom_extendable=True,
-               capital_cost=0.7 * costs.at['central solid biomass CHP', 'fixed'] * costs.at[
-                   'central solid biomass CHP', 'efficiency']
+               capital_cost=0.7 * costs.at['central solid biomass CHP CC', 'fixed'] * costs.at[
+                   'central solid biomass CHP CC', 'efficiency']
                             + costs.at['biomass CHP capture', 'fixed'] * costs.at['solid biomass', 'CO2 intensity'],
-               marginal_cost=costs.at['central solid biomass CHP', 'VOM'],
-               efficiency=costs.at['central solid biomass CHP', 'efficiency'],
+               marginal_cost=costs.at['central solid biomass CHP CC', 'VOM'],
+               efficiency=1.3 * costs.at['central solid biomass CHP CC', 'efficiency'],
                efficiency2=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
                efficiency3=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['solid biomass', 'CO2 intensity'] * (1 - options["cc_fraction"]),
                # p_nom_ratio=costs.at['central solid biomass CHP', 'p_nom_ratio'],
-               lifetime=costs.at['central solid biomass CHP', 'lifetime'])
+               lifetime=costs.at['central solid biomass CHP CC', 'lifetime'])
 
     # AC buses with district heating
     urban_central = n.buses.index[n.buses.carrier == "urban central heat"]
@@ -2346,8 +2346,6 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                lifetime=costs.at['central solid biomass CHP', 'lifetime'])
 
         if beccs:
-            #Take biomass usage for steam production for CC into account
-            scalingFactor = 1 / (1 + costs.at['solid biomass', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'])
             n.madd("Link",
                    urban_central + " urban central solid biomass CHP CC",
                    bus0=urban_central + " solid biomass",
@@ -2357,20 +2355,18 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                    bus4="co2 stored",
                    carrier="urban central solid biomass CHP CC",
                    p_nom_extendable=True,
-                   capital_cost=costs.at['central solid biomass CHP', 'fixed'] * costs.at[
-                       'central solid biomass CHP', 'efficiency'] * scalingFactor #Adapting investment share of CHP due to steam boiler addition
-                                + costs.at['solid biomass boiler steam', 'fixed'] * (1 - scalingFactor) #Adding steam boiler for CC
+                   capital_cost=costs.at['central solid biomass CHP CC', 'fixed'] * costs.at['central solid biomass CHP CC', 'efficiency']
                                 + costs.at['biomass CHP capture', 'fixed'] * costs.at['solid biomass', 'CO2 intensity'],
-                   marginal_cost=costs.at['central solid biomass CHP', 'VOM'],
-                   efficiency=costs.at['central solid biomass CHP', 'efficiency'] * scalingFactor,
-                   efficiency2=costs.at['central solid biomass CHP', 'efficiency-heat'] * scalingFactor + costs.at[
+                   marginal_cost=costs.at['central solid biomass CHP CC', 'VOM'],
+                   efficiency=costs.at['central solid biomass CHP CC', 'efficiency'],
+                   efficiency2=costs.at['central solid biomass CHP CC', 'efficiency-heat'] + costs.at[
                        'solid biomass', 'CO2 intensity'] * (costs.at['biomass CHP capture', 'heat-output'] + costs.at[
                        'biomass CHP capture', 'compression-heat-output']),
                    efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (1 - options["cc_fraction"])-costs.at['solid biomass', 'CO2 intensity'],
                    efficiency4=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
-                   c_b=costs.at['central solid biomass CHP', 'c_b'],
-                   c_v=costs.at['central solid biomass CHP', 'c_v'],
-                   lifetime=costs.at['central solid biomass CHP', 'lifetime'])
+                   c_b=costs.at['central solid biomass CHP CC', 'c_b'],
+                   c_v=costs.at['central solid biomass CHP CC', 'c_v'],
+                   lifetime=costs.at['central solid biomass CHP CC', 'lifetime'])
 
         if options['waste_chp']:
             print('Adding waste CHPs')
@@ -2390,8 +2386,6 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                    lifetime=costs.at['waste CHP', 'lifetime'])
 
             if beccs:
-                #Take biomass usage for steam production for CC into account
-                scalingFactor = 1 / (1 + costs.at['solid biomass', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'])
                 n.madd("Link",
                        urban_central + " waste CHP CC",
                        bus0=urban_central + " municipal solid waste",
@@ -2401,24 +2395,21 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                        bus4="co2 stored",
                        carrier="urban central waste incineration CC",
                        p_nom_extendable=True,
-                       capital_cost=costs.at['waste CHP', 'fixed'] * costs.at['waste CHP', 'efficiency'] * scalingFactor #Adapting investment share of CHP due to steam boiler addition
-                       #TODO: check assumption for waste to steam generation
-                                    + costs.at['solid biomass boiler steam', 'fixed'] * (1 - scalingFactor) #Adding steam boiler for CC
+                       capital_cost=costs.at['waste CHP CC', 'fixed'] * costs.at['waste CHP CC', 'efficiency']
                                     + costs.at['biomass CHP capture', 'fixed'] * costs.at['solid biomass', 'CO2 intensity'],
-                       marginal_cost=costs.at['waste CHP', 'VOM'],
-                       efficiency=costs.at['waste CHP', 'efficiency'] * scalingFactor,
-                       efficiency2=costs.at['waste CHP', 'efficiency-heat'] * scalingFactor + costs.at[
+                       marginal_cost=costs.at['waste CHP CC', 'VOM'],
+                       efficiency=costs.at['waste CHP CC', 'efficiency'],
+                       efficiency2=costs.at['waste CHP CC', 'efficiency-heat'] + costs.at[
                            'solid biomass', 'CO2 intensity'] * (costs.at['biomass CHP capture', 'heat-output'] + costs.at[
                            'biomass CHP capture', 'compression-heat-output']),
                        #Assuming same CO2 intensity as solid biomass
                        efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (1 - options["cc_fraction"])-costs.at['solid biomass', 'CO2 intensity'],
                        efficiency4=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
-                       c_b=costs.at['waste CHP', 'c_b'],
-                       c_v=costs.at['waste CHP', 'c_v'],
-                       lifetime=costs.at['waste CHP', 'lifetime'])
+                       c_b=costs.at['waste CHP CC', 'c_b'],
+                       c_v=costs.at['waste CHP CC', 'c_v'],
+                       lifetime=costs.at['waste CHP CC', 'lifetime'])
 
     if options["biomass_boiler"]:
-        #TODO: Add surcharge for pellets
         nodes_heat = create_nodes_for_heat_sector()[0]
         for name in ["residential rural", "services rural",
                      "residential urban decentral", "services urban decentral"]:
