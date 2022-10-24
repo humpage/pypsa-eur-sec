@@ -2577,9 +2577,9 @@ def add_industry(n, costs):
                        carrier="solid biomass for mediumT industry",
                        p_nom_extendable=True,
                        p_min_pu=0.8,
-                       efficiency=0.8,
+                       efficiency=0.8 * costs.at['solid biomass boiler steam', 'efficiency'],
                        efficiency2=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
-                       capital_cost=0.8 * costs.at['solid biomass boiler steam', 'fixed'],
+                       capital_cost=costs.at['solid biomass boiler steam', 'fixed'] * 0.8 * costs.at['solid biomass boiler steam', 'efficiency'],
                        marginal_cost=costs.at['solid biomass boiler steam', 'VOM'])
 
 
@@ -2595,17 +2595,15 @@ def add_industry(n, costs):
                            carrier="lowT process steam solid biomass CC",
                            p_nom_extendable=True,
                            p_min_pu=0.8,
-                           efficiency=costs.at['solid biomass boiler steam', 'efficiency'] - costs.at[
-                               'solid biomass', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'],
-                           capital_cost=costs.at['solid biomass boiler steam', 'fixed'] * (costs.at['solid biomass boiler steam', 'efficiency'] - costs.at[
-                               'solid biomass', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input']) + costs.at[
+                           efficiency=costs.at['solid biomass boiler steam CC', 'efficiency'],
+                           capital_cost=costs.at['solid biomass boiler steam CC', 'fixed'] + costs.at[
                                "biomass CHP capture", "fixed"] * costs.at['solid biomass', 'CO2 intensity'],
-                           marginal_cost=costs.at['solid biomass boiler steam', 'VOM'],
+                           marginal_cost=costs.at['solid biomass boiler steam CC', 'VOM'],
                            efficiency2=costs.at['solid biomass', 'CO2 intensity'] * (
                                    1 - costs.at["biomass CHP capture", "capture_rate"])-costs.at['solid biomass', 'CO2 intensity'],
                            efficiency3=costs.at['solid biomass', 'CO2 intensity'] * costs.at[
                                "biomass CHP capture", "capture_rate"],
-                           lifetime=costs.at['biomass CHP capture', 'lifetime'])
+                           lifetime=costs.at['solid biomass boiler steam CC', 'lifetime'])
 
                 if snakemake.config['biomass']['mediumT industry biomass']:
                     n.madd("Link",
@@ -2618,14 +2616,15 @@ def add_industry(n, costs):
                            carrier="solid biomass for mediumT industry CC",
                            p_nom_extendable=True,
                            p_min_pu=0.8,
-                           efficiency=0.8 - costs.at['solid biomass', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'],
+                           efficiency=0.8 * costs.at['solid biomass boiler steam CC', 'efficiency'],
                            efficiency2=costs.at['solid biomass', 'CO2 intensity'] * (
                                    1 - costs.at["biomass CHP capture", "capture_rate"])-costs.at['solid biomass', 'CO2 intensity'],
                            efficiency3=costs.at['solid biomass', 'CO2 intensity'] * costs.at[
                                "biomass CHP capture", "capture_rate"],
-                           capital_cost=costs.at['solid biomass boiler steam', 'fixed'] * (0.8 - costs.at['solid biomass', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input']) + costs.at[
+                           capital_cost=costs.at['solid biomass boiler steam CC', 'fixed'] * 0.8 * costs.at['solid biomass boiler steam CC', 'efficiency'] + costs.at[
                                "biomass CHP capture", "fixed"] * costs.at['solid biomass', 'CO2 intensity'],
-                           marginal_cost=costs.at['solid biomass boiler steam', 'VOM'],)
+                           marginal_cost=costs.at['solid biomass boiler steam CC', 'VOM'],
+                           lifetime=costs.at['solid biomass boiler steam CC', 'lifetime'])
 
     if options["industrial_steam_methane"]:
         n.madd("Link",
