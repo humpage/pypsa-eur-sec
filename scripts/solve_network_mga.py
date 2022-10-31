@@ -484,7 +484,7 @@ def define_mga_objective(n):
 
     #Avoid capturing also CCGT when choosing CC as objective, and add DAC
     if pattern == 'CC':
-        pattern = 'CC(?!process emissions)$|DAC$'
+        pattern = 'CC(?!process emissions)$'#|DAC$'
     elif pattern == 'VRE':
         pattern = 'solar|wind'
 
@@ -555,7 +555,6 @@ if __name__ == "__main__":
         if termination_condition == 'suboptimal':
             solver_opts = snakemake.config['solving']['solver'].copy()
             solver_opts['ScaleFlag'] = 2
-            solver_opts['ObjScale'] = -0.5
             solver_opts['BarHomogeneous'] = 1
             print('Sub-optimal - rerunning with new solver settings: ', solver_opts)
 
