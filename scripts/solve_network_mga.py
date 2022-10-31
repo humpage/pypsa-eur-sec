@@ -552,16 +552,16 @@ if __name__ == "__main__":
 
         print(status, termination_condition)
 
-        if termination_condition == 'suboptimal':
-            solver_opts = snakemake.config['solving']['solver'].copy()
-            solver_opts['ScaleFlag'] = 2
-            solver_opts['BarHomogeneous'] = 1
-            print('Sub-optimal - rerunning with new solver settings: ', solver_opts)
-
-            n, status, termination_condition = solve_network(n, config=snakemake.config, solver_opts=solver_opts, opts=opts,
-                              solver_dir=tmpdir,
-                              solver_logfile=snakemake.log.solver,
-                              skip_objective=True)
+        # if termination_condition == 'suboptimal':
+        #     solver_opts = snakemake.config['solving']['solver'].copy()
+        #     solver_opts['ScaleFlag'] = 2
+        #     solver_opts['BarHomogeneous'] = 1
+        #     print('Sub-optimal - rerunning with new solver settings: ', solver_opts)
+        #
+        #     n, status, termination_condition = solve_network(n, config=snakemake.config, solver_opts=solver_opts, opts=opts,
+        #                       solver_dir=tmpdir,
+        #                       solver_logfile=snakemake.log.solver,
+        #                       skip_objective=True)
 
         if "lv_limit" in n.global_constraints.index:
             n.line_volume_limit = n.global_constraints.at["lv_limit", "constant"]
