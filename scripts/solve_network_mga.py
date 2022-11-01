@@ -482,9 +482,9 @@ def define_mga_objective(n):
 
     components, pattern, sense = n.mga_obj
 
-    #Avoid capturing also CCGT when choosing CC as objective, and add DAC
+    #Avoid capturing also CCGT when choosing CC as objective
     if pattern == 'CC':
-        pattern = 'CC(?!process emissions)$'#|DAC$'
+        pattern = 'CC$'
     elif pattern == 'VRE':
         pattern = 'solar|wind'
 
@@ -498,7 +498,6 @@ def define_mga_objective(n):
         variables = get_var(n, c, nominal_attrs[c]).filter(regex=to_regex(pattern))
         print(variables.head(50))
         variables.to_csv('temp.csv')
-
         if c in ["Link", "Line"] and pattern in ["", "LN|LK", "LK|LN"]:
             coeffs = sense * n.df(c).loc[variables.index, "length"]
         else:
