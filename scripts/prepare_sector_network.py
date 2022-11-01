@@ -2065,7 +2065,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
 
     # TODO: gas grid cost added for biogas processes in insert_gas_distribution_costs, but demands refining! Also add CO2 transport cost!
     n.madd("Link",
-           nodes + " biomass biogas",
+           nodes + " biogas",
            bus0=nodes + " digestible biomass",
            bus1="EU gas",
            bus3="co2 atmosphere",
@@ -2078,7 +2078,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
 
     if beccs:
         n.madd("Link",
-               nodes + " biomass biogas CC",
+               nodes + " biogas CC",
                bus0=nodes + " digestible biomass",
                bus1="EU gas",
                bus2="co2 stored",
@@ -2424,77 +2424,6 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                 marginal_cost=costs.at['biomass boiler', 'pelletizing cost'],
                 lifetime=costs.at['biomass boiler', 'lifetime']
             )
-
-    #Solid biomass to liquid fuel
-    if options["biomass_to_liquid"]:
-        n.madd("Link",
-           spatial.biomass.nodes,
-           suffix=" biomass to liquid",
-           bus0=spatial.biomass.nodes,
-           bus1=spatial.oil.nodes,
-           bus2="co2 atmosphere",
-           carrier="biomass to liquid",
-           lifetime=costs.at['BtL', 'lifetime'],
-           efficiency=costs.at['BtL', 'efficiency'],
-           efficiency2=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['BtL', 'CO2 stored'],
-           p_nom_extendable=True,
-           capital_cost=costs.at['BtL', 'fixed'],
-           marginal_cost=costs.at['BtL', 'efficiency']*costs.loc["BtL", "VOM"]
-        )
-
-        #TODO: Update with energy penalty
-        n.madd("Link",
-           spatial.biomass.nodes,
-           suffix=" biomass to liquid CC",
-           bus0=spatial.biomass.nodes,
-           bus1=spatial.oil.nodes,
-           bus2="co2 atmosphere",
-           bus3=spatial.co2.nodes,
-           carrier="biomass to liquid",
-           lifetime=costs.at['BtL', 'lifetime'],
-           efficiency=costs.at['BtL', 'efficiency'],
-           efficiency2=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['BtL', 'CO2 stored'] * (1 - costs.at['BtL', 'capture rate']),
-           efficiency3=costs.at['BtL', 'CO2 stored'] * costs.at['BtL', 'capture rate'],
-           p_nom_extendable=True,
-           capital_cost=costs.at['BtL', 'fixed'] + costs.at['biomass CHP capture', 'fixed'] * costs.at[
-               "BtL", "CO2 stored"],
-           marginal_cost=costs.at['BtL', 'efficiency'] * costs.loc["BtL", "VOM"])
-
-    #BioSNG from solid biomass
-    if options["biosng"]:
-        n.madd("Link",
-            spatial.biomass.nodes,
-            suffix=" solid biomass to gas",
-            bus0=spatial.biomass.nodes,
-            bus1=spatial.gas.nodes,
-            bus3="co2 atmosphere",
-            carrier="BioSNG",
-            lifetime=costs.at['BioSNG', 'lifetime'],
-            efficiency=costs.at['BioSNG', 'efficiency'],
-            efficiency3=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['BioSNG', 'CO2 stored'],
-            p_nom_extendable=True,
-            capital_cost=costs.at['BioSNG', 'fixed'],
-            marginal_cost=costs.at['BioSNG', 'efficiency']*costs.loc["BioSNG", "VOM"]
-        )
-
-        n.madd("Link",
-            spatial.biomass.nodes,
-            suffix=" solid biomass to gas CC",
-            bus0=spatial.biomass.nodes,
-            bus1=spatial.gas.nodes,
-            bus2=spatial.co2.nodes,
-            bus3="co2 atmosphere",
-            carrier="BioSNG",
-            lifetime=costs.at['BioSNG', 'lifetime'],
-            efficiency=costs.at['BioSNG', 'efficiency'],
-            efficiency2=costs.at['BioSNG', 'CO2 stored'] * costs.at['BioSNG', 'capture rate'],
-            efficiency3=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['BioSNG', 'CO2 stored'] * (1 - costs.at['BioSNG', 'capture rate']),
-            p_nom_extendable=True,
-            capital_cost=costs.at['BioSNG', 'fixed'] + costs.at['biomass CHP capture', 'fixed'] * costs.at[
-                "BioSNG", "CO2 stored"],
-            marginal_cost=costs.at['BioSNG', 'efficiency']*costs.loc["BioSNG", "VOM"]
-
-        )
 
 
 def add_industry(n, costs):
