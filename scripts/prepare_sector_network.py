@@ -562,14 +562,14 @@ def add_dac(n, costs):
     n.madd("Link",
         heat_buses.str.replace(" heat", " DAC"),
         bus0="co2 atmosphere",
-        bus1=spatial.co2.df.loc[locations, "nodes"].values,
-        bus2=locations.values,
-        bus3=heat_buses,
+        bus2=spatial.co2.df.loc[locations, "nodes"].values,
+        bus1=locations.values,
+        bus4=heat_buses,
         carrier="DAC",
         capital_cost=costs.at['direct air capture', 'fixed'],
-        efficiency=1.,
-        efficiency2=efficiency2,
-        efficiency3=efficiency3,
+        efficiency2=1.,
+        efficiency=efficiency2,
+        efficiency4=efficiency3,
         p_nom_extendable=True,
         lifetime=costs.at['direct air capture', 'lifetime']
     )
@@ -796,13 +796,13 @@ def add_generation(n, costs):
             nodes + " " + generator,
             bus0=carrier_nodes,
             bus1=nodes,
-            bus2="co2 atmosphere",
+            bus3="co2 atmosphere",
             marginal_cost=costs.at[generator, 'efficiency'] * costs.at[generator, 'VOM'], #NB: VOM is per MWel
             capital_cost=costs.at[generator, 'efficiency'] * costs.at[generator, 'fixed'], #NB: fixed cost is per MWel
             p_nom_extendable=True,
             carrier=generator,
             efficiency=costs.at[generator, 'efficiency'],
-            efficiency2=costs.at[carrier, 'CO2 intensity'],
+            efficiency3=costs.at[carrier, 'CO2 intensity'],
             lifetime=costs.at[generator, 'lifetime']
         )
 
@@ -828,11 +828,11 @@ def add_ammonia(n, costs):
         suffix=" Haber-Bosch",
         bus0=nodes,
         bus1=spatial.ammonia.nodes,
-        bus2=nodes + " H2",
+        bus4=nodes + " H2",
         p_nom_extendable=True,
         carrier="Haber-Bosch",
         efficiency=1 / (cf_industry["MWh_elec_per_tNH3_electrolysis"] / cf_industry["MWh_NH3_per_tNH3"]), # output: MW_NH3 per MW_elec
-        efficiency2=-cf_industry["MWh_H2_per_tNH3_electrolysis"] / cf_industry["MWh_elec_per_tNH3_electrolysis"], # input: MW_H2 per MW_elec
+        efficiency4=-cf_industry["MWh_H2_per_tNH3_electrolysis"] / cf_industry["MWh_elec_per_tNH3_electrolysis"], # input: MW_H2 per MW_elec
         capital_cost=costs.at["Haber-Bosch synthesis", "fixed"],
         lifetime=costs.at["Haber-Bosch synthesis", 'lifetime']
     )
@@ -1346,15 +1346,15 @@ def add_storage_and_grids(n, costs):
             suffix=" coal CC",
             bus0=spatial.coal.nodes,
             bus1=spatial.nodes,
-            bus2="co2 atmosphere",
-            bus3="co2 stored",
+            bus3="co2 atmosphere",
+            bus2="co2 stored",
             marginal_cost=costs.at['coal', 'efficiency'] * costs.at['coal', 'VOM'], #NB: VOM is per MWel
             capital_cost=costs.at['coal', 'efficiency'] * costs.at['coal', 'fixed'] + costs.at['biomass CHP capture', 'fixed'] * costs.at['coal', 'CO2 intensity'], #NB: fixed cost is per MWel
             p_nom_extendable=True,
             carrier="coal",
             efficiency=costs.at['coal', 'efficiency'],
-            efficiency2=costs.at['coal', 'CO2 intensity'] * (1 - costs.at['biomass CHP capture','capture_rate']),
-            efficiency3=costs.at['coal', 'CO2 intensity'] * costs.at['biomass CHP capture','capture_rate'],
+            efficiency3=costs.at['coal', 'CO2 intensity'] * (1 - costs.at['biomass CHP capture','capture_rate']),
+            efficiency2=costs.at['coal', 'CO2 intensity'] * costs.at['biomass CHP capture','capture_rate'],
             lifetime=costs.at['coal','lifetime']
         )
 
@@ -1364,13 +1364,13 @@ def add_storage_and_grids(n, costs):
             suffix=" SMR CC",
             bus0=spatial.gas.nodes,
             bus1=nodes + " H2",
-            bus2="co2 atmosphere",
-            bus3=spatial.co2.nodes,
+            bus3="co2 atmosphere",
+            bus2=spatial.co2.nodes,
             p_nom_extendable=True,
             carrier="SMR CC",
             efficiency=costs.at["SMR CC", "efficiency"],
-            efficiency2=costs.at['gas', 'CO2 intensity'] * (1 - options["cc_fraction"]),
-            efficiency3=costs.at['gas', 'CO2 intensity'] * options["cc_fraction"],
+            efficiency3=costs.at['gas', 'CO2 intensity'] * (1 - options["cc_fraction"]),
+            efficiency2=costs.at['gas', 'CO2 intensity'] * options["cc_fraction"],
             capital_cost=costs.at["SMR CC", "fixed"],
             lifetime=costs.at['SMR CC', 'lifetime']
         )
@@ -1379,11 +1379,11 @@ def add_storage_and_grids(n, costs):
             nodes + " SMR",
             bus0=spatial.gas.nodes,
             bus1=nodes + " H2",
-            bus2="co2 atmosphere",
+            bus3="co2 atmosphere",
             p_nom_extendable=True,
             carrier="SMR",
             efficiency=costs.at["SMR", "efficiency"],
-            efficiency2=costs.at['gas', 'CO2 intensity'],
+            efficiency3=costs.at['gas', 'CO2 intensity'],
             capital_cost=costs.at["SMR", "fixed"],
             lifetime=costs.at['SMR', 'lifetime']
         )
@@ -1727,10 +1727,10 @@ def add_heat(n, costs):
                 p_nom_extendable=True,
                 bus0=spatial.gas.df.loc[nodes[name], "nodes"].values,
                 bus1=nodes[name] + f" {name} heat",
-                bus2="co2 atmosphere",
+                bus3="co2 atmosphere",
                 carrier=name + " gas boiler",
                 efficiency=costs.at[key, 'efficiency'],
-                efficiency2=costs.at['gas', 'CO2 intensity'],
+                efficiency3=costs.at['gas', 'CO2 intensity'],
                 capital_cost=costs.at[key, 'efficiency'] * costs.at[key, 'fixed'],
                 lifetime=costs.at[key, 'lifetime']
             )
@@ -1756,14 +1756,14 @@ def add_heat(n, costs):
                 nodes[name] + " urban central gas CHP",
                 bus0=spatial.gas.df.loc[nodes[name], "nodes"].values,
                 bus1=nodes[name],
-                bus2=nodes[name] + " urban central heat",
+                bus4=nodes[name] + " urban central heat",
                 bus3="co2 atmosphere",
                 carrier="urban central gas CHP",
                 p_nom_extendable=True,
                 capital_cost=costs.at['central gas CHP', 'fixed'] * costs.at['central gas CHP', 'efficiency'],
                 marginal_cost=costs.at['central gas CHP', 'VOM'],
                 efficiency=costs.at['central gas CHP', 'efficiency'],
-                efficiency2=costs.at['central gas CHP', 'efficiency'] / costs.at['central gas CHP', 'c_b'],
+                efficiency4=costs.at['central gas CHP', 'efficiency'] / costs.at['central gas CHP', 'c_b'],
                 efficiency3=costs.at['gas', 'CO2 intensity'],
                 lifetime=costs.at['central gas CHP', 'lifetime']
             )
@@ -1772,17 +1772,17 @@ def add_heat(n, costs):
                 nodes[name] + " urban central gas CHP CC",
                 bus0=spatial.gas.df.loc[nodes[name], "nodes"].values,
                 bus1=nodes[name],
-                bus2=nodes[name] + " urban central heat",
+                bus4=nodes[name] + " urban central heat",
                 bus3="co2 atmosphere",
-                bus4=spatial.co2.df.loc[nodes[name], "nodes"].values,
+                bus2=spatial.co2.df.loc[nodes[name], "nodes"].values,
                 carrier="urban central gas CHP CC",
                 p_nom_extendable=True,
                 capital_cost=costs.at['central gas CHP', 'fixed']*costs.at['central gas CHP', 'efficiency'] + costs.at['biomass CHP capture', 'fixed']*costs.at['gas', 'CO2 intensity'],
                 marginal_cost=costs.at['central gas CHP', 'VOM'],
                 efficiency=costs.at['central gas CHP', 'efficiency'] - costs.at['gas', 'CO2 intensity'] * (costs.at['biomass CHP capture', 'electricity-input'] + costs.at['biomass CHP capture', 'compression-electricity-input']),
-                efficiency2=costs.at['central gas CHP', 'efficiency'] / costs.at['central gas CHP', 'c_b'] + costs.at['gas', 'CO2 intensity'] * (costs.at['biomass CHP capture', 'heat-output'] + costs.at['biomass CHP capture', 'compression-heat-output'] - costs.at['biomass CHP capture', 'heat-input']),
+                efficiency4=costs.at['central gas CHP', 'efficiency'] / costs.at['central gas CHP', 'c_b'] + costs.at['gas', 'CO2 intensity'] * (costs.at['biomass CHP capture', 'heat-output'] + costs.at['biomass CHP capture', 'compression-heat-output'] - costs.at['biomass CHP capture', 'heat-input']),
                 efficiency3=costs.at['gas', 'CO2 intensity'] * (1-costs.at['biomass CHP capture', 'capture_rate']),
-                efficiency4=costs.at['gas', 'CO2 intensity'] * costs.at['biomass CHP capture', 'capture_rate'],
+                efficiency2=costs.at['gas', 'CO2 intensity'] * costs.at['biomass CHP capture', 'capture_rate'],
                 lifetime=costs.at['central gas CHP', 'lifetime']
             )
 
@@ -1791,13 +1791,13 @@ def add_heat(n, costs):
                 nodes[name] + " urban central hydrogen CHP",
                 bus0=nodes[name] + " H2",
                 bus1=nodes[name],
-                bus2=nodes[name] + " urban central heat",
+                bus4=nodes[name] + " urban central heat",
                 carrier="urban central hydrogen CHP",
                 p_nom_extendable=True,
                 capital_cost=costs.at['central hydrogen CHP', 'fixed'] * costs.at['central hydrogen CHP', 'efficiency'],
                 # marginal_cost=costs.at['central hydrogen CHP', 'VOM'],
                 efficiency=costs.at['central hydrogen CHP', 'efficiency'],
-                efficiency2=costs.at['central hydrogen CHP', 'efficiency'] / costs.at['central hydrogen CHP', 'c_b'],
+                efficiency4=costs.at['central hydrogen CHP', 'efficiency'] / costs.at['central hydrogen CHP', 'c_b'],
                 lifetime=costs.at['central hydrogen CHP', 'lifetime']
             )
 
@@ -1807,11 +1807,11 @@ def add_heat(n, costs):
                 p_nom_extendable=True,
                 bus0=spatial.gas.df.loc[nodes[name], "nodes"].values,
                 bus1=nodes[name],
-                bus2=nodes[name] + f" {name} heat",
+                bus4=nodes[name] + f" {name} heat",
                 bus3="co2 atmosphere",
                 carrier=name + " micro gas CHP",
                 efficiency=costs.at['micro CHP', 'efficiency'],
-                efficiency2=costs.at['micro CHP', 'efficiency-heat'],
+                efficiency4=costs.at['micro CHP', 'efficiency-heat'],
                 efficiency3=costs.at['gas', 'CO2 intensity'],
                 capital_cost=costs.at['micro CHP', 'fixed'],
                 lifetime=costs.at['micro CHP', 'lifetime']
@@ -2113,13 +2113,13 @@ def add_biomass(n, costs, beccs, biomass_import_price):
     #        nodes + " biogas plus hydrogen",
     #        bus0=nodes + " digestible biomass",
     #        bus1="EU gas",
-    #        bus2=nodes + " H2",
+    #        bus4=nodes + " H2",
     #        bus3="co2 atmosphere",
     #        carrier="biogas plus hydrogen",
     #        capital_cost=costs.at["biogas", "fixed"] + costs.at["biogas plus hydrogen", "fixed"],
     #        marginal_cost=costs.at["biogas plus hydrogen", "VOM"],
     #        efficiency=costs.at["biogas plus hydrogen", "efficiency"],
-    #        efficiency2=-costs.at["biogas plus hydrogen", "hydrogen input"],
+    #        efficiency4=-costs.at["biogas plus hydrogen", "hydrogen input"],
     #        efficiency3=costs.at["biogas plus hydrogen", "CO2 stored"],
     #        p_nom_extendable=True)
 
@@ -2330,7 +2330,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                urban_central + " urban central solid biomass CHP",
                bus0=urban_central + " solid biomass",
                bus1=urban_central,
-               bus2=urban_central + " urban central heat",
+               bus4=urban_central + " urban central heat",
                bus3="co2 atmosphere",
                carrier="urban central solid biomass CHP",
                p_nom_extendable=True,
@@ -2338,7 +2338,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                    'central solid biomass CHP', 'efficiency'],
                marginal_cost=costs.at['central solid biomass CHP', 'VOM'],
                efficiency=costs.at['central solid biomass CHP', 'efficiency'],
-               efficiency2=costs.at['central solid biomass CHP', 'efficiency-heat'],
+               efficiency4=costs.at['central solid biomass CHP', 'efficiency-heat'],
                efficiency3=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
                c_b=costs.at['central solid biomass CHP', 'c_b'],
                c_v=costs.at['central solid biomass CHP', 'c_v'],
@@ -2349,20 +2349,20 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                    urban_central + " urban central solid biomass CHP CC",
                    bus0=urban_central + " solid biomass",
                    bus1=urban_central,
-                   bus2=urban_central + " urban central heat",
+                   bus4=urban_central + " urban central heat",
                    bus3="co2 atmosphere",
-                   bus4="co2 stored",
+                   bus2="co2 stored",
                    carrier="urban central solid biomass CHP CC",
                    p_nom_extendable=True,
                    capital_cost=costs.at['central solid biomass CHP CC', 'fixed'] * costs.at['central solid biomass CHP CC', 'efficiency']
                                 + costs.at['biomass CHP capture', 'fixed'] * costs.at['solid biomass', 'CO2 intensity'],
                    marginal_cost=costs.at['central solid biomass CHP CC', 'VOM'],
                    efficiency=costs.at['central solid biomass CHP CC', 'efficiency'],
-                   efficiency2=costs.at['central solid biomass CHP CC', 'efficiency-heat'] + costs.at[
+                   efficiency4=costs.at['central solid biomass CHP CC', 'efficiency-heat'] + costs.at[
                        'solid biomass', 'CO2 intensity'] * (costs.at['biomass CHP capture', 'heat-output'] + costs.at[
                        'biomass CHP capture', 'compression-heat-output']),
                    efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (1 - options["cc_fraction"])-costs.at['solid biomass', 'CO2 intensity'],
-                   efficiency4=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
+                   efficiency2=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
                    c_b=costs.at['central solid biomass CHP CC', 'c_b'],
                    c_v=costs.at['central solid biomass CHP CC', 'c_v'],
                    lifetime=costs.at['central solid biomass CHP CC', 'lifetime'])
@@ -2373,14 +2373,14 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                    urban_central + " waste CHP",
                    bus0=urban_central + " municipal solid waste",
                    bus1=urban_central,
-                   bus2=urban_central + " urban central heat",
+                   bus4=urban_central + " urban central heat",
                    bus3="co2 atmosphere",
                    carrier="urban central waste incineration",
                    p_nom_extendable=True,
                    capital_cost=costs.at['waste CHP', 'fixed'] * costs.at['waste CHP', 'efficiency'],
                    marginal_cost=costs.at['waste CHP', 'VOM'],
                    efficiency=costs.at['waste CHP', 'efficiency'],
-                   efficiency2=costs.at['waste CHP', 'efficiency-heat'],
+                   efficiency4=costs.at['waste CHP', 'efficiency-heat'],
                    efficiency3=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
                    lifetime=costs.at['waste CHP', 'lifetime'])
 
@@ -2389,21 +2389,21 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                        urban_central + " waste CHP CC",
                        bus0=urban_central + " municipal solid waste",
                        bus1=urban_central,
-                       bus2=urban_central + " urban central heat",
+                       bus4=urban_central + " urban central heat",
                        bus3="co2 atmosphere",
-                       bus4="co2 stored",
+                       bus2="co2 stored",
                        carrier="urban central waste incineration CC",
                        p_nom_extendable=True,
                        capital_cost=costs.at['waste CHP CC', 'fixed'] * costs.at['waste CHP CC', 'efficiency']
                                     + costs.at['biomass CHP capture', 'fixed'] * costs.at['solid biomass', 'CO2 intensity'],
                        marginal_cost=costs.at['waste CHP CC', 'VOM'],
                        efficiency=costs.at['waste CHP CC', 'efficiency'],
-                       efficiency2=costs.at['waste CHP CC', 'efficiency-heat'] + costs.at[
+                       efficiency4=costs.at['waste CHP CC', 'efficiency-heat'] + costs.at[
                            'solid biomass', 'CO2 intensity'] * (costs.at['biomass CHP capture', 'heat-output'] + costs.at[
                            'biomass CHP capture', 'compression-heat-output']),
                        #Assuming same CO2 intensity as solid biomass
                        efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (1 - options["cc_fraction"])-costs.at['solid biomass', 'CO2 intensity'],
-                       efficiency4=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
+                       efficiency2=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
                        c_b=costs.at['waste CHP CC', 'c_b'],
                        c_v=costs.at['waste CHP CC', 'c_v'],
                        lifetime=costs.at['waste CHP CC', 'lifetime'])
@@ -2485,12 +2485,12 @@ def add_industry(n, costs):
                        suffix=" solid biomass for lowT industry",
                        bus0=nodes + " solid biomass",
                        bus1=nodes + " lowT process steam",
-                       bus2="co2 atmosphere",
+                       bus3="co2 atmosphere",
                        carrier="lowT process steam solid biomass",
                        p_nom_extendable=True,
                        p_min_pu=0.8,
                        efficiency=costs.at['solid biomass boiler steam', 'efficiency'],
-                       efficiency2=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
+                       efficiency3=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
                        capital_cost=costs.at['solid biomass boiler steam', 'fixed'] * costs.at['solid biomass boiler steam', 'efficiency'],
                        marginal_cost=costs.at['solid biomass boiler steam', 'VOM'])
 
@@ -2500,12 +2500,12 @@ def add_industry(n, costs):
                        suffix=" solid biomass for mediumT industry",
                        bus0=nodes + " solid biomass",
                        bus1=nodes + " mediumT industry",
-                       bus2="co2 atmosphere",
+                       bus3="co2 atmosphere",
                        carrier="solid biomass for mediumT industry",
                        p_nom_extendable=True,
                        p_min_pu=0.8,
                        efficiency=0.8 * costs.at['solid biomass boiler steam', 'efficiency'],
-                       efficiency2=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
+                       efficiency3=costs.at['solid biomass', 'CO2 intensity']-costs.at['solid biomass', 'CO2 intensity'],
                        capital_cost=costs.at['solid biomass boiler steam', 'fixed'] * 0.8 * costs.at['solid biomass boiler steam', 'efficiency'],
                        marginal_cost=costs.at['solid biomass boiler steam', 'VOM'])
 
@@ -2517,8 +2517,8 @@ def add_industry(n, costs):
                            suffix=" solid biomass for lowT industry CC",
                            bus0=nodes + " solid biomass",
                            bus1=nodes + " lowT process steam",
-                           bus2="co2 atmosphere",
-                           bus3="co2 stored",
+                           bus3="co2 atmosphere",
+                           bus2="co2 stored",
                            carrier="lowT process steam solid biomass CC",
                            p_nom_extendable=True,
                            p_min_pu=0.8,
@@ -2526,9 +2526,9 @@ def add_industry(n, costs):
                            capital_cost=costs.at['solid biomass boiler steam CC', 'fixed'] + costs.at[
                                "biomass CHP capture", "fixed"] * costs.at['solid biomass', 'CO2 intensity'],
                            marginal_cost=costs.at['solid biomass boiler steam CC', 'VOM'],
-                           efficiency2=costs.at['solid biomass', 'CO2 intensity'] * (
+                           efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (
                                    1 - costs.at["biomass CHP capture", "capture_rate"])-costs.at['solid biomass', 'CO2 intensity'],
-                           efficiency3=costs.at['solid biomass', 'CO2 intensity'] * costs.at[
+                           efficiency2=costs.at['solid biomass', 'CO2 intensity'] * costs.at[
                                "biomass CHP capture", "capture_rate"],
                            lifetime=costs.at['solid biomass boiler steam CC', 'lifetime'])
 
@@ -2538,15 +2538,15 @@ def add_industry(n, costs):
                            suffix=" solid biomass for mediumT industry CC",
                            bus0=nodes + " solid biomass",
                            bus1=nodes + " mediumT industry",
-                           bus2="co2 atmosphere",
-                           bus3="co2 stored",
+                           bus3="co2 atmosphere",
+                           bus2="co2 stored",
                            carrier="solid biomass for mediumT industry CC",
                            p_nom_extendable=True,
                            p_min_pu=0.8,
                            efficiency=0.8 * costs.at['solid biomass boiler steam CC', 'efficiency'],
-                           efficiency2=costs.at['solid biomass', 'CO2 intensity'] * (
+                           efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (
                                    1 - costs.at["biomass CHP capture", "capture_rate"])-costs.at['solid biomass', 'CO2 intensity'],
-                           efficiency3=costs.at['solid biomass', 'CO2 intensity'] * costs.at[
+                           efficiency2=costs.at['solid biomass', 'CO2 intensity'] * costs.at[
                                "biomass CHP capture", "capture_rate"],
                            capital_cost=costs.at['solid biomass boiler steam CC', 'fixed'] * 0.8 * costs.at['solid biomass boiler steam CC', 'efficiency'] + costs.at[
                                "biomass CHP capture", "fixed"] * costs.at['solid biomass', 'CO2 intensity'],
@@ -2559,14 +2559,14 @@ def add_industry(n, costs):
                suffix=" methane for lowT industry",
                bus0="EU gas",
                bus1=nodes + " lowT process steam",
-               bus2="co2 atmosphere",
+               bus3="co2 atmosphere",
                carrier="lowT process steam methane",
                p_nom_extendable=True,
                p_min_pu=0.8,
                efficiency=costs.at['gas boiler steam', 'efficiency'],
                capital_cost=costs.at['gas boiler steam', 'fixed'],
                marginal_cost=costs.at['gas boiler steam', 'VOM'],
-               efficiency2=costs.at['gas', 'CO2 intensity'])
+               efficiency3=costs.at['gas', 'CO2 intensity'])
 
     if not options["industrial_steam_methane"]:
         n.madd("Link",
@@ -2574,8 +2574,8 @@ def add_industry(n, costs):
                suffix=" methane for lowT industry CC",
                bus0="EU gas",
                bus1=nodes + " lowT process steam",
-               bus2="co2 atmosphere",
-               bus3="co2 stored",
+               bus3="co2 atmosphere",
+               bus2="co2 stored",
                carrier="lowT process steam methane CC",
                p_nom_extendable=True,
                p_min_pu=0.8,
@@ -2583,8 +2583,8 @@ def add_industry(n, costs):
                capital_cost=costs.at['gas boiler steam', 'fixed'] + costs.at["biomass CHP capture", "fixed"] * costs.at[
                    'gas', 'CO2 intensity'],
                marginal_cost=costs.at['gas boiler steam', 'VOM'],
-               efficiency2=costs.at['gas', 'CO2 intensity'] * (1 - costs.at["biomass CHP capture", "capture_rate"]),
-               efficiency3=costs.at['gas', 'CO2 intensity'] * costs.at["biomass CHP capture", "capture_rate"],
+               efficiency3=costs.at['gas', 'CO2 intensity'] * (1 - costs.at["biomass CHP capture", "capture_rate"]),
+               efficiency2=costs.at['gas', 'CO2 intensity'] * costs.at["biomass CHP capture", "capture_rate"],
                lifetime=costs.at['gas boiler steam', 'lifetime'])
 
     if options["industrial_steam_heat_pumps"]:
@@ -2621,54 +2621,54 @@ def add_industry(n, costs):
                suffix=" gas for mediumT industry",
                bus0="EU gas",
                bus1=nodes + " mediumT industry",
-               bus2="co2 atmosphere",
+               bus3="co2 atmosphere",
                carrier="gas for mediumT industry",
                p_nom_extendable=True,
                p_min_pu=0.8,
                efficiency=1.,
-               efficiency2=costs.at['gas', 'CO2 intensity'])
+               efficiency3=costs.at['gas', 'CO2 intensity'])
 
         n.madd("Link",
                nodes,
                suffix=" gas for mediumT industry CC",
                bus0="EU gas",
                bus1=nodes + " mediumT industry",
-               bus2="co2 atmosphere",
-               bus3="co2 stored",
+               bus3="co2 atmosphere",
+               bus2="co2 stored",
                carrier="gas for mediumT industry CC",
                p_nom_extendable=True,
                p_min_pu=0.8,
                capital_cost=costs.at["biomass CHP capture", "fixed"] * costs.at['gas', 'CO2 intensity'],
                efficiency=1 - costs.at['gas', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'],
-               efficiency2=costs.at['gas', 'CO2 intensity'] * (1 - costs.at["biomass CHP capture", "capture_rate"]),
-               efficiency3=costs.at['gas', 'CO2 intensity'] * costs.at["biomass CHP capture", "capture_rate"])
+               efficiency3=costs.at['gas', 'CO2 intensity'] * (1 - costs.at["biomass CHP capture", "capture_rate"]),
+               efficiency2=costs.at['gas', 'CO2 intensity'] * costs.at["biomass CHP capture", "capture_rate"])
 
     n.madd("Link",
            nodes,
            suffix=" gas for highT industry",
            bus0="EU gas",
            bus1=nodes + " highT industry",
-           bus2="co2 atmosphere",
+           bus3="co2 atmosphere",
            carrier="gas for highT industry",
            p_nom_extendable=True,
            p_min_pu=0.8,
            efficiency=1.,
-           efficiency2=costs.at['gas', 'CO2 intensity'])
+           efficiency3=costs.at['gas', 'CO2 intensity'])
 
     n.madd("Link",
            nodes,
            suffix=" gas for highT industry CC",
            bus0="EU gas",
            bus1=nodes + " highT industry",
-           bus2="co2 atmosphere",
-           bus3="co2 stored",
+           bus3="co2 atmosphere",
+           bus2="co2 stored",
            carrier="gas for highT industry CC",
            p_nom_extendable=True,
            p_min_pu=0.8,
            capital_cost=costs.at["biomass CHP capture", "fixed"] * costs.at['gas', 'CO2 intensity'],
            efficiency=1 - costs.at['gas', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input'],
-           efficiency2=costs.at['gas', 'CO2 intensity'] * (1 - costs.at["biomass CHP capture", "capture_rate"]),
-           efficiency3=costs.at['gas', 'CO2 intensity'] * costs.at["biomass CHP capture", "capture_rate"])
+           efficiency3=costs.at['gas', 'CO2 intensity'] * (1 - costs.at["biomass CHP capture", "capture_rate"]),
+           efficiency2=costs.at['gas', 'CO2 intensity'] * costs.at["biomass CHP capture", "capture_rate"])
 
     if options["hydrogen_for_mediumT_industry"]:
         print('Adding H2 for mediumT industry')
@@ -2807,10 +2807,10 @@ def add_industry(n, costs):
                 p_nom_extendable=True,
                 bus0=spatial.oil.nodes,
                 bus1=nodes_heat[name] + f" {name}  heat",
-                bus2="co2 atmosphere",
+                bus3="co2 atmosphere",
                 carrier=f"{name} oil boiler",
                 efficiency=costs.at['decentral oil boiler', 'efficiency'],
-                efficiency2=costs.at['oil', 'CO2 intensity'],
+                efficiency3=costs.at['oil', 'CO2 intensity'],
                 capital_cost=costs.at['decentral oil boiler', 'efficiency'] * costs.at['decentral oil boiler', 'fixed'],
                 lifetime=costs.at['decentral oil boiler', 'lifetime']
             )
@@ -2969,7 +2969,7 @@ def add_waste_heat(n):
                         urban_central + " solid biomass to gas", "efficiency"]
 
         if options['use_fuel_cell_waste_heat']:
-            n.links.loc[urban_central + " H2 Fuel Cell", "bus2"] = urban_central + " urban central heat"
+            n.links.loc[urban_central + " H2 Fuel Cell", "bus4"] = urban_central + " urban central heat"
             n.links.loc[urban_central + " H2 Fuel Cell", "efficiency2"] = 0.95 - n.links.loc[
                 urban_central + " H2 Fuel Cell", "efficiency"]
 
