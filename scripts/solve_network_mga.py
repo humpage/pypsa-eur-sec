@@ -494,17 +494,13 @@ def define_mga_objective(n):
 
     terms = []
     for c in components:
-        print('nominal attrs: ', nominal_attrs[c])
-
-        # variables = get_var(n, c, nominal_attrs[c]).filter(regex=to_regex(pattern))
-        # if pattern == 'CC$':
         variables = get_var(n, c, 'p').filter(regex=to_regex(pattern))
         print(variables.head(50))
         variables.to_csv('temp.csv')
         if c in ["Link", "Line"] and pattern in ["", "LN|LK", "LK|LN"]:
             coeffs = sense * n.df(c).loc[variables.index, "length"]
         elif pattern == 'CC$':
-            coeffs = sense * n.df(c).loc[variables.index, efficiency2]
+            coeffs = sense * n.df(c).loc[variables.columns, 'efficiency2']
         else:
             coeffs = sense
 
