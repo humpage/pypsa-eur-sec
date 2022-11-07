@@ -550,15 +550,15 @@ if __name__ == "__main__":
                           solver_logfile=snakemake.log.solver,
                           skip_objective=True)
 
-        #read last line of snakemake.log.solver, check if last line contains Sub-optimal termination
+        #read last line of solver log (gurobi output), check if last line does not contain 'Optimal objective
+        # (or contains either 'Sub-optimal' or 'numerical trouble')
+        #solution due to dicrepancy between gurobi solver status and termination_condition
         with open(snakemake.log.solver, "r") as file:
             last_line = file.readlines()[-2]
-        print(last_line)
-        print(status, termination_condition)
 
-        if 'Sub-optimal' in last_line: #termination_condition == 'suboptimal':
+        if 'Optimal objective' not in last_line:
             solver_opts = snakemake.config['solving']['solver'].copy()
-            solver_opts['ScaleFlag'] = 2
+            # solver_opts['ScaleFlag'] = 2
             solver_opts['BarHomogeneous'] = 1
             print('Sub-optimal - rerunning with new solver settings: ', solver_opts)
 
