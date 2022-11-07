@@ -5,9 +5,9 @@ import pypsa
 import numpy as np
 import pandas as pd
 
-from pypsa.linopt import get_var, linexpr, define_constraints
+from pypsa.linopt import get_var, linexpr, define_constraints, join_exprs
 
-from pypsa.linopf import network_lopf, ilopf
+from pypsa.linopf import network_lopf, ilopf, join_exprs
 
 from vresutils.benchmark import memory_logger
 
@@ -256,7 +256,6 @@ def add_biofuel_constraint(n):
         if "B" in o:
             liquid_biofuel_limit = o[o.find("B") + 1:o.find("B") + 4]
             liquid_biofuel_limit = float(liquid_biofuel_limit.replace("p", "."))
-            print('Length of o: ', len(o))
             if len(o) > 7:
                 biofuel_constraint_type = o[o.find("B") + 6:o.find("B") + 8]
 
@@ -264,39 +263,41 @@ def add_biofuel_constraint(n):
 
     biofuel_i = n.links.query('carrier == "biomass to liquid"').index
     biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
-    # print('Biofuel p', biofuel_vars)
     biofuel_vars_eta = n.links.query('carrier == "biomass to liquid"').efficiency
-    biofuel_vars_eta = n.links.query('carrier == "biomass to liquid"').efficiency
-    # print('Eta', biofuel_vars_eta)
-    # print('biofuel vars*eta', biofuel_vars*biofuel_vars_eta)
 
     napkership = n.loads.p_set.filter(regex='naphtha for industry|kerosene for aviation|shipping oil$').sum() * len(n.snapshots)
-    # print(napkership)
     landtrans = n.loads_t.p_set.filter(regex='land transport oil$').sum().sum()
-    # print(landtrans)
 
     total_oil_load = napkership+landtrans
     limit = liquid_biofuel_limit * total_oil_load
 
     lhs = linexpr((biofuel_vars_eta, biofuel_vars)).sum().sum()
-
     name = 'liquid_biofuel_min'
-    # print('Constraint type: ', biofuel_constraint_type)
     sense = '>='
     if biofuel_constraint_type == 'Eq':
         sense = '=='
     elif biofuel_constraint_type == 'Lt':
         sense = '>='
 
-    # n.add("GlobalConstraint", name, sense=sense, constant=limit,
-    #       type=np.nan, carrier_attribute=np.nan)
-
     define_constraints(n, lhs, sense, limit, 'Link', spec=name)
+
+def add_msw_full_usage(n):
+    print('Adding MSW incineration constraint')
+    wasteCHP_i = n.links.carrier.filter(regex='waste CHP').index
+    wasteCHP_vars = get_var(n, "Link", "p").loc[:, wasteCHP_i]
+
+    lhs = linexpr((1, wasteCHP_vars)).sum().sum()
+    rhs = n.generators.p_nom.filter(regex='municipal solid waste').sum() * len(n.snapshots)
+    name = 'msw_full_incineration'
+    sense = '=='
+    define_constraints(n, lhs, sense, rhs, 'Link', spec=name)
+
 
 def extra_functionality(n, snapshots):
     add_battery_constraints(n)
     add_pipe_retrofit_constraint(n)
     add_co2_sequestration_limit(n, snapshots)
+    add_msw_full_usage(n)
 
     options = snakemake.wildcards.sector_opts.split('-')
     for o in options:
