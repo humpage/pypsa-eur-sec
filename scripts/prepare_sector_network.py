@@ -2044,8 +2044,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
            nodes + " municipal solid waste",
            bus=nodes + " municipal solid waste",
            carrier="municipal solid waste",
-           p_nom_extendable=True,
-           p_nom_max=biomass_potential['municipal solid waste'] / 8760,
+           p_nom=biomass_potential['municipal solid waste'] / 8760,
            marginal_cost=biomass_costs['municipal solid waste'])
 
 
@@ -2091,7 +2090,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                marginal_cost=costs.at["biogas upgrading", "VOM"] * costs.at["biogas","efficiency"],
                efficiency=costs.at["biogas", "efficiency"],
                efficiency2=costs.at["biogas", "CO2 stored"] * costs.at['biogas', 'capture rate'],
-               efficiency3=-costs.at['gas', 'CO2 intensity'] * costs.at["biogas", "efficiency"] + costs.at["biogas", "CO2 stored"] * costs.at['biogas', 'capture rate'],
+               efficiency3=-costs.at['gas', 'CO2 intensity'] * costs.at["biogas", "efficiency"] - costs.at["biogas", "CO2 stored"] * costs.at['biogas', 'capture rate'],
                p_nom_extendable=True)
 
         n.madd("Link",
@@ -2377,6 +2376,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                    bus3="co2 atmosphere",
                    carrier="urban central waste incineration",
                    p_nom_extendable=True,
+                   # p_nom=biomass_potential['municipal solid waste'] / 8760,
                    capital_cost=costs.at['waste CHP', 'fixed'] * costs.at['waste CHP', 'efficiency'],
                    marginal_cost=costs.at['waste CHP', 'VOM'],
                    efficiency=costs.at['waste CHP', 'efficiency'],
@@ -2394,6 +2394,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                        bus2="co2 stored",
                        carrier="urban central waste incineration CC",
                        p_nom_extendable=True,
+                       # p_nom=costs.at['waste CHP CC', 'efficiency'] * biomass_potential['municipal solid waste'] / 8760,
                        capital_cost=costs.at['waste CHP CC', 'fixed'] * costs.at['waste CHP CC', 'efficiency']
                                     + costs.at['biomass CHP capture', 'fixed'] * costs.at['solid biomass', 'CO2 intensity'],
                        marginal_cost=costs.at['waste CHP CC', 'VOM'],
@@ -2616,6 +2617,7 @@ def add_industry(n, costs):
                lifetime=costs.at['electric boiler steam', 'lifetime'])
 
     if options["gas_for_mediumT_industry"]:
+        #TODO: adapt efficiencies and add capital cost for gas turbine
         n.madd("Link",
                nodes,
                suffix=" gas for mediumT industry",
@@ -2672,6 +2674,7 @@ def add_industry(n, costs):
 
     if options["hydrogen_for_mediumT_industry"]:
         print('Adding H2 for mediumT industry')
+        #TODO: Adapt efficiencies and add capital cost
         n.madd("Link",
                nodes,
                suffix=" hydrogen for mediumT industry",
