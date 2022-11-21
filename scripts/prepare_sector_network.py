@@ -2958,14 +2958,14 @@ def add_waste_heat(n):
         # TODO what is the 0.95 and should it be a config option?
         if options['use_fischer_tropsch_waste_heat']:
             n.links.loc[urban_central + " Fischer-Tropsch", "bus4"] = urban_central + " urban central heat"
-            n.links.loc[urban_central + " Fischer-Tropsch", "efficiency4"] = 0.95 - n.links.loc[
+            n.links.loc[urban_central + " Fischer-Tropsch", "efficiency4"] = 0.9 - n.links.loc[
                 urban_central + " Fischer-Tropsch", "efficiency"]
 
         for o in opts:
             if "B" in o:
                 if options['use_biofuel_waste_heat']:
                     n.links.loc[urban_central + " biomass to liquid", "bus4"] = urban_central + " urban central heat"
-                    n.links.loc[urban_central + " biomass to liquid", "efficiency4"] = 0.6 - n.links.loc[
+                    n.links.loc[urban_central + " biomass to liquid", "efficiency4"] = 0.8 - n.links.loc[
                         urban_central + " biomass to liquid", "efficiency"]
                     n.links.loc[urban_central + " solid biomass to gas", "bus4"] = urban_central + " urban central heat"
                     n.links.loc[urban_central + " solid biomass to gas", "efficiency4"] = 0.8 - n.links.loc[
