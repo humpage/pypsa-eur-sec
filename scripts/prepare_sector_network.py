@@ -2166,7 +2166,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
             superfluous = {}
             tot_EU_biomass = biomass_pot_node.values.sum() - biomass_pot_node["not included"].values.sum()
             print('Total EU biomass: ', tot_EU_biomass * 3.6 / 1e9, ' EJ')
-            step_size = 10  # EJ
+            step_size = 1  # EJ
             biomass_import_limit_low_level = 20e9  # EJ
 
             for num in range(1, 10):
