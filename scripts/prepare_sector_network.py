@@ -554,10 +554,18 @@ def add_dac(n, costs):
     heat_buses = n.buses.index[n.buses.carrier.isin(heat_carriers)]
     locations = n.buses.location[heat_buses]
 
-    efficiency2 = -(costs.at['direct air capture', 'electricity-input'] + costs.at[
-        'direct air capture', 'compression-electricity-input'])
-    efficiency3 = -(costs.at['direct air capture', 'heat-input'] - costs.at[
-        'direct air capture', 'compression-heat-output'])
+    #Assuming steam for CC to be produced by electric steam boiler
+    efficiency_el = -(costs.at['direct air capture', 'electricity-input'] + costs.at[
+        'direct air capture', 'compression-electricity-input'] + costs.at['direct air capture', 'heat-input'] * costs.at['electric boiler steam', 'efficiency'])
+    efficiency_th = costs.at['direct air capture', 'compression-heat-output']
+
+    #Add steam boiler to capital cost
+    capital_cost = costs.at['direct air capture', 'fixed'] + costs.at['direct air capture', 'heat-input'] \
+                   * costs.at['electric boiler steam', 'fixed'] * costs.at['electric boiler steam', 'efficiency']
+    # print('Adding DAC with energy penalty. Capital cost = ',capital_cost,'(only DAC=',costs.at['direct air capture', 'fixed'],'). eta_el=',
+    #       efficiency_el,'(only DAC=',-(costs.at['direct air capture', 'electricity-input'] + costs.at[
+    #     'direct air capture', 'compression-electricity-input']),'). eta_th=',efficiency_th,
+    #       ' (Only DAC=',-(costs.at['direct air capture', 'heat-input']-costs.at['direct air capture', 'compression-heat-output']),').')
 
     n.madd("Link",
         heat_buses.str.replace(" heat", " DAC"),
@@ -566,10 +574,10 @@ def add_dac(n, costs):
         bus1=locations.values,
         bus4=heat_buses,
         carrier="DAC",
-        capital_cost=costs.at['direct air capture', 'fixed'],
+        capital_cost=capital_cost,
         efficiency2=1.,
-        efficiency=efficiency2,
-        efficiency4=efficiency3,
+        efficiency=efficiency_el,
+        efficiency4=efficiency_th,
         p_nom_extendable=True,
         lifetime=costs.at['direct air capture', 'lifetime']
     )
