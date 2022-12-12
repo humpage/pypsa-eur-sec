@@ -2180,7 +2180,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
             step_size = 1  # EJ
             biomass_import_limit_low_level = 20e9  # EJ
 
-            for num in range(1, 10):
+            for num in range(1, 20):
                 import_name[num] = "import" + str(num)
                 if num == 1:
                     import_potential[num] = max(biomass_import_limit_low_level / 3.6 - tot_EU_biomass,
@@ -2299,6 +2299,28 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                marginal_cost=costs.at['BtL', 'efficiency'] * costs.loc["BtL", "VOM"]
                )
 
+    if options['electrobiofuels']:
+        print('Adding electrobiofuels')
+        efuel_scale_factor = costs.at['BtL', 'C stored']
+        n.madd("Link",
+               nodes + " electrobiofuels",
+               bus0=nodes + " solid biomass",
+               bus1=spatial.oil.nodes,
+               bus2=nodes + " H2",
+               bus3="co2 atmosphere",
+               carrier="electrobiofuels",
+               lifetime=costs.at['electrobiofuels', 'lifetime'],
+               efficiency=costs.at['electrobiofuels', 'efficiency-biomass'],
+               efficiency2=costs.at['electrobiofuels', 'efficiency-hydrogen'],
+               efficiency3=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['BtL', 'CO2 stored'] * (1 - costs.at['Fischer-Tropsch', 'capture rate']),
+               p_nom_extendable=True,
+               capital_cost=costs.at['BtL', 'fixed'] * costs.at['electrobiofuels', 'efficiency-biomass'] \
+                            + efuel_scale_factor * costs.at['Fischer-Tropsch', 'fixed'] * costs.at['electrobiofuels', 'efficiency-hydrogen'],
+               marginal_cost=costs.at['BtL', 'VOM'] * costs.at['electrobiofuels', 'efficiency-biomass'] \
+                             + efuel_scale_factor * costs.at['Fischer-Tropsch', 'VOM'] * costs.at['electrobiofuels', 'efficiency-hydrogen']
+               )
+
+
     # TODO: Add real data for bioelectricity without CHP!
     n.madd("Link",
            nodes + " solid biomass to electricity",
@@ -2356,6 +2378,17 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                c_v=costs.at['central solid biomass CHP', 'c_v'],
                lifetime=costs.at['central solid biomass CHP', 'lifetime'])
 
+        n.madd("Link",
+               urban_central + " urban central solid biomass heat",
+               bus0=urban_central + " solid biomass",
+               bus1=urban_central + " urban central heat",
+               carrier="solid biomass district heat",
+               p_nom_extendable=True,
+               efficiency=costs.at['solid biomass boiler steam', 'efficiency'],
+               capital_cost=costs.at['solid biomass boiler steam', 'fixed'] * costs.at[
+                   'solid biomass boiler steam', 'efficiency'],
+               marginal_cost=costs.at['solid biomass boiler steam', 'VOM'])
+
         if beccs:
             n.madd("Link",
                    urban_central + " urban central solid biomass CHP CC",
@@ -2378,6 +2411,26 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                    c_b=costs.at['central solid biomass CHP CC', 'c_b'],
                    c_v=costs.at['central solid biomass CHP CC', 'c_v'],
                    lifetime=costs.at['central solid biomass CHP CC', 'lifetime'])
+
+            n.madd("Link",
+                   urban_central + " urban central solid biomass heat",
+                   bus0=urban_central + " solid biomass",
+                   bus1=urban_central + " urban central heat",
+                   bus3="co2 atmosphere",
+                   bus2="co2 stored",
+                   carrier="solid biomass district heat CC",
+                   p_nom_extendable=True,
+                   efficiency=costs.at['solid biomass boiler steam CC', 'efficiency'],
+                   capital_cost=costs.at['solid biomass boiler steam CC', 'fixed'] * costs.at[
+                       'solid biomass boiler steam CC', 'efficiency'] + costs.at[
+                                    "biomass CHP capture", "fixed"] * costs.at['solid biomass', 'CO2 intensity'],
+                   marginal_cost=costs.at['solid biomass boiler steam CC', 'VOM'],
+                   efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (
+                           1 - costs.at["biomass CHP capture", "capture_rate"]) - costs.at[
+                                   'solid biomass', 'CO2 intensity'],
+                   efficiency2=costs.at['solid biomass', 'CO2 intensity'] * costs.at[
+                       "biomass CHP capture", "capture_rate"],
+                   lifetime=costs.at['solid biomass boiler steam CC', 'lifetime'])
 
         if options['waste_chp']:
             print('Adding waste CHPs')
@@ -2570,7 +2623,7 @@ def add_industry(n, costs):
     if options["industrial_steam_methane"]:
         n.madd("Link",
                nodes,
-               suffix=" methane for lowT industry",
+               suffix=" gas for lowT industry",
                bus0="EU gas",
                bus1=nodes + " lowT process steam",
                bus3="co2 atmosphere",
@@ -2586,7 +2639,7 @@ def add_industry(n, costs):
         eta = costs.at['gas boiler steam', 'efficiency'] - costs.at['gas', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input']
         n.madd("Link",
                nodes,
-               suffix=" methane for lowT industry CC",
+               suffix=" gas for lowT industry CC",
                bus0="EU gas",
                bus1=nodes + " lowT process steam",
                bus3="co2 atmosphere",
@@ -2995,6 +3048,11 @@ def add_waste_heat(n):
                     n.links.loc[urban_central + " biomass to liquid", "bus4"] = urban_central + " urban central heat"
                     n.links.loc[urban_central + " biomass to liquid", "efficiency4"] = 0.8 - n.links.loc[
                         urban_central + " biomass to liquid", "efficiency"]
+
+                    if options['electrobiofuels']:
+                        n.links.loc[urban_central + " electrobiofuels", "bus4"] = urban_central + " urban central heat"
+                        n.links.loc[urban_central + " electrobiofuels", "efficiency4"] = 0.8 - n.links.loc[urban_central + " electrobiofuels", "efficiency-tot"]
+
                     n.links.loc[urban_central + " solid biomass to gas", "bus4"] = urban_central + " urban central heat"
                     n.links.loc[urban_central + " solid biomass to gas", "efficiency4"] = 0.8 - n.links.loc[
                         urban_central + " solid biomass to gas", "efficiency"]
