@@ -342,13 +342,13 @@ def extra_functionality(n, snapshots):
     add_battery_constraints(n)
     add_pipe_retrofit_constraint(n)
     add_co2_sequestration_limit(n, snapshots)
-    add_msw_full_usage(n)
 
     options = snakemake.wildcards.sector_opts.split('-')
     for o in options:
         if "B" in o:
             print('adding biofuel constraints')
             add_biofuel_constraint(n)
+            add_msw_full_usage(n)
         if 'CCL' in o:
             print('adding ccl constraints')
             add_ccl_constraints(n)
@@ -482,21 +482,60 @@ def define_mga_objective(n):
 
     components, pattern, sense = n.mga_obj
 
+    pattern2 = []
+
     #Avoid capturing also CCGT when choosing CC as objective
     if pattern == 'CC':
         pattern = 'CC$'
     elif pattern == 'VRE':
         pattern = 'solar|wind'
+    # elif pattern == 'biomass CHP':
+    #     pattern2 = 'gas CHP'
+    # elif pattern == 'biomass industry':
+    #     pattern2 = 'gas industry'
+
+    print('pattern: ', to_regex(pattern))
+    # print('pattern2: ', to_regex(pattern2))
 
     if isinstance(components, str):
         components = [components]
-    print(components)
+    print('components: ', components)
+
+    #If n.df(c).loc[variables.columns, 'bus0'] == 'EU gas'
+    #add biogas + biogas + CC + SNG + SNG + CC divided by other producers
+    # bm = (df.loc['biogas'] + df.loc['biogas CC'] + df.loc['BioSNG'] + df.loc['BioSNG CC'])
+    # allgasprod = bm + df.loc['gas'] + df.loc['Sabatier'] + df.loc['helmeth']
+    # multiply by bm / allgasprod
+
+    # .rename(columns='EU gas', inplace=True)
+    #
+    # bm_gas = get_var(n, 'Link', 'p').filter(regex='biogas$|biogas CC$|BioSNG$|BioSNG CC$')
+    # other_gas = get_var(n, 'Link', 'p').filter(regex='Sabatier|helmeth')
+    # fossil_gas = get_var(n, 'Generator', 'p').filter(regex='gas')
+    #
+    # bm_gas_expr = linexpr((1,bm_gas)).sum(axis=1)#.apply(join_exprs, axis=1)
+    # print('bm_gas: ', bm_gas_expr)
+    #
+    # other_gas_expr = linexpr((1,other_gas)).sum(axis=1)#.apply(join_exprs, axis=1)
+    # print('other_gas: ', other_gas_expr)
+    #
+    # fossil_gas_expr = linexpr((1,fossil_gas))#.apply(join_exprs, axis=1)
+    # print('fossil_gas: ', fossil_gas_expr)
+    #
+    # denom = linexpr((1, bm_gas_expr), (1, 1/bm_gas_expr))#.apply(join_exprs, axis=1)#, (1, fossil_gas_expr))
+    # print('denom: ', denom)
+    #
+    # bm_gas_expr = linexpr((bm_gas_expr, 1/denom))
+    #
+    # bm_share_gas = bm_gas_expr # * (other_gas_expr + fossil_gas_expr) #bm_gas / (bm_gas + other_gas)# + fossil_gas)
+    #
+    # print('bm_share_gas: ', bm_share_gas)
 
     terms = []
     for c in components:
         variables = get_var(n, c, 'p').filter(regex=to_regex(pattern))
         print(variables.head(50))
-        variables.to_csv('temp.csv')
+        variables.to_csv('temp.csv', mode='a')
         if c in ["Link", "Line"] and pattern in ["", "LN|LK", "LK|LN"]:
             coeffs = sense * n.df(c).loc[variables.index, "length"]
         elif pattern == 'CC$':
@@ -504,7 +543,14 @@ def define_mga_objective(n):
         else:
             coeffs = sense
 
-        terms.append(linexpr((coeffs, variables)))
+        # if not pattern2 == []:
+        #     variables2 = get_var(n, c, 'p').filter(regex=to_regex(pattern2))
+        #     print(variables2.head(50))
+        #     variables2.to_csv('temp2.csv', mode='a')
+        #
+        #     terms.append(linexpr((bm_share_gas, variables2)))
+
+    terms.append(linexpr((coeffs, variables)))
 
     joint_terms = pd.concat(terms)
 
@@ -558,8 +604,12 @@ if __name__ == "__main__":
 
         if 'Optimal objective' not in last_line:
             solver_opts = snakemake.config['solving']['solver'].copy()
-            # solver_opts['ScaleFlag'] = 2
+            solver_opts['ScaleFlag'] = 2
+            # solver_opts['ObjScale'] = -0.5
             solver_opts['BarHomogeneous'] = 1
+            solver_opts['NumericFocus'] = 2
+            # solver_opts['Quad'] = 1
+            # solver_opts['MarkowitzTol'] = 0.1
             print('Sub-optimal - rerunning with new solver settings: ', solver_opts)
 
             n, status, termination_condition = solve_network(n, config=snakemake.config, solver_opts=solver_opts, opts=opts,
