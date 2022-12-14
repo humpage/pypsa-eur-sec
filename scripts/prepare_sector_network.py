@@ -557,27 +557,22 @@ def add_dac(n, costs):
     #Assuming steam for CC to be produced by electric steam boiler
     efficiency_el = -(costs.at['direct air capture', 'electricity-input'] + costs.at[
         'direct air capture', 'compression-electricity-input'] + costs.at['direct air capture', 'heat-input'] * costs.at['electric boiler steam', 'efficiency'])
-    efficiency_th = costs.at['direct air capture', 'compression-heat-output']
 
     #Add steam boiler to capital cost
     capital_cost = costs.at['direct air capture', 'fixed'] + costs.at['direct air capture', 'heat-input'] \
                    * costs.at['electric boiler steam', 'fixed'] * costs.at['electric boiler steam', 'efficiency']
-    # print('Adding DAC with energy penalty. Capital cost = ',capital_cost,'(only DAC=',costs.at['direct air capture', 'fixed'],'). eta_el=',
-    #       efficiency_el,'(only DAC=',-(costs.at['direct air capture', 'electricity-input'] + costs.at[
-    #     'direct air capture', 'compression-electricity-input']),'). eta_th=',efficiency_th,
-    #       ' (Only DAC=',-(costs.at['direct air capture', 'heat-input']-costs.at['direct air capture', 'compression-heat-output']),').')
 
+    # print('DAC buses', heat_buses.str.replace(" heat", " DAC"))
+    # input('anykey')
     n.madd("Link",
         heat_buses.str.replace(" heat", " DAC"),
         bus0="co2 atmosphere",
         bus2=spatial.co2.df.loc[locations, "nodes"].values,
         bus1=locations.values,
-        bus4=heat_buses,
         carrier="DAC",
         capital_cost=capital_cost,
         efficiency2=1.,
         efficiency=efficiency_el,
-        efficiency4=efficiency_th,
         p_nom_extendable=True,
         lifetime=costs.at['direct air capture', 'lifetime']
     )
@@ -3059,9 +3054,17 @@ def add_waste_heat(n):
 
         if options['use_fuel_cell_waste_heat']:
             n.links.loc[urban_central + " H2 Fuel Cell", "bus4"] = urban_central + " urban central heat"
-            n.links.loc[urban_central + " H2 Fuel Cell", "efficiency2"] = 0.95 - n.links.loc[
+            n.links.loc[urban_central + " H2 Fuel Cell", "efficiency4"] = 0.8 - n.links.loc[
                 urban_central + " H2 Fuel Cell", "efficiency"]
 
+        # heat_carriers = ["urban central heat", "services urban decentral heat"]
+        # heat_buses = n.buses.index[n.buses.carrier.isin(heat_carriers)]
+        # locations = n.buses.location[heat_buses]
+        if options['use_dac_waste_heat']:
+            n.links.loc[urban_central + " urban central DAC", "bus4"] = urban_central + " urban central heat"
+            n.links.loc[urban_central + " urban central DAC", "efficiency4"] = costs.at['direct air capture', 'compression-heat-output']
+            n.links.loc[urban_central + " services urban decentral DAC", "bus4"] = urban_central + " urban central heat"
+            n.links.loc[urban_central + " services urban decentral DAC", "efficiency4"] = costs.at['direct air capture', 'compression-heat-output']
 
 def add_agriculture(n, costs):
 
@@ -3419,14 +3422,15 @@ if __name__ == "__main__":
             if options["biomass_transport"]:
                 add_biomass_transport(n)
 
+    if options['dac']:
+        add_dac(n, costs)
+
     if "I" in opts and "H" in opts:
         add_waste_heat(n)
 
     if "A" in opts:  # requires H and I
         add_agriculture(n, costs)
 
-    if options['dac']:
-        add_dac(n, costs)
 
     if options['ammonia']:
         add_ammonia(n, costs)
