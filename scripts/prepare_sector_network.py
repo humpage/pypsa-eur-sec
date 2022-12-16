@@ -3057,6 +3057,10 @@ def add_waste_heat(n):
             n.links.loc[urban_central + " H2 Fuel Cell", "efficiency4"] = 0.8 - n.links.loc[
                 urban_central + " H2 Fuel Cell", "efficiency"]
 
+        if options['use_electrolysis_waste_heat']:
+            n.links.loc[urban_central + " H2 Electrolysis", "bus4"] = urban_central + " urban central heat"
+            n.links.loc[urban_central + " H2 Electrolysis", "efficiency4"] = costs.at['electrolysis', 'efficiency-heat']
+
         # heat_carriers = ["urban central heat", "services urban decentral heat"]
         # heat_buses = n.buses.index[n.buses.carrier.isin(heat_carriers)]
         # locations = n.buses.location[heat_buses]
