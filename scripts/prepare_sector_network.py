@@ -715,7 +715,7 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
         costs.at['electrolysis', 'investment'] = 150000
     elif 'H22' in snakemake.wildcards.h2_s:
         # costs.at['electrolysis', 'efficiency'] = 0.7
-        costs.at['electrolysis', 'investment'] = 400000
+        costs.at['electrolysis', 'investment'] = 450000
     elif 'H23' in snakemake.wildcards.h2_s:
         # costs.at['electrolysis', 'efficiency'] = 0.7
         costs.at['electrolysis', 'investment'] = 600000
