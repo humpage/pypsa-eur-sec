@@ -2728,8 +2728,8 @@ def add_industry(n, costs):
                efficiency=eta,
                efficiency3=costs.at['gas', 'CO2 intensity'] * (1 - costs.at["biomass CHP capture", "capture_rate"]),
                efficiency2=costs.at['gas', 'CO2 intensity'] * costs.at["biomass CHP capture", "capture_rate"],
-               capital_cost=costs.at['direct firing gas', 'fixed'] * costs.at['direct firing gas', 'efficiency'] + costs.at["biomass CHP capture", "fixed"] * costs.at['gas', 'CO2 intensity'],
-               marginal_cost=costs.at['direct firing gas', 'VOM'],
+               capital_cost=costs.at['direct firing gas CC', 'fixed'] * costs.at['direct firing gas CC', 'efficiency'] + costs.at["biomass CHP capture", "fixed"] * costs.at['gas', 'CO2 intensity'],
+               marginal_cost=costs.at['direct firing gas CC', 'VOM'],
                lifetime=costs.at['direct firing gas', 'lifetime'])
 
     #TODO: differentiate medium and high T processes
@@ -2762,21 +2762,20 @@ def add_industry(n, costs):
            efficiency=eta,
            efficiency3=costs.at['gas', 'CO2 intensity'] * (1 - costs.at["biomass CHP capture", "capture_rate"]),
            efficiency2=costs.at['gas', 'CO2 intensity'] * costs.at["biomass CHP capture", "capture_rate"],
-           capital_cost=costs.at['direct firing gas', 'fixed'] * costs.at['direct firing gas', 'efficiency'] + costs.at["biomass CHP capture", "fixed"] * costs.at['gas', 'CO2 intensity'],
-           marginal_cost=costs.at['direct firing gas', 'VOM'],
+           capital_cost=costs.at['direct firing gas CC', 'fixed'] * costs.at['direct firing gas CC', 'efficiency'] + costs.at["biomass CHP capture", "fixed"] * costs.at['gas', 'CO2 intensity'],
+           marginal_cost=costs.at['direct firing gas CC', 'VOM'],
            lifetime=costs.at['direct firing gas', 'lifetime'])
 
     if options["hydrogen_for_mediumT_industry"]:
         print('Adding H2 for mediumT industry')
-        #TODO: Adapt efficiencies and add capital cost!
         n.madd("Link",
                nodes,
                suffix=" hydrogen for mediumT industry",
                bus0=nodes + " H2",
                bus1=nodes + " mediumT industry",
                carrier="hydrogen for mediumT industry",
-               capital_cost=costs.at['direct firing gas', 'fixed'] * costs.at['direct firing gas', 'efficiency'],
-               marginal_cost=costs.at['direct firing gas', 'VOM'],
+               capital_cost=10 * costs.at['direct firing gas', 'fixed'] * costs.at['direct firing gas', 'efficiency'],
+               marginal_cost=10 * costs.at['direct firing gas', 'VOM'],
                p_nom_extendable=True,
                p_min_pu=0.8,
                efficiency=costs.at['direct firing gas', 'efficiency'])
@@ -2789,8 +2788,8 @@ def add_industry(n, costs):
                bus0=nodes + " H2",
                bus1=nodes + " highT industry",
                carrier="hydrogen for highT industry",
-               capital_cost=costs.at['direct firing gas', 'fixed'] * costs.at['direct firing gas', 'efficiency'],
-               marginal_cost=costs.at['direct firing gas', 'VOM'],
+               capital_cost=10 * costs.at['direct firing gas', 'fixed'] * costs.at['direct firing gas', 'efficiency'],
+               marginal_cost=10 * costs.at['direct firing gas', 'VOM'],
                p_nom_extendable=True,
                p_min_pu=0.8,
                efficiency=costs.at['direct firing gas', 'efficiency'])
