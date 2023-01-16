@@ -637,7 +637,8 @@ def cycling_shift(df, steps=1):
 def prepare_costs(cost_file, USD_to_EUR, discount_rate, Nyears, lifetime):
     # set all asset costs and other parameters
     costs = pd.read_csv(cost_file, index_col=[0, 1]).sort_index()
-
+    print(costs['value'].head(50))
+    print(costs[costs['value'].isna()].head(50))
     # correct units to MW and EUR
     costs.loc[costs.unit.str.contains("/kW"), "value"] *= 1e3
     costs.loc[costs.unit.str.contains("USD"), "value"] *= USD_to_EUR
@@ -2079,7 +2080,6 @@ def add_biomass(n, costs, beccs, biomass_import_price):
            p_nom_extendable=True)
 
     if beccs:
-        #TODO: add energy penalty for steam needed for amines
         n.madd("Link",
                nodes + " biogas CC",
                bus0=nodes + " digestible biomass",
@@ -2087,31 +2087,32 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                bus2="co2 stored",
                bus3="co2 atmosphere",
                carrier="biogas CC",
-               capital_cost=(costs.at["biogas", "fixed"] + costs.at["biogas upgrading", "fixed"]) * costs.at["biogas", "efficiency"]
-                            + costs.at['biomass CHP capture', 'fixed'] * costs.at["biogas", "CO2 stored"],
+               capital_cost=(costs.at["biogas CC", "fixed"] + costs.at["biogas upgrading", "fixed"]) * costs.at["biogas CC", "efficiency"]
+                            + costs.at['biomass CHP capture', 'fixed'] * costs.at["biogas CC", "CO2 stored"],
                # Assuming that the CO2 from upgrading is pure, such as in amine scrubbing. I.e., with and without CC is
                # equivalent. Adding biomass CHP capture because biogas is often small-scale and decentral so further
-               # from e.g. CO2 grid or buyers
-               marginal_cost=costs.at["biogas upgrading", "VOM"] * costs.at["biogas","efficiency"],
-               efficiency=costs.at["biogas", "efficiency"],
-               efficiency2=costs.at["biogas", "CO2 stored"] * costs.at['biogas', 'capture rate'],
-               efficiency3=-costs.at['gas', 'CO2 intensity'] * costs.at["biogas", "efficiency"] - costs.at["biogas", "CO2 stored"] * costs.at['biogas', 'capture rate'],
+               # from e.g. CO2 grid or buyers. This is a proxy for the added cost for e.g. a raw biogas pipeline to a central upgrading facility
+               marginal_cost=(costs.at["biogas CC", "VOM"] + costs.at["biogas upgrading", "VOM"]) * costs.at["biogas","efficiency"],
+               efficiency=costs.at["biogas CC", "efficiency"],
+               efficiency2=costs.at["biogas CC", "CO2 stored"] * costs.at['biogas CC', 'capture rate'],
+               efficiency3=-costs.at['gas', 'CO2 intensity'] * costs.at["biogas CC", "efficiency"] - costs.at["biogas CC", "CO2 stored"] * costs.at['biogas CC', 'capture rate'],
                p_nom_extendable=True)
 
-        n.madd("Link",
-               nodes + " digestible biomass to hydrogen CC",
-               bus0=nodes + " digestible biomass",
-               bus1=nodes + " H2",
-               bus2="co2 stored",
-               bus3="co2 atmosphere",
-               carrier="digestible biomass to hydrogen CC",
-               capital_cost=costs.at['digestible biomass to hydrogen', 'fixed'] * costs.at['digestible biomass to hydrogen', 'efficiency']
-                            + costs.at['biomass CHP capture', 'fixed'] * costs.at["biogas", "CO2 stored"],
-               marginal_cost=costs.at["biogas upgrading", "VOM"] * costs.at['digestible biomass to hydrogen', 'efficiency'],
-               efficiency=costs.at['digestible biomass to hydrogen', 'efficiency'],
-               efficiency2=(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * costs.at['digestible biomass to hydrogen', 'capture rate'],
-               efficiency3=-(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * costs.at['digestible biomass to hydrogen', 'capture rate'],
-               p_nom_extendable=True)
+        if options['digestible_biomass_to_hydrogen']:
+            n.madd("Link",
+                   nodes + " digestible biomass to hydrogen CC",
+                   bus0=nodes + " digestible biomass",
+                   bus1=nodes + " H2",
+                   bus2="co2 stored",
+                   bus3="co2 atmosphere",
+                   carrier="digestible biomass to hydrogen CC",
+                   capital_cost=costs.at['digestible biomass to hydrogen', 'fixed'] * costs.at['digestible biomass to hydrogen', 'efficiency']
+                                + costs.at['biomass CHP capture', 'fixed'] * costs.at["biogas", "CO2 stored"],
+                   marginal_cost=costs.at["biogas upgrading", "VOM"] * costs.at['digestible biomass to hydrogen', 'efficiency'],
+                   efficiency=costs.at['digestible biomass to hydrogen', 'efficiency'],
+                   efficiency2=(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * costs.at['digestible biomass to hydrogen', 'capture rate'],
+                   efficiency3=-(costs.at['gas', 'CO2 intensity'] + costs.at["biogas", "CO2 stored"]) * costs.at['digestible biomass to hydrogen', 'capture rate'],
+                   p_nom_extendable=True)
 
 
     # n.madd("Link",
