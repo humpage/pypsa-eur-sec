@@ -765,9 +765,11 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
         pass
 
     if 'IM0' in snakemake.wildcards.bmim_s:
-        biomass_import_price = 10 * 3.6
+        # biomass_import_price = 10 * 3.6
+        pass
     elif 'IM2' in snakemake.wildcards.bmim_s:
-        biomass_import_price = 20 * 3.6
+        # biomass_import_price = 20 * 3.6
+        pass
     elif 'IM1' in snakemake.wildcards.bmim_s:
         pass
 
@@ -2099,21 +2101,6 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                p_nom_extendable=True)
 
 
-    # n.madd("Link",
-    #        nodes + " biogas plus hydrogen",
-    #        bus0=nodes + " digestible biomass",
-    #        bus1="EU gas",
-    #        bus4=nodes + " H2",
-    #        bus3="co2 atmosphere",
-    #        carrier="biogas plus hydrogen",
-    #        capital_cost=costs.at["biogas", "fixed"] + costs.at["biogas plus hydrogen", "fixed"],
-    #        marginal_cost=costs.at["biogas plus hydrogen", "VOM"],
-    #        efficiency=costs.at["biogas plus hydrogen", "efficiency"],
-    #        efficiency4=-costs.at["biogas plus hydrogen", "hydrogen input"],
-    #        efficiency3=costs.at["biogas plus hydrogen", "CO2 stored"],
-    #        p_nom_extendable=True)
-
-
     solid_biomass_types = ["forest residues", "industry wood residues", "landscape care"]
     for name in solid_biomass_types:
         n.add("Carrier", name + " solid biomass")
@@ -2142,7 +2129,31 @@ def add_biomass(n, costs, beccs, biomass_import_price):
 
     for o in opts:
         if o[o.find("B") + 4:o.find("B") + 6] == "Im":
-            print("Adding biomass import with cost ", biomass_import_price, ' EUR/MWh')
+            if 'IM0' in snakemake.wildcards.bmim_s:
+                bm_im_ef = 0
+            elif 'IM1' in snakemake.wildcards.bmim_s:
+                bm_im_ef = 0
+            elif 'IM2' in snakemake.wildcards.bmim_s:
+                bm_im_ef = 0.1
+            elif 'IM3' in snakemake.wildcards.bmim_s:
+                bm_im_ef = 0.2
+            elif 'IM4' in snakemake.wildcards.bmim_s:
+                bm_im_ef = 0.3
+            elif 'IM5' in snakemake.wildcards.bmim_s:
+                bm_im_ef = 0.4
+            elif 'IM6' in snakemake.wildcards.bmim_s:
+                bm_im_ef = 0.5
+            elif 'IM7' in snakemake.wildcards.bmim_s:
+                bm_im_ef = 0.6
+            elif 'IM8' in snakemake.wildcards.bmim_s:
+                bm_im_ef = 0.7
+            elif 'IM9' in snakemake.wildcards.bmim_s:
+                bm_im_ef = 0.8
+            elif 'IM10' in snakemake.wildcards.bmim_s:
+                bm_im_ef = 0.9
+
+            print("Adding biomass import with cost ", biomass_import_price, ' EUR/MWh, and embedded emissions of ', bm_im_ef*100, '%')
+
 
             n.add("Carrier", "solid biomass import")
 
@@ -2194,8 +2205,10 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                        nodes + " " + import_name[num] + " solid biomass",
                        bus0="solid biomass import",
                        bus1=nodes + " solid biomass",
+                       bus3="co2 atmosphere",
                        carrier="solid biomass import",
                        efficiency=1.,
+                       efficiency3=bm_im_ef * costs.at['solid biomass', 'CO2 intensity'],
                        p_nom_extendable=True)
 
     n.madd("Link",
