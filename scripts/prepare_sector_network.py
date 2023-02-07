@@ -555,13 +555,15 @@ def add_dac(n, costs):
     locations = n.buses.location[heat_buses]
 
     #Assuming steam for CC to be produced by electric steam boiler
-    efficiency_el = -(costs.at['direct air capture', 'electricity-input'] + costs.at[
-        'direct air capture', 'compression-electricity-input'] + costs.at['direct air capture', 'heat-input'] * costs.at['electric boiler steam', 'efficiency'])
+    # efficiency_el = -(costs.at['direct air capture', 'electricity-input'] + costs.at[
+    #     'direct air capture', 'compression-electricity-input'] + costs.at['direct air capture', 'heat-input'] * costs.at['electric boiler steam', 'efficiency'])
 
     #Add steam boiler to capital cost
-    capital_cost = costs.at['direct air capture', 'fixed'] + costs.at['direct air capture', 'heat-input'] \
-                   * costs.at['electric boiler steam', 'fixed'] * costs.at['electric boiler steam', 'efficiency']
+    # capital_cost = costs.at['direct air capture', 'fixed'] + costs.at['direct air capture', 'heat-input'] \
+    #                * costs.at['electric boiler steam', 'fixed'] * costs.at['electric boiler steam', 'efficiency']
 
+    efficiency_el = -(costs.at['direct air capture', 'electricity-input'] + costs.at['direct air capture', 'compression-electricity-input'])
+    efficiency_th = -costs.at['direct air capture', 'heat-input']
     # print('DAC buses', heat_buses.str.replace(" heat", " DAC"))
     # input('anykey')
     n.madd("Link",
@@ -569,10 +571,12 @@ def add_dac(n, costs):
         bus0="co2 atmosphere",
         bus2=spatial.co2.df.loc[locations, "nodes"].values,
         bus1=locations.values,
+        bus3=locations.values + " lowT process steam",
         carrier="DAC",
-        capital_cost=capital_cost,
+        capital_cost=costs.at['direct air capture', 'fixed'],
         efficiency2=1.,
         efficiency=efficiency_el,
+        efficiency3=efficiency_th,
         p_nom_extendable=True,
         lifetime=costs.at['direct air capture', 'lifetime']
     )
@@ -2154,7 +2158,6 @@ def add_biomass(n, costs, beccs, biomass_import_price):
 
             print("Adding biomass import with cost ", biomass_import_price, ' EUR/MWh, and embedded emissions of ', bm_im_ef*100, '%')
 
-
             n.add("Carrier", "solid biomass import")
 
             n.madd("Bus",
@@ -2226,7 +2229,6 @@ def add_biomass(n, costs, beccs, biomass_import_price):
            )
 
     if beccs:
-        #TODO: add energy penalty for steam needed for amines?
         n.madd("Link",
                nodes + " solid biomass to gas CC",
                bus0=nodes + " solid biomass",
@@ -2300,12 +2302,12 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                nodes + " electrobiofuels",
                bus0=nodes + " solid biomass",
                bus1=spatial.oil.nodes,
-               bus2=nodes + " H2",
+               bus5=nodes + " H2",
                bus3="co2 atmosphere",
                carrier="electrobiofuels",
                lifetime=costs.at['electrobiofuels', 'lifetime'],
                efficiency=costs.at['electrobiofuels', 'efficiency-biomass'],
-               efficiency2=-costs.at['electrobiofuels', 'efficiency-hydrogen'],
+               efficiency5=-costs.at['electrobiofuels', 'efficiency-hydrogen'],
                efficiency3=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['BtL', 'CO2 stored'] * (1 - costs.at['Fischer-Tropsch', 'capture rate']),
                p_nom_extendable=True,
                capital_cost=costs.at['BtL', 'fixed'] * costs.at['electrobiofuels', 'efficiency-biomass'] \
