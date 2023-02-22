@@ -225,11 +225,6 @@ def add_co2_sequestration_limit(n, sns):
     lhs = linexpr((1, vars_final_co2_stored)).sum()
 
     limit = n.config["sector"].get("co2_sequestration_potential", 200) * 1e6
-    # for o in opts:
-    #     if not "seq" in o: continue
-    #     limit = float(o[o.find("seq")+3:]) * 1e6
-    #     print(float(o[o.find("seq")+3:]))
-    #     break
 
     opts = snakemake.wildcards.sector_opts.split('-')
     for o in opts:
@@ -297,12 +292,12 @@ def extra_functionality(n, snapshots):
     add_battery_constraints(n)
     add_pipe_retrofit_constraint(n)
     add_co2_sequestration_limit(n, snapshots)
-    add_msw_full_usage(n)
 
     options = snakemake.wildcards.sector_opts.split('-')
     for o in options:
         if "B" in o:
             print('adding biofuel constraints')
+            add_msw_full_usage(n)
             add_biofuel_constraint(n)
         if 'CCL' in o:
             print('adding ccl constraints')

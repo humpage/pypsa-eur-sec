@@ -421,6 +421,7 @@ def define_mga_constraint(n, snapshots, epsilon=None, with_fix=None):
 
     expr = []
 
+    print('snapshot weightings: ', n.snapshot_weightings)
     # operation
     for c, attr in lookup.query("marginal_cost").index:
         cost = (
@@ -489,6 +490,9 @@ def define_mga_objective(n):
         pattern = 'CC$'
     elif pattern == 'VRE':
         pattern = 'solar|wind'
+    elif pattern == 'biofuels':
+        pattern = 'biomass to liquid|electrobiofuels'
+
     # elif pattern == 'biomass CHP':
     #     pattern2 = 'gas CHP'
     # elif pattern == 'biomass industry':
