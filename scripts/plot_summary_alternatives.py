@@ -21,7 +21,7 @@ def rename_techs(label):
     ]
 
     rename_if_contains = [
-        "CHP",
+        # "CHP",
         "gas boiler",
         "biogas",
         "solar thermal",
@@ -254,7 +254,7 @@ def plot_balances():
         df = df / 1e6
 
         #remove trailing link ports
-        df.index = [i[:-1] if ((i != "co2") and (i[-1:] in ["0","1","2","3","4"])) else i for i in df.index]
+        df.index = [i[:-1] if ((i != "co2") and (i[-1:] in ["0","1","2","3","4","5"])) else i for i in df.index]
 
         df = df.groupby(df.index.map(rename_techs)).sum()
 
