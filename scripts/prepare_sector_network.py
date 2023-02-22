@@ -2390,18 +2390,18 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                    urban_central + " urban central solid biomass CHP CC",
                    bus0=urban_central + " solid biomass",
                    bus1=urban_central,
-                   bus4=urban_central + " urban central heat",
-                   bus3="co2 atmosphere",
                    bus2="co2 stored",
+                   bus3="co2 atmosphere",
+                   bus4=urban_central + " urban central heat",
                    carrier="urban central solid biomass CHP CC",
                    p_nom_extendable=True,
                    capital_cost=costs.at['central solid biomass CHP CC', 'fixed'] * costs.at['central solid biomass CHP CC', 'efficiency']
                                 + costs.at['biomass CHP capture', 'fixed'] * costs.at['solid biomass', 'CO2 intensity'],
                    marginal_cost=costs.at['central solid biomass CHP CC', 'VOM'],
                    efficiency=costs.at['central solid biomass CHP CC', 'efficiency'],
-                   efficiency4=costs.at['central solid biomass CHP CC', 'efficiency-heat'],
-                   efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (1 - options["cc_fraction"])-costs.at['solid biomass', 'CO2 intensity'],
                    efficiency2=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
+                   efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (1 - options["cc_fraction"])-costs.at['solid biomass', 'CO2 intensity'],
+                   efficiency4=costs.at['central solid biomass CHP CC', 'efficiency-heat'],
                    c_b=costs.at['central solid biomass CHP CC', 'c_b'],
                    c_v=costs.at['central solid biomass CHP CC', 'c_v'],
                    lifetime=costs.at['central solid biomass CHP CC', 'lifetime'])
@@ -3071,7 +3071,7 @@ def add_waste_heat(n):
 
                     if options['electrobiofuels']:
                         n.links.loc[urban_central + " electrobiofuels", "bus4"] = urban_central + " urban central heat"
-                        n.links.loc[urban_central + " electrobiofuels", "efficiency4"] = (0.8 - n.links.loc[urban_central + " electrobiofuels", "efficiency-tot"]) * options['waste_heat_usage_share']
+                        n.links.loc[urban_central + " electrobiofuels", "efficiency4"] = (0.8 - costs.at['electrobiofuels', "efficiency-tot"]) * options['waste_heat_usage_share']
 
                     n.links.loc[urban_central + " solid biomass to gas", "bus4"] = urban_central + " urban central heat"
                     n.links.loc[urban_central + " solid biomass to gas", "efficiency4"] = (0.8 - n.links.loc[
