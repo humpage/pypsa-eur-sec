@@ -2428,7 +2428,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                        lifetime=costs.at['central solid biomass CHP powerboost CC', 'lifetime'])
 
             n.madd("Link",
-                   urban_central + " urban central solid biomass heat",
+                   urban_central + " urban central solid biomass heat CC",
                    bus0=urban_central + " solid biomass",
                    bus1=urban_central + " urban central heat",
                    bus3="co2 atmosphere",
