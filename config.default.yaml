@@ -15,15 +15,15 @@ scenario:
   simpl: # only relevant for PyPSA-Eur
     - ''
   lv: # allowed transmission line volume expansion, can be any float >= 1.0 (today) or "opt"
-    - 1.0
+#    - 1.0
     - 1.5
   clusters: # number of nodes in Europe, any integer between 37 (1 node per country-zone) and several hundred
-    - 45
-    - 50
+    - 37
+#    - 50
   opts: # only relevant for PyPSA-Eur
     - ''
   sector_opts: # this is where the main scenario settings are
-    - Co2L0-3H-T-H-B-I-A-solar+p3-dist1
+    - Co2L0-600H-T-H-B-I-A-solar+p3-dist1
   # to really understand the options here, look in scripts/prepare_sector_network.py
   # Co2Lx specifies the CO2 target in x% of the 1990 values; default will give default (5%);
   # Co2L0p25 will give 25% CO2 emissions; Co2Lm0p05 will give 5% negative emissions
@@ -284,9 +284,11 @@ sector:
   ammonia: false # can be false (no NH3 carrier), true (copperplated NH3), "regional" (regionalised NH3 without network)
   min_part_load_fischer_tropsch: 0.9 # p_min_pu
   min_part_load_methanolisation: 0.5 # p_min_pu
+  waste_heat_usage_share: 0.5
   use_fischer_tropsch_waste_heat: true
   use_fuel_cell_waste_heat: true
-  use_electrolysis_waste_heat: false
+  use_electrolysis_waste_heat: true
+  use_biofuel_waste_heat: true
   electricity_distribution_grid: true
   electricity_distribution_grid_cost_factor: 1.0  #multiplies cost in data/costs.csv
   electricity_grid_connection: true  # only applies to onshore wind and utility PV

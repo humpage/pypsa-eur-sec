@@ -2518,17 +2518,38 @@ def add_waste_heat(n):
 
         # TODO what is the 0.95 and should it be a config option?
         if options['use_fischer_tropsch_waste_heat']:
-            n.links.loc[urban_central + " Fischer-Tropsch", "bus3"] = urban_central + " urban central heat"
-            n.links.loc[urban_central + " Fischer-Tropsch", "efficiency3"] = 0.95 - n.links.loc[urban_central + " Fischer-Tropsch", "efficiency"]
+            n.links.loc[urban_central + " Fischer-Tropsch", "bus4"] = urban_central + " urban central heat"
+            n.links.loc[urban_central + " Fischer-Tropsch", "efficiency4"] = (0.95 - n.links.loc[urban_central + " Fischer-Tropsch", "efficiency"]) * options['waste_heat_usage_share']
 
         # TODO integrate useable waste heat efficiency into technology-data from DEA
         if options.get('use_electrolysis_waste_heat', False):
-            n.links.loc[urban_central + " H2 Electrolysis", "bus2"] = urban_central + " urban central heat"
-            n.links.loc[urban_central + " H2 Electrolysis", "efficiency2"] = 0.84 - n.links.loc[urban_central + " H2 Electrolysis", "efficiency"]
+            n.links.loc[urban_central + " H2 Electrolysis", "bus4"] = urban_central + " urban central heat"
+            n.links.loc[urban_central + " H2 Electrolysis", "efficiency4"] = costs.at['electrolysis', 'efficiency-heat'] * options['waste_heat_usage_share']
+
+        if options['use_biofuel_waste_heat']:
+
+            if options['biomass_to_liquid']:
+            n.links.loc[urban_central + " biomass to liquid", "bus4"] = urban_central + " urban central heat"
+            n.links.loc[urban_central + " biomass to liquid", "efficiency4"] = (0.8 - n.links.loc[
+                urban_central + " biomass to liquid", "efficiency"]) * options['waste_heat_usage_share']
+
+            n.links.loc[urban_central + " biomass to liquid CC", "bus4"] = urban_central + " urban central heat"
+            n.links.loc[urban_central + " biomass to liquid CC", "efficiency4"] = (0.8 - n.links.loc[
+                urban_central + " biomass to liquid CC", "efficiency"]) * options['waste_heat_usage_share']
+
+            if options['electrobiofuels']:
+                n.links.loc[urban_central + " electrobiofuels", "bus4"] = urban_central + " urban central heat"
+                n.links.loc[urban_central + " electrobiofuels", "efficiency4"] = (0.8 - costs.at[
+                    'electrobiofuels', "efficiency-tot"]) * options['waste_heat_usage_share']
+
+            if options['biosng']:
+            n.links.loc[urban_central + " solid biomass to gas", "bus4"] = urban_central + " urban central heat"
+            n.links.loc[urban_central + " solid biomass to gas", "efficiency4"] = (0.8 - n.links.loc[
+                urban_central + " solid biomass to gas", "efficiency"]) * options['waste_heat_usage_share']
 
         if options['use_fuel_cell_waste_heat']:
             n.links.loc[urban_central + " H2 Fuel Cell", "bus2"] = urban_central + " urban central heat"
-            n.links.loc[urban_central + " H2 Fuel Cell", "efficiency2"] = 0.95 - n.links.loc[urban_central + " H2 Fuel Cell", "efficiency"]
+            n.links.loc[urban_central + " H2 Fuel Cell", "efficiency2"] = (0.95 - n.links.loc[urban_central + " H2 Fuel Cell", "efficiency"]) * options['waste_heat_usage_share']
 
 
 def add_agriculture(n, costs):
