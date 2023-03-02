@@ -2543,7 +2543,7 @@ def add_industry(n, costs):
            suffix=" mediumT industry",
            bus=nodes + " mediumT industry",
            carrier="mediumT industry",
-           p_set=0.3*industrial_demand.loc[nodes, "methane"] / 8760.)
+           p_set=0.36*industrial_demand.loc[nodes, "methane"] / 8760.)
 
     n.madd("Bus",
            nodes + " highT industry",
@@ -2555,7 +2555,7 @@ def add_industry(n, costs):
            suffix=" highT industry",
            bus=nodes + " highT industry",
            carrier="highT industry",
-           p_set=0.7*industrial_demand.loc[nodes, "methane"] / 8760.)
+           p_set=0.64*industrial_demand.loc[nodes, "methane"] / 8760.)
 
     for o in opts:
         if "B" in o:
@@ -2648,7 +2648,6 @@ def add_industry(n, costs):
                marginal_cost=costs.at['gas boiler steam', 'VOM'],
                efficiency3=costs.at['gas', 'CO2 intensity'])
 
-    if not options["industrial_steam_methane"]:
         eta = costs.at['gas boiler steam', 'efficiency'] - costs.at['gas', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input']
         n.madd("Link",
                nodes,
