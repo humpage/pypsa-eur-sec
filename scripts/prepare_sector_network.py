@@ -550,7 +550,7 @@ def add_co2_network(n, costs):
 
 
 def add_dac(n, costs):
-    heat_carriers = ["urban central heat", "services urban decentral heat"]
+    heat_carriers = ["urban central heat"]#, "services urban decentral heat"]
     heat_buses = n.buses.index[n.buses.carrier.isin(heat_carriers)]
     locations = n.buses.location[heat_buses]
 
@@ -564,8 +564,7 @@ def add_dac(n, costs):
 
     efficiency_el = -(costs.at['direct air capture', 'electricity-input'] + costs.at['direct air capture', 'compression-electricity-input'])
     efficiency_th = -costs.at['direct air capture', 'heat-input']
-    # print('DAC buses', heat_buses.str.replace(" heat", " DAC"))
-    # input('anykey')
+
     n.madd("Link",
         heat_buses.str.replace(" heat", " DAC"),
         bus0="co2 atmosphere",
@@ -2513,6 +2512,7 @@ def add_industry(n, costs):
 
     # 1e6 to convert TWh to MWh
     industrial_demand = pd.read_csv(snakemake.input.industrial_demand, index_col=0) * 1e6
+
     n.madd("Bus",
            nodes + " lowT process steam",
            location=nodes,
@@ -2668,7 +2668,8 @@ def add_industry(n, costs):
                lifetime=costs.at['gas boiler steam', 'lifetime'])
 
     if options["industrial_steam_heat_pumps"]:
-        eta=costs.at['industrial heat pump high temperature', 'efficiency']
+        eta=costs.at['industrial heat pump medium temperature', 'efficiency'] * 0.5
+
         n.madd("Link",
                nodes,
                suffix=" industrial heat pump steam for lowT industry",
@@ -2678,9 +2679,9 @@ def add_industry(n, costs):
                p_nom_extendable=True,
                p_min_pu=0.8,
                efficiency=eta,
-               capital_cost=costs.at['industrial heat pump high temperature', 'fixed'] * eta,
-               marginal_cost=costs.at['industrial heat pump high temperature', 'VOM'],
-               lifetime=costs.at['industrial heat pump high temperature', 'lifetime'])
+               capital_cost=costs.at['industrial heat pump medium temperature', 'fixed'] * eta,
+               marginal_cost=costs.at['industrial heat pump medium temperature', 'VOM'],
+               lifetime=costs.at['industrial heat pump medium temperature', 'lifetime'])
 
     if options["industrial_steam_electric_boiler"]:
         n.madd("Link",
@@ -3041,7 +3042,7 @@ def add_industry(n, costs):
         )
 
 
-def add_waste_heat(n):
+def add_waste_heat(n,beccs):
     # TODO options?
 
     logger.info("Add possibility to use industrial waste heat in district heating")
@@ -3064,9 +3065,10 @@ def add_waste_heat(n):
                     n.links.loc[urban_central + " biomass to liquid", "efficiency4"] = (0.8 - n.links.loc[
                         urban_central + " biomass to liquid", "efficiency"]) * options['waste_heat_usage_share']
 
-                    n.links.loc[urban_central + " biomass to liquid CC", "bus4"] = urban_central + " urban central heat"
-                    n.links.loc[urban_central + " biomass to liquid CC", "efficiency4"] = (0.8 - n.links.loc[
-                        urban_central + " biomass to liquid CC", "efficiency"]) * options['waste_heat_usage_share']
+                    if beccs:
+                        n.links.loc[urban_central + " biomass to liquid CC", "bus4"] = urban_central + " urban central heat"
+                        n.links.loc[urban_central + " biomass to liquid CC", "efficiency4"] = (0.8 - n.links.loc[
+                            urban_central + " biomass to liquid CC", "efficiency"]) * options['waste_heat_usage_share']
 
                     if options['electrobiofuels']:
                         n.links.loc[urban_central + " electrobiofuels", "bus4"] = urban_central + " urban central heat"
@@ -3091,8 +3093,8 @@ def add_waste_heat(n):
         if options['use_dac_waste_heat']:
             n.links.loc[urban_central + " urban central DAC", "bus4"] = urban_central + " urban central heat"
             n.links.loc[urban_central + " urban central DAC", "efficiency4"] = costs.at['direct air capture', 'compression-heat-output'] * options['waste_heat_usage_share']
-            n.links.loc[urban_central + " services urban decentral DAC", "bus4"] = urban_central + " urban central heat"
-            n.links.loc[urban_central + " services urban decentral DAC", "efficiency4"] = costs.at['direct air capture', 'compression-heat-output'] * options['waste_heat_usage_share']
+            # n.links.loc[urban_central + " services urban decentral DAC", "bus4"] = urban_central + " services urban decentral heat"
+            # n.links.loc[urban_central + " services urban decentral DAC", "efficiency4"] = costs.at['direct air capture', 'compression-heat-output'] * options['waste_heat_usage_share']
 
 def add_agriculture(n, costs):
 
@@ -3443,9 +3445,9 @@ if __name__ == "__main__":
     if options["hvdc"]:
         hvdc_transport_model(n)
 
+    beccs = snakemake.config['biomass']['beccs']
     for o in opts:
         if "B" in o:
-            beccs = snakemake.config['biomass']['beccs']
             add_biomass(n, costs, beccs, biomass_import_price)
             if options["biomass_transport"]:
                 add_biomass_transport(n)
@@ -3454,7 +3456,7 @@ if __name__ == "__main__":
         add_dac(n, costs)
 
     if "I" in opts and "H" in opts:
-        add_waste_heat(n)
+        add_waste_heat(n,beccs)
 
     if "A" in opts:  # requires H and I
         add_agriculture(n, costs)
