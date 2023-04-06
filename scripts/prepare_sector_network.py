@@ -561,6 +561,10 @@ def add_dac(n, costs):
     #Add steam boiler to capital cost
     # capital_cost = costs.at['direct air capture', 'fixed'] + costs.at['direct air capture', 'heat-input'] \
     #                * costs.at['electric boiler steam', 'fixed'] * costs.at['electric boiler steam', 'efficiency']
+    if options["industrial_steam_heat_pumps"]:
+        heatbus = " <120C process steam"
+    else:
+        heatbus = " >120C process steam"
 
     efficiency_el = -(costs.at['direct air capture', 'electricity-input'] + costs.at['direct air capture', 'compression-electricity-input'])
     efficiency_th = -costs.at['direct air capture', 'heat-input']
@@ -570,7 +574,7 @@ def add_dac(n, costs):
         bus0="co2 atmosphere",
         bus2=spatial.co2.df.loc[locations, "nodes"].values,
         bus1=locations.values,
-        bus3=locations.values + " lowT process steam",
+        bus3=locations.values + heatbus,
         carrier="DAC",
         capital_cost=costs.at['direct air capture', 'fixed'],
         efficiency2=1.,
@@ -2514,9 +2518,9 @@ def add_industry(n, costs):
     industrial_demand = pd.read_csv(snakemake.input.industrial_demand, index_col=0) * 1e6
 
     n.madd("Bus",
-           nodes + " lowT process steam",
+           nodes + " >120C process steam",
            location=nodes,
-           carrier="lowT process steam",
+           carrier=">120C process steam",
            unit="MWh_LHV")
 
     # if options["biomass_transport"]:
@@ -2526,9 +2530,9 @@ def add_industry(n, costs):
 
     n.madd("Load",
            nodes,
-           suffix=" lowT process steam",
-           bus=nodes + " lowT process steam",
-           carrier="lowT process steam",
+           suffix=" >120C process steam",
+           bus=nodes + " >120C process steam",
+           carrier=">120C process steam",
            p_set=industrial_demand.loc[nodes, "solid biomass"] / 8760.)
 
     n.madd("Bus",
@@ -2559,14 +2563,14 @@ def add_industry(n, costs):
 
     for o in opts:
         if "B" in o:
-            if snakemake.config['biomass']['lowT industry steam biomass']:
+            if snakemake.config['biomass']['>120C industry steam biomass']:
                 n.madd("Link",
                        nodes,
-                       suffix=" solid biomass for lowT industry",
+                       suffix=" solid biomass for >120C industry",
                        bus0=nodes + " solid biomass",
-                       bus1=nodes + " lowT process steam",
+                       bus1=nodes + " >120C process steam",
                        bus3="co2 atmosphere",
-                       carrier="lowT process steam solid biomass",
+                       carrier=">120C process steam solid biomass",
                        p_nom_extendable=True,
                        p_min_pu=0.8,
                        efficiency=costs.at['solid biomass boiler steam', 'efficiency'],
@@ -2592,15 +2596,15 @@ def add_industry(n, costs):
 
 
             if snakemake.config['biomass']['beccs']:
-                if snakemake.config['biomass']['lowT industry steam biomass']:
+                if snakemake.config['biomass']['>120C industry steam biomass']:
                     n.madd("Link",
                            nodes,
-                           suffix=" solid biomass for lowT industry CC",
+                           suffix=" solid biomass for >120C industry CC",
                            bus0=nodes + " solid biomass",
-                           bus1=nodes + " lowT process steam",
+                           bus1=nodes + " >120C process steam",
                            bus3="co2 atmosphere",
                            bus2="co2 stored",
-                           carrier="lowT process steam solid biomass CC",
+                           carrier=">120C process steam solid biomass CC",
                            p_nom_extendable=True,
                            p_min_pu=0.8,
                            efficiency=costs.at['solid biomass boiler steam CC', 'efficiency'],
@@ -2636,11 +2640,11 @@ def add_industry(n, costs):
     if options["industrial_steam_methane"]:
         n.madd("Link",
                nodes,
-               suffix=" gas for lowT industry",
+               suffix=" gas for >120C industry",
                bus0="EU gas",
-               bus1=nodes + " lowT process steam",
+               bus1=nodes + " >120C process steam",
                bus3="co2 atmosphere",
-               carrier="lowT process steam methane",
+               carrier=">120C process steam methane",
                p_nom_extendable=True,
                p_min_pu=0.8,
                efficiency=costs.at['gas boiler steam', 'efficiency'],
@@ -2651,12 +2655,12 @@ def add_industry(n, costs):
         eta = costs.at['gas boiler steam', 'efficiency'] - costs.at['gas', 'CO2 intensity'] * costs.at['biomass CHP capture', 'heat-input']
         n.madd("Link",
                nodes,
-               suffix=" gas for lowT industry CC",
+               suffix=" gas for >120C industry CC",
                bus0="EU gas",
-               bus1=nodes + " lowT process steam",
+               bus1=nodes + " >120C process steam",
                bus3="co2 atmosphere",
                bus2="co2 stored",
-               carrier="lowT process steam methane CC",
+               carrier=">120C process steam methane CC",
                p_nom_extendable=True,
                p_min_pu=0.8,
                efficiency=eta,
@@ -2668,14 +2672,22 @@ def add_industry(n, costs):
                lifetime=costs.at['gas boiler steam', 'lifetime'])
 
     if options["industrial_steam_heat_pumps"]:
-        eta=costs.at['industrial heat pump medium temperature', 'efficiency'] * 0.5
+
+        n.madd("Bus",
+               nodes + " <120C process steam",
+               location=nodes,
+               carrier="<120C process steam",
+               unit="MWh_LHV")
+
+        eta=costs.at['industrial heat pump medium temperature', 'efficiency'] * options['industrial_steam_heat_pump_factor']
+        print('adding industrial heat pump with COP: ', eta)
 
         n.madd("Link",
                nodes,
-               suffix=" industrial heat pump steam for lowT industry",
+               suffix=" industrial heat pump steam for <120C industry",
                bus0=nodes,
-               bus1=nodes + " lowT process steam",
-               carrier="lowT process steam heat pump",
+               bus1=nodes + " <120C process steam",
+               carrier="<120C process steam heat pump",
                p_nom_extendable=True,
                p_min_pu=0.8,
                efficiency=eta,
@@ -2686,10 +2698,10 @@ def add_industry(n, costs):
     if options["industrial_steam_electric_boiler"]:
         n.madd("Link",
                nodes,
-               suffix=" electricity for lowT industry",
+               suffix=" electricity for >120C industry",
                bus0=nodes,
-               bus1=nodes + " lowT process steam",
-               carrier="lowT process steam electricity",
+               bus1=nodes + " >120C process steam",
+               carrier=">120C process steam electricity",
                p_nom_extendable=True,
                p_min_pu=0.8,
                efficiency=costs.at['electric boiler steam', 'efficiency'],
