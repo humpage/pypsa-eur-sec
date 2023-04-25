@@ -177,6 +177,7 @@ biomass:
   beccs: true
   mediumT industry biomass: true
   '>120C industry steam biomass': true
+  nobiomass: false #true to exclude biomass, else false
 
 
 solar_thermal:

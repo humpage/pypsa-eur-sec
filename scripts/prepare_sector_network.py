@@ -2050,6 +2050,8 @@ def add_biomass(n, costs, beccs, biomass_import_price):
     for name in biomass_types:
         biomass_potential[name] = biomass_pot_node[name].values
         biomass_costs[name] = ((biomass_costs_node[name].values * biomass_pot_node[name].values).sum() / biomass_pot_node[name].values.sum()).round(3)
+        if snakemake.config['biomass']['nobiomass'] and name not in ['municipal solid waste']:
+            biomass_potential[name] = 0
 
 
     print('municipal solid waste cost: ',biomass_costs['municipal solid waste'])
