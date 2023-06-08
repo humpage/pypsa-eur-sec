@@ -244,7 +244,6 @@ def add_co2_sequestration_limit(n, sns):
 def add_biofuel_constraint(n):
 
     options = snakemake.wildcards.sector_opts.split('-')
-    # print('options: ', options)
     liquid_biofuel_limit = 0
     biofuel_constraint_type = 'Lt'
     for o in options:
@@ -256,11 +255,11 @@ def add_biofuel_constraint(n):
 
     print('Liq biofuel minimum constraint: ', liquid_biofuel_limit, ' ', type(liquid_biofuel_limit))
 
-    biofuel_i = n.links.query('carrier == "biomass to liquid"').index
+    biofuel_i = n.links.query('carrier == "biomass to liquid"|carrier == "biomass to liquid CC"').index
     biofuel_vars = get_var(n, "Link", "p").loc[:, biofuel_i]
-    biofuel_vars_eta = n.links.query('carrier == "biomass to liquid"').efficiency
+    biofuel_vars_eta = n.links.query('carrier == "biomass to liquid"|carrier == "biomass to liquid CC"').efficiency
 
-    napkership = n.loads.p_set.filter(regex='naphtha for industry|kerosene for aviation|shipping oil$').sum() * len(n.snapshots)
+    napkership = n.loads.p_set.filter(regex='naphtha for industry|kerosene for aviation|agriculture machinery oil$|shipping oil$').sum() * len(n.snapshots)
     landtrans = n.loads_t.p_set.filter(regex='land transport oil$').sum().sum()
 
     total_oil_load = napkership+landtrans
