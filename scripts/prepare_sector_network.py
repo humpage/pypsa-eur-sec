@@ -3471,7 +3471,7 @@ if __name__ == "__main__":
     # if options["notransmission"]:
     #     no_transmission(n)
 
-    if options["hvdc"] and not options["notransmission"]:
+    if options["hvdc"]:# and not options["notransmission"]:
         hvdc_transport_model(n)
 
     beccs = snakemake.config['biomass']['beccs']
