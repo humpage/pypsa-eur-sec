@@ -3468,8 +3468,8 @@ if __name__ == "__main__":
     if "I" in opts:
         add_industry(n, costs)
 
-    if options["notransmission"]:
-        no_transmission(n)
+    # if options["notransmission"]:
+    #     no_transmission(n)
 
     if options["hvdc"] and not options["notransmission"]:
         hvdc_transport_model(n)
