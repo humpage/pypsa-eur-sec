@@ -2143,23 +2143,29 @@ def add_biomass(n, costs, beccs, biomass_import_price):
             elif 'IM1' in snakemake.wildcards.bmim_s:
                 bm_im_ef = 0
             elif 'IM2' in snakemake.wildcards.bmim_s:
-                bm_im_ef = 0.1
+                bm_im_ef = 0.01
             elif 'IM3' in snakemake.wildcards.bmim_s:
-                bm_im_ef = 0.2
+                bm_im_ef = 0.05
             elif 'IM4' in snakemake.wildcards.bmim_s:
-                bm_im_ef = 0.3
+                bm_im_ef = 0.1
             elif 'IM5' in snakemake.wildcards.bmim_s:
-                bm_im_ef = 0.4
+                bm_im_ef = 0.15
             elif 'IM6' in snakemake.wildcards.bmim_s:
-                bm_im_ef = 0.5
+                bm_im_ef = 0.2
             elif 'IM7' in snakemake.wildcards.bmim_s:
-                bm_im_ef = 0.6
+                bm_im_ef = 0.25
             elif 'IM8' in snakemake.wildcards.bmim_s:
-                bm_im_ef = 0.7
+                bm_im_ef = 0.35
             elif 'IM9' in snakemake.wildcards.bmim_s:
-                bm_im_ef = 0.8
+                bm_im_ef = 0.4
             elif 'IM10' in snakemake.wildcards.bmim_s:
-                bm_im_ef = 0.9
+                bm_im_ef = -0.05
+            elif 'IM11' in snakemake.wildcards.bmim_s:
+                bm_im_ef = -0.1
+            elif 'IM12' in snakemake.wildcards.bmim_s:
+                bm_im_ef = -0.15
+            elif 'IM13' in snakemake.wildcards.bmim_s:
+                bm_im_ef = -0.2
 
             print("Adding biomass import with cost ", biomass_import_price, ' EUR/MWh, and embedded emissions of ', bm_im_ef*100, '%')
 
@@ -3284,6 +3290,12 @@ def hvdc_transport_model(n):
     n.links.loc[n.links.carrier == 'DC', 'efficiency'] = 1 - 0.03 * n.links.loc[
         n.links.carrier == 'DC', 'length'] / 1000
 
+def no_transmission(n):
+    # Remove AC lines
+    print("Removing AC lines")
+    lines_rm = n.lines.index
+    n.mremove("Line", lines_rm)
+
 
 def apply_time_segmentation(n, segments, solver_name="cbc",
                             overwrite_time_dependent=True):
@@ -3456,7 +3468,10 @@ if __name__ == "__main__":
     if "I" in opts:
         add_industry(n, costs)
 
-    if options["hvdc"]:
+    if options["notransmission"]:
+        no_transmission(n)
+
+    if options["hvdc"] and not options["notransmission"]:
         hvdc_transport_model(n)
 
     beccs = snakemake.config['biomass']['beccs']
