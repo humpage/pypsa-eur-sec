@@ -2137,7 +2137,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                marginal_cost=biomass_costs[name])
 
     for o in opts:
-        if o[o.find("B") + 4:o.find("B") + 6] == "Im":
+        if o[o.find("B") + 4:o.find("B") + 6] == "Im" and not snakemake.config['biomass']['nobiomass']:
             if 'IM0' in snakemake.wildcards.bmim_s:
                 bm_im_ef = 0
             elif 'IM1' in snakemake.wildcards.bmim_s:
