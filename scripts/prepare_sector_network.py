@@ -2105,8 +2105,8 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                # from e.g. CO2 grid or buyers. This is a proxy for the added cost for e.g. a raw biogas pipeline to a central upgrading facility
                marginal_cost=(costs.at["biogas CC", "VOM"] + costs.at["biogas upgrading", "VOM"]) * costs.at["biogas","efficiency"],
                efficiency=costs.at["biogas CC", "efficiency"],
-               efficiency2=costs.at["biogas CC", "CO2 stored"] * costs.at['biogas CC', 'capture rate'],
-               efficiency3=-costs.at['gas', 'CO2 intensity'] * costs.at["biogas CC", "efficiency"] - costs.at["biogas CC", "CO2 stored"] * costs.at['biogas CC', 'capture rate'],
+               efficiency2=costs.at["biogas CC", "CO2 stored"] * options["cc_fraction"],
+               efficiency3=-costs.at['gas', 'CO2 intensity'] * costs.at["biogas CC", "efficiency"] - costs.at["biogas CC", "CO2 stored"] * options["cc_fraction"],
                p_nom_extendable=True)
 
 
@@ -2249,8 +2249,8 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                carrier="BioSNG CC",
                lifetime=costs.at['BioSNG', 'lifetime'],
                efficiency=costs.at['BioSNG', 'efficiency'],
-               efficiency2=costs.at['BioSNG', 'CO2 stored'] * costs.at['BioSNG', 'capture rate'],
-               efficiency3=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['BioSNG', 'CO2 stored'] * (1 - costs.at['BioSNG', 'capture rate']),
+               efficiency2=costs.at['BioSNG', 'CO2 stored'] * options["cc_fraction"],
+               efficiency3=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['BioSNG', 'CO2 stored'] * (1 - options["cc_fraction"]),
                p_nom_extendable=True,
                capital_cost=costs.at['BioSNG', 'fixed'] * costs.at['BioSNG', 'efficiency'] + costs.at['biomass CHP capture', 'fixed'] * costs.at[
                    "BioSNG", "CO2 stored"],
@@ -2265,8 +2265,8 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                bus3="co2 atmosphere",
                carrier="solid biomass to hydrogen CC",
                efficiency=costs.at['solid biomass to hydrogen', 'efficiency'],
-               efficiency2=costs.at['solid biomass', 'CO2 intensity'] * costs.at['solid biomass to hydrogen', 'capture rate'],
-               efficiency3=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['solid biomass', 'CO2 intensity'] * (1 - costs.at['solid biomass to hydrogen', 'capture rate']),
+               efficiency2=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
+               efficiency3=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['solid biomass', 'CO2 intensity'] * (1 - options["cc_fraction"]),
                p_nom_extendable=True,
                capital_cost=costs.at['solid biomass to hydrogen', 'fixed'] * costs.at['solid biomass to hydrogen', 'efficiency']
                             + costs.at['biomass CHP capture', 'fixed'] * costs.at['solid biomass', 'CO2 intensity'],
@@ -2298,8 +2298,8 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                carrier="biomass to liquid CC",
                lifetime=costs.at['BtL', 'lifetime'],
                efficiency=costs.at['BtL', 'efficiency'],
-               efficiency2=costs.at['BtL', 'CO2 stored'] * costs.at['BtL', 'capture rate'],
-               efficiency3=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['BtL', 'CO2 stored'] * (1 - costs.at['BtL', 'capture rate']),
+               efficiency2=costs.at['BtL', 'CO2 stored'] * options["cc_fraction"],
+               efficiency3=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['BtL', 'CO2 stored'] * (1 - options["cc_fraction"]),
                p_nom_extendable=True,
                capital_cost=costs.at['BtL', 'fixed'] * costs.at['BtL', 'efficiency'] + costs.at['biomass CHP capture', 'fixed'] * costs.at[
                    "BtL", "CO2 stored"],
