@@ -668,7 +668,7 @@ def prepare_costs(cost_file, USD_to_EUR, discount_rate, Nyears, lifetime):
     return costs
 
 
-def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
+def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost, options):
 
     print('Adapting costs for sensitivity analysis')
     print('Fischer-Tropsch sensitivity string: ', snakemake.wildcards.ft_s)
@@ -711,9 +711,13 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
     # input('Press ENTER to continue')
 
     if 'EFU0' in snakemake.wildcards.efu_s:
-        pass
+        options["cc_fraction"] = 0.9
     elif 'EFU2' in snakemake.wildcards.efu_s:
-        pass
+        options["cc_fraction"] = 0.8
+    elif 'EFU3' in snakemake.wildcards.efu_s:
+        options["cc_fraction"] = 0.7
+    elif 'EFU4' in snakemake.wildcards.efu_s:
+        options["cc_fraction"] = 0.6
     elif 'EFU1' in snakemake.wildcards.efu_s:
         pass
 
@@ -734,17 +738,25 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
         pass
 
     if 'CC0' in snakemake.wildcards.cc_s:
-        costs.at['biomass CHP capture', 'investment'] = 1600000
-        costs.at['cement capture', 'investment'] = 1400000
-        costs.at['DAC', 'investment'] = 1000000
+        # costs.at['biomass CHP capture', 'investment'] = 1600000
+        # costs.at['cement capture', 'investment'] = 1800000
+        costs.at['direct air capture', 'investment'] = 4000000
     elif 'CC2' in snakemake.wildcards.cc_s:
-        costs.at['biomass CHP capture', 'investment'] = 2200000
-        costs.at['cement capture', 'investment'] = 1900000
-        costs.at['DAC', 'investment'] = 2000000
+        # costs.at['biomass CHP capture', 'investment'] = 2400000
+        # costs.at['cement capture', 'investment'] = 2600000
+        costs.at['direct air capture', 'investment'] = 4000000
     elif 'CC3' in snakemake.wildcards.cc_s:
-        costs.at['biomass CHP capture', 'investment'] = 2800000
-        costs.at['cement capture', 'investment'] = 2400000
-        costs.at['DAC', 'investment'] = 3000000
+        # costs.at['biomass CHP capture', 'investment'] = 2400000
+        # costs.at['cement capture', 'investment'] = 3000000
+        costs.at['direct air capture', 'investment'] = 3000000
+    elif 'CC4' in snakemake.wildcards.cc_s:
+        # costs.at['biomass CHP capture', 'investment'] = 2700000
+        # costs.at['cement capture', 'investment'] = 3000000
+        costs.at['direct air capture', 'investment'] = 2000000
+    elif 'CC5' in snakemake.wildcards.cc_s:
+        # costs.at['biomass CHP capture', 'investment'] = 2700000
+        # costs.at['cement capture', 'investment'] = 3000000
+        costs.at['direct air capture', 'investment'] = 1500000
     elif 'CC1' in snakemake.wildcards.cc_s:
         pass
 
@@ -788,7 +800,7 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost):
     print('Electrofuel investment: ', costs.at['Fischer-Tropsch', 'investment'])
     print('Biomass import price: ', biomass_import_price)
 
-    return costs, biomass_import_price, carbon_sequestration_cost
+    return costs, biomass_import_price, carbon_sequestration_cost, options
 
 
 
@@ -3419,7 +3431,7 @@ if __name__ == "__main__":
 
     biomass_import_price = snakemake.config['biomass']['import price'] * 3.6  # EUR/MWh
     carbon_sequestration_cost = options["co2_sequestration_cost"]
-    costs, biomass_import_price, carbon_sequestration_cost = sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost)
+    costs, biomass_import_price, carbon_sequestration_cost, options = sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost, options)
 
     print('Updated biomass import price: ', biomass_import_price)
     print('Updated CO2 sequestration cost: ', carbon_sequestration_cost)
