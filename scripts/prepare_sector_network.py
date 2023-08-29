@@ -2130,17 +2130,17 @@ def add_biomass(n, costs, beccs, biomass_import_price):
     for name in solid_biomass_types:
         n.add("Carrier", name + " solid biomass")
 
-        #Update solid biomass costs according to sensitivity settings
-        if 'BM0' in snakemake.wildcards.bm_s:
-            pass
-        elif 'BM2' in snakemake.wildcards.bm_s:
-            biomass_costs[name] = biomass_costs[name] + (biomass_import_price - biomass_costs[name]) / 3
-        elif 'BM3' in snakemake.wildcards.bm_s:
-            biomass_costs[name] = biomass_costs[name] + (biomass_import_price - biomass_costs[name]) * 2 / 3
-        elif 'BM4' in snakemake.wildcards.bm_s:
-            biomass_costs[name] = biomass_import_price
-        elif 'BM1' in snakemake.wildcards.bm_s:
-            pass
+        # #Update solid biomass costs according to sensitivity settings
+        # if 'BM0' in snakemake.wildcards.bm_s:
+        #     pass
+        # elif 'BM2' in snakemake.wildcards.bm_s:
+        #     biomass_costs[name] = biomass_costs[name] + (biomass_import_price - biomass_costs[name]) / 3
+        # elif 'BM3' in snakemake.wildcards.bm_s:
+        #     biomass_costs[name] = biomass_costs[name] + (biomass_import_price - biomass_costs[name]) * 2 / 3
+        # elif 'BM4' in snakemake.wildcards.bm_s:
+        #     biomass_costs[name] = biomass_import_price
+        # elif 'BM1' in snakemake.wildcards.bm_s:
+        #     pass
 
         print(name, ' cost: ', biomass_costs[name])
 
