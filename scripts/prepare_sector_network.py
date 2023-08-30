@@ -577,7 +577,7 @@ def add_dac(n, costs):
         bus3=locations.values + heatbus,
         carrier="DAC",
         capital_cost=costs.at['direct air capture', 'fixed'],
-        efficiency2=options["cc_fraction"] / 0.9,#Set to a baseline of 1 for DAC when cc_fraction is 0.9
+        efficiency2=min(1,options["cc_fraction"] / 0.9),#Set to a baseline of 1 for DAC when cc_fraction is >=0.9
         efficiency=efficiency_el,
         efficiency3=efficiency_th,
         p_nom_extendable=True,
