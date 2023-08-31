@@ -718,7 +718,7 @@ def sensitivity_costs(costs, biomass_import_price, carbon_sequestration_cost, op
         options["cc_fraction"] = 0.8
     elif 'EFU4' in snakemake.wildcards.efu_s:
         options["cc_fraction"] = 0.75
-    elif 'EFU4' in snakemake.wildcards.efu_s:
+    elif 'EFU5' in snakemake.wildcards.efu_s:
         options["cc_fraction"] = 0.7
     elif 'EFU1' in snakemake.wildcards.efu_s:
         pass
