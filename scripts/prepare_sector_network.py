@@ -561,10 +561,15 @@ def add_dac(n, costs):
     #Add steam boiler to capital cost
     # capital_cost = costs.at['direct air capture', 'fixed'] + costs.at['direct air capture', 'heat-input'] \
     #                * costs.at['electric boiler steam', 'fixed'] * costs.at['electric boiler steam', 'efficiency']
-    if options["industrial_steam_heat_pumps"]:
-        heatbus = " <120C process steam"
+    opts = snakemake.wildcards.sector_opts.split('-')
+
+    if "I" in opts:
+        if options["industrial_steam_heat_pumps"]:
+            heatbus = " <120C process steam"
+        else:
+            heatbus = " >120C process steam"
     else:
-        heatbus = " >120C process steam"
+        heatbus = n.buses.location[heat_buses]
 
     efficiency_el = -(costs.at['direct air capture', 'electricity-input'] + costs.at['direct air capture', 'compression-electricity-input'])
     efficiency_th = -costs.at['direct air capture', 'heat-input']
