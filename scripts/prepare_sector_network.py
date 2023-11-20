@@ -3242,7 +3242,7 @@ def maybe_adjust_costs_and_potentials(n, opts):
 
 def add_biomass_transport(n):
     # costs for biomass transport
-    transport_costs = pd.read_csv(snakemake.input.biomass_transport,
+    transport_costs = pd.read_csv('resources/biomass_transport_costs.csv',#snakemake.input.build_biomass_transport_costs,#biomass_transport,
                                   index_col=0)
     # add biomass transport
     biomass_transport = create_network_topology(n, "Biomass transport ")
@@ -3311,6 +3311,8 @@ def no_transmission(n):
     lines_rm = n.lines.index
     n.mremove("Line", lines_rm)
 
+    n.links.loc[n.links.carrier == 'DC', 'p_nom'] = 0
+    # n.links.loc[n.links.carrier == 'DC', 'p_nom_extendable'] = 'False'
 
 def apply_time_segmentation(n, segments, solver_name="cbc",
                             overwrite_time_dependent=True):
@@ -3483,11 +3485,11 @@ if __name__ == "__main__":
     if "I" in opts:
         add_industry(n, costs)
 
-    # if options["notransmission"]:
-    #     no_transmission(n)
-
-    if options["hvdc"]:# and not options["notransmission"]:
+    if options["hvdc"] and not options["notransmission"]:
         hvdc_transport_model(n)
+
+    if options["notransmission"]:
+        no_transmission(n)
 
     beccs = snakemake.config['biomass']['beccs']
     for o in opts:
