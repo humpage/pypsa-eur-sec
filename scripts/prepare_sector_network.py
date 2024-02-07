@@ -2343,10 +2343,10 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                efficiency5=-costs.at['electrobiofuels', 'efficiency-hydrogen'],
                efficiency3=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['BtL', 'CO2 stored'] * (1 - costs.at['Fischer-Tropsch', 'capture rate']),
                p_nom_extendable=True,
-               capital_cost=costs.at['BtL', 'fixed'] * costs.at['electrobiofuels', 'efficiency-biomass'] \
-                            + efuel_scale_factor * costs.at['Fischer-Tropsch', 'fixed'] * costs.at['electrobiofuels', 'efficiency-hydrogen'],
-               marginal_cost=costs.at['BtL', 'VOM'] * costs.at['electrobiofuels', 'efficiency-biomass'] \
-                             + efuel_scale_factor * costs.at['Fischer-Tropsch', 'VOM'] * costs.at['electrobiofuels', 'efficiency-hydrogen']
+               capital_cost=costs.at['BtL', 'fixed'] * costs.at['BtL', 'efficiency'] / costs.at['electrobiofuels', 'efficiency-biomass'] \
+                            + efuel_scale_factor * costs.at['Fischer-Tropsch', 'fixed'] * costs.at['Fischer-Tropsch', 'efficiency'] / costs.at['electrobiofuels', 'efficiency-hydrogen'],
+               marginal_cost=costs.at['BtL', 'VOM'] * costs.at['BtL', 'efficiency'] / costs.at['electrobiofuels', 'efficiency-biomass'] \
+                             + efuel_scale_factor * costs.at['Fischer-Tropsch', 'VOM'] * costs.at['Fischer-Tropsch', 'efficiency'] / costs.at['electrobiofuels', 'efficiency-hydrogen']
                )
 
 
