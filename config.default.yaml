@@ -360,7 +360,8 @@ sector:
     lignite: lignite
     nuclear: uranium
   biomass_transport: false
-  hvdc: true
+  hvdc: false
+  notransmission: true
   biomass_to_liquid: true
   biosng: true
   biomass_boiler: true

@@ -363,6 +363,12 @@ def calculate_metrics(n, label, metrics):
 
 
 def calculate_prices(n, label, prices):
+    sns = n.snapshots
+    # weightings = n.snapshot_weightings.objective.loc[sns]
+
+    # n.buses_t.marginal_price.loc[sns] = n.buses_t.marginal_price.loc[sns].divide(
+    #     weightings, axis=0
+    # )
 
     prices = prices.reindex(prices.index.union(n.buses.carrier.unique()))
 

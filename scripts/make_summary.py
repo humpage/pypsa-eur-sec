@@ -231,6 +231,7 @@ def calculate_energy(n, label, energy):
             c_energies = pd.Series(0., c.df.carrier.unique())
             for port in [col[3:] for col in c.df.columns if col[:3] == "bus"]:
                 totals = c.pnl["p" + port].multiply(n.snapshot_weightings.generators, axis=0).sum()
+                print(totals)
                 #remove values where bus is missing (bug in nomopyomo)
                 no_bus = c.df.index[c.df["bus" + port] == ""]
                 totals.loc[no_bus] = n.component_attrs[c.name].loc["p" + port, "default"]
@@ -272,7 +273,7 @@ def calculate_supply(n, label, supply):
         for c in n.iterate_components(n.branch_components):
 
             for end in [col[3:] for col in c.df.columns if col[:3] == "bus"]:
-
+                print(c.df.index)
                 items = c.df.index[c.df["bus" + end].map(bus_map, na_action=None)]
 
                 if len(items) == 0:
