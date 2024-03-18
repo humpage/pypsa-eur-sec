@@ -573,21 +573,62 @@ def add_dac(n, costs):
 
     efficiency_el = -(costs.at['direct air capture', 'electricity-input'] + costs.at['direct air capture', 'compression-electricity-input'])
     efficiency_th = -costs.at['direct air capture', 'heat-input']
+    
+    n.add("Carrier",
+	"KOH"
+	)
+	    	   
+    n.madd("Bus",
+    	spatial.nodes,
+	suffix=" KOH",
+	location=spatial.nodes,
+	carrier="KOH",
+	unit="t"
+	)
+	    
+	    
+	    	   
+    n.madd("Link",
+	spatial.nodes + " Solvent KOH",
+	bus1=spatial.nodes + " H2",
+	bus0=spatial.nodes,
+	bus2= spatial.nodes + " KOH",
+	p_nom_extendable=True,
+	carrier= "KOH",
+	efficiency= 0.2941,
+		#efficiency=costs.at["electrolysis", "efficiency"],
+	efficiency2 = 0.39,
+	capital_cost = 500000,    #Euros / MW   Maybe should change this to MW instead
+		#capital_cost=costs.at["electrolysis", "fixed"],
+	lifetime = 25
+		#lifetime=costs.at['electrolysis', 'lifetime']
+	)
 
     n.madd("Link",
-        heat_buses.str.replace(" heat", " DAC"),
-        bus0="co2 atmosphere",
-        bus2=spatial.co2.df.loc[locations, "nodes"].values,
-        bus1=locations.values,
-        bus3=locations.values + heatbus,
-        carrier="DAC",
-        capital_cost=costs.at['direct air capture', 'fixed'],
-        efficiency2=min(1,options["cc_fraction"] / 0.9),#Set to a baseline of 1 for DAC when cc_fraction is >=0.9
-        efficiency=efficiency_el,
-        efficiency3=efficiency_th,
-        p_nom_extendable=True,
-        lifetime=costs.at['direct air capture', 'lifetime']
-    )
+	heat_buses.str.replace(" heat", " DAC"),
+	bus0="co2 atmosphere",
+	bus2=spatial.co2.df.loc[locations, "nodes"].values,
+	bus1=locations.values,
+	bus3=locations.values + heatbus,
+	bus5= spatial.nodes +" KOH",     #Added
+	carrier="DAC",
+	capital_cost=costs.at['direct air capture', 'fixed'],
+	efficiency2=min(1,options["cc_fraction"] / 0.9),#Set to a baseline of 1 for DAC when cc_fraction is >=0.9
+	efficiency=efficiency_el,
+	efficiency3=efficiency_th,
+	efficiency5= - 4e-3,
+	p_nom_extendable=True,
+	lifetime=costs.at['direct air capture', 'lifetime']
+	    )
+	    
+    n.madd("Store",
+	spatial.nodes + " KOH",
+	bus=spatial.nodes + " KOH",
+	e_nom_extendable=True,
+	e_cyclic=True,
+	carrier=" KOH storage"
+	    	
+	    	)
 
 
 def add_co2limit(n, Nyears=1., limit=0.):
@@ -868,8 +909,8 @@ def add_ammonia(n, costs):
         carrier="Haber-Bosch",
         efficiency=1 / (cf_industry["MWh_elec_per_tNH3_electrolysis"] / cf_industry["MWh_NH3_per_tNH3"]), # output: MW_NH3 per MW_elec
         efficiency4=-cf_industry["MWh_H2_per_tNH3_electrolysis"] / cf_industry["MWh_elec_per_tNH3_electrolysis"], # input: MW_H2 per MW_elec
-        capital_cost=costs.at["Haber-Bosch synthesis", "fixed"],
-        lifetime=costs.at["Haber-Bosch synthesis", 'lifetime']
+        capital_cost=costs.at["Haber-Bosch", "fixed"],
+        lifetime=costs.at["Haber-Bosch", 'lifetime']
     )
 
     n.madd("Link",

@@ -8,7 +8,7 @@ costs_dir: ../technology-data/outputs/
 run: termination_condition # use this to keep track of runs with different settings
 foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
-mga: true #Turn modelling to generate alternatives on/off
+mga: false #Turn modelling to generate alternatives on/off
 
 ###---------------
 
@@ -23,8 +23,8 @@ scenario:
     - ''
   sector_opts: # this is where the main scenario settings are
 #    - Co2Lm0p1-631H-H-I-T-A-B0p0Im-High-seq650
-    - Co2Lm0p1-631H-H-I-T-A-B0p0-Med-seq650
-#    - Co2L0p0-631H-H-I-T-A-B0p0Im-High-seq650
+    - Co2Lm0p1-500H-H-I-T-A-B0p0-Med-seq600
+    - Co2Lm0p1-500H-H-I-T-A-B0p0-Med-seq2000
 #    - Co2L1p0-631H-H-I-T-A-B0p0Im-High-seq0
   # to really understand the options here, look in scripts/prepare_sector_network.py
   # Co2Lx specifies the CO2 target in x% of the 1990 values; default will give default (5%);
@@ -329,7 +329,7 @@ sector:
     # - onshore  # more than 50 km from sea
     - nearshore  # within 50 km of sea
     # - offshore
-  ammonia: false # can be false (no NH3 carrier), true (copperplated NH3), "regional" (regionalised NH3 without network)
+  ammonia: true # can be false (no NH3 carrier), true (copperplated NH3), "regional" (regionalised NH3 without network)
   use_fischer_tropsch_waste_heat: false
   use_fuel_cell_waste_heat: true
   use_biofuel_waste_heat: false
