@@ -899,7 +899,22 @@ def add_ammonia(n, costs):
         carrier="NH3"
     )
 
-    n.madd("Link",
+    #n.madd("Link",
+    #    nodes,
+    #    suffix=" Haber-Bosch",
+    #    bus0=nodes,
+    #    bus1=spatial.ammonia.nodes,
+    #    bus4=nodes + " H2",
+    #    p_nom_extendable=True,
+    #    carrier="Haber-Bosch",
+    #    efficiency=1 / (cf_industry["MWh_elec_per_tNH3_electrolysis"] / cf_industry["MWh_NH3_per_tNH3"]), # output: MW_NH3 per MW_elec
+    #    efficiency4=-cf_industry["MWh_H2_per_tNH3_electrolysis"] / cf_industry["MWh_elec_per_tNH3_electrolysis"], # input: MW_H2 per MW_elec
+    #    capital_cost=costs.at["Haber-Bosch", "fixed"],
+    #    lifetime=costs.at["Haber-Bosch", 'lifetime']
+    #)
+
+    n.madd(
+        "Link",
         nodes,
         suffix=" Haber-Bosch",
         bus0=nodes,
@@ -907,10 +922,15 @@ def add_ammonia(n, costs):
         bus4=nodes + " H2",
         p_nom_extendable=True,
         carrier="Haber-Bosch",
-        efficiency=1 / (cf_industry["MWh_elec_per_tNH3_electrolysis"] / cf_industry["MWh_NH3_per_tNH3"]), # output: MW_NH3 per MW_elec
-        efficiency4=-cf_industry["MWh_H2_per_tNH3_electrolysis"] / cf_industry["MWh_elec_per_tNH3_electrolysis"], # input: MW_H2 per MW_elec
-        capital_cost=costs.at["Haber-Bosch", "fixed"],
-        lifetime=costs.at["Haber-Bosch", 'lifetime']
+        efficiency=1 /  0.2473,   #costs.at["Haber-Bosch", "electricity-input"],
+        efficiency4=-1.1484 / 0.2473,
+        #costs.at["Haber-Bosch", "hydrogen-input"]
+        #/ costs.at["Haber-Bosch", "electricity-input"],
+        capital_cost=costs.at["Haber-Bosch", "fixed"]
+        / 0.2473, #costs.at["Haber-Bosch", "electricity-input"],
+        marginal_cost=costs.at["Haber-Bosch", "VOM"]
+        / 0.2473, #costs.at["Haber-Bosch", "electricity-input"],
+        lifetime=costs.at["Haber-Bosch", "lifetime"],
     )
 
     n.madd("Link",
@@ -920,8 +940,8 @@ def add_ammonia(n, costs):
         bus1=nodes + " H2",
         p_nom_extendable=True,
         carrier="ammonia cracker",
-        efficiency=1 / cf_industry["MWh_NH3_per_MWh_H2_cracker"],
-        capital_cost=costs.at["Ammonia cracker", "fixed"] / cf_industry["MWh_NH3_per_MWh_H2_cracker"], # given per MW_H2
+        efficiency=1 / cf_industry["MWh_NH3_per_MWh_H2_cracker"],  #Value is 1.46
+        capital_cost=costs.at["Ammonia cracker", "fixed"] /  cf_industry["MWh_NH3_per_MWh_H2_cracker"], # given per MW_H2, also 1.46
         lifetime=costs.at['Ammonia cracker', 'lifetime']
     )
 
