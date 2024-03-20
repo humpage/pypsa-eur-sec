@@ -971,10 +971,15 @@ def add_ethylene(n,costs):
     
     n.madd("links",
         spatial.nodes + " Ethylene from Electric steam cracking",
-        bus0=spatial.nodes,
-        bus1=spatial.nodes + " Ethylene",
+        bus0=spatial.oil.nodes
+        bus1=spatial.nodes,
+        
+        bus2=spatial.nodes + " Ethylene",
+        bus3="co2 atmosphere"
         carrier="Ethylene",
-        efficiency=0.37, #Based on 30% conversion of HVC in steam cracking and 2.7 MWh_el/t_hvc for electric steam cracking. So get 1/2.7 t_ethylene/MWh_el when considering equal importance of products (ethylene and propylene etc)
+        efficiency=2.7/14.4,  #14.4 MWh_naphtha per t_hvc and 2.7 MWh_el/t_hvc
+        efficiency2=1/14.4, #Based on 30% conversion of HVC in steam cracking and 2.7 MWh_el/t_hvc for electric steam cracking. So get 1/2.7 t_ethylene/MWh_el when considering equal importance of products (ethylene and propylene etc), CHANGED TO BE t_ETHYLENE / MWh_naphtha
+        efficiency3= 0.55/14.4 #t_CO2/MWh_naphtha
         capital_cost = costs.at["Electric steam cracker", "fixed"]
         
         )
@@ -989,7 +994,8 @@ def add_ethylene(n,costs):
     	
     	)
     	
-         
+
+        
          
 
 
