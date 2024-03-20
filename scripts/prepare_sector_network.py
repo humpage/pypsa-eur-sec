@@ -956,6 +956,41 @@ def add_ammonia(n, costs):
         capital_cost=costs.at["NH3 (l) storage tank incl. liquefaction", "fixed"],
         lifetime=costs.at['NH3 (l) storage tank incl. liquefaction', 'lifetime']
     )
+    
+def add_ethylene(n,costs):
+
+    n.add("Carrier", "Ethylene")
+    
+    n.madd("bus", 
+         spatial.nodes,
+         suffix=" Ethylene",
+         location=spatial.nodes,
+         carrier="Ethylene",
+         unit="t"
+         )
+    
+    n.madd("links",
+        spatial.nodes + " Ethylene from Electric steam cracking",
+        bus0=spatial.nodes,
+        bus1=spatial.nodes + " Ethylene",
+        carrier="Ethylene",
+        efficiency=0.37, #Based on 30% conversion of HVC in steam cracking and 2.7 MWh_el/t_hvc for electric steam cracking. So get 1/2.7 t_ethylene/MWh_el when considering equal importance of products (ethylene and propylene etc)
+        capital_cost = costs.at["Electric steam cracker", "fixed"]
+        
+        )
+         
+    n.madd("store",
+    	spatial.nodes,
+    	suffix=" Ethylene store",
+    	bus=spatial.nodes+ " Ethylene",
+    	e_nom_extendable=True,
+	e_cyclic=True,
+    	carrier="Ethylene"
+    	
+    	)
+    	
+         
+         
 
 
 def add_wave(n, wave_cost_factor):
@@ -3627,6 +3662,9 @@ if __name__ == "__main__":
 
     if options['electricity_grid_connection']:
         add_electricity_grid_connection(n, costs)
+        
+    if options["Ethylene"]:
+    	add_ethylene(n,costs)
 
     n.meta = dict(snakemake.config, **dict(wildcards=dict(snakemake.wildcards)))
     n.export_to_netcdf(snakemake.output[0])
