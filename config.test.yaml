@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: Testing_with_NH3_2 # use this to keep track of runs with different settings
+run: Testing_with_MEA # use this to keep track of runs with different settings
 foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 mga: false #Turn modelling to generate alternatives on/off
@@ -365,6 +365,7 @@ sector:
     # - offshore
   ammonia: true # can be false (no NH3 carrier), true (copperplated NH3), "regional" (regionalised NH3 without network)
   Ethylene: true
+  MEA: true
   waste_heat_usage_share: 0.5
   use_fischer_tropsch_waste_heat: true
   use_fuel_cell_waste_heat: true

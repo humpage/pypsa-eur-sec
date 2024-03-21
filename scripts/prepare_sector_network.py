@@ -971,15 +971,15 @@ def add_ethylene(n,costs):
     
     n.madd("links",
         spatial.nodes + " Ethylene from Electric steam cracking",
-        bus0=spatial.oil.nodes
+        bus0=spatial.oil.nodes,
         bus1=spatial.nodes,
         
         bus2=spatial.nodes + " Ethylene",
-        bus3="co2 atmosphere"
+        bus3="co2 atmosphere",
         carrier="Ethylene",
         efficiency=2.7/14.4,  #14.4 MWh_naphtha per t_hvc and 2.7 MWh_el/t_hvc
         efficiency2=1/14.4, #Based on 30% conversion of HVC in steam cracking and 2.7 MWh_el/t_hvc for electric steam cracking. So get 1/2.7 t_ethylene/MWh_el when considering equal importance of products (ethylene and propylene etc), CHANGED TO BE t_ETHYLENE / MWh_naphtha
-        efficiency3= 0.55/14.4 #t_CO2/MWh_naphtha
+        efficiency3= 0.55/14.4, #t_CO2/MWh_naphtha
         capital_cost = costs.at["Electric steam cracker", "fixed"]
         
         )
@@ -993,6 +993,33 @@ def add_ethylene(n,costs):
     	carrier="Ethylene"
     	
     	)
+    	
+def add_MEA(n):
+    
+    n.add("Carrier", "MEA")
+    
+    n.madd("bus",
+        spatial.nodes,
+        suffix=" MEA",
+        location=spatial.nodes,
+        carrier= "MEA",
+        unit="t"
+        )
+       
+    n.madd("links",
+        spatial.nodes + " MEA production",
+        bus0=spatial.nodes + " MEA",
+        bus1=spatial.nodes + " Ethylene",
+        bus2=spatial.ammonia.nodes,                  #This might be in concentration of 20-30% instead of pure ammonia so need to check this maybe
+        bus3=spatial.nodes,
+        bus4=spatial.nodes + " >120C process steam",  #Replaces the heat required by natural gas
+        carrier="MEA",
+        efficiency= - 0.816,  #Allocation done by mass as suggested by ecoinvent
+        efficiency2= - 0.788,
+        efficiency3= - 0.333e-3,
+        efficiency4= - 0.5556e-3,
+        captial_cost=1000000
+        )
     	
 
         
@@ -3671,6 +3698,9 @@ if __name__ == "__main__":
         
     if options["Ethylene"]:
     	add_ethylene(n,costs)
+    	
+    if options["MEA"]:
+    	add_MEA(n)
 
     n.meta = dict(snakemake.config, **dict(wildcards=dict(snakemake.wildcards)))
     n.export_to_netcdf(snakemake.output[0])
