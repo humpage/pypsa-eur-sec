@@ -548,32 +548,7 @@ def add_co2_network(n, costs):
         lifetime=costs.at['CO2 pipeline', 'lifetime']
     )
 
-
-def add_dac(n, costs):
-    heat_carriers = ["urban central heat"]#, "services urban decentral heat"]
-    heat_buses = n.buses.index[n.buses.carrier.isin(heat_carriers)]
-    locations = n.buses.location[heat_buses]
-
-    #Assuming steam for CC to be produced by electric steam boiler
-    # efficiency_el = -(costs.at['direct air capture', 'electricity-input'] + costs.at[
-    #     'direct air capture', 'compression-electricity-input'] + costs.at['direct air capture', 'heat-input'] * costs.at['electric boiler steam', 'efficiency'])
-
-    #Add steam boiler to capital cost
-    # capital_cost = costs.at['direct air capture', 'fixed'] + costs.at['direct air capture', 'heat-input'] \
-    #                * costs.at['electric boiler steam', 'fixed'] * costs.at['electric boiler steam', 'efficiency']
-    opts = snakemake.wildcards.sector_opts.split('-')
-
-    if "I" in opts:
-        if options["industrial_steam_heat_pumps"]:
-            heatbus = " <120C process steam"
-        else:
-            heatbus = " >120C process steam"
-    else:
-        heatbus = n.buses.location[heat_buses]
-
-    efficiency_el = -(costs.at['direct air capture', 'electricity-input'] + costs.at['direct air capture', 'compression-electricity-input'])
-    efficiency_th = -costs.at['direct air capture', 'heat-input']
-    
+def add_KOH(n):
     n.add("Carrier",
 	"KOH"
 	)
@@ -603,6 +578,44 @@ def add_dac(n, costs):
 	lifetime = 25
 		#lifetime=costs.at['electrolysis', 'lifetime']
 	)
+	
+    n.madd("Store",
+	spatial.nodes + " KOH",
+	bus=spatial.nodes + " KOH",
+	e_nom_extendable=True,
+	e_cyclic=True,
+	carrier=" KOH storage"
+	    	
+	    	)
+
+
+
+def add_dac(n, costs):
+    heat_carriers = ["urban central heat"]#, "services urban decentral heat"]
+    heat_buses = n.buses.index[n.buses.carrier.isin(heat_carriers)]
+    locations = n.buses.location[heat_buses]
+
+    #Assuming steam for CC to be produced by electric steam boiler
+    # efficiency_el = -(costs.at['direct air capture', 'electricity-input'] + costs.at[
+    #     'direct air capture', 'compression-electricity-input'] + costs.at['direct air capture', 'heat-input'] * costs.at['electric boiler steam', 'efficiency'])
+
+    #Add steam boiler to capital cost
+    # capital_cost = costs.at['direct air capture', 'fixed'] + costs.at['direct air capture', 'heat-input'] \
+    #                * costs.at['electric boiler steam', 'fixed'] * costs.at['electric boiler steam', 'efficiency']
+    opts = snakemake.wildcards.sector_opts.split('-')
+
+    if "I" in opts:
+        if options["industrial_steam_heat_pumps"]:
+            heatbus = " <120C process steam"
+        else:
+            heatbus = " >120C process steam"
+    else:
+        heatbus = n.buses.location[heat_buses]
+
+    efficiency_el = -(costs.at['direct air capture', 'electricity-input'] + costs.at['direct air capture', 'compression-electricity-input'])
+    efficiency_th = -costs.at['direct air capture', 'heat-input']
+    
+
 
     n.madd("Link",
 	heat_buses.str.replace(" heat", " DAC"),
@@ -621,14 +634,7 @@ def add_dac(n, costs):
 	lifetime=costs.at['direct air capture', 'lifetime']
 	    )
 	    
-    n.madd("Store",
-	spatial.nodes + " KOH",
-	bus=spatial.nodes + " KOH",
-	e_nom_extendable=True,
-	e_cyclic=True,
-	carrier=" KOH storage"
-	    	
-	    	)
+
 
 
 def add_co2limit(n, Nyears=1., limit=0.):
@@ -972,14 +978,16 @@ def add_ethylene(n,costs):
     n.madd("Link",
         spatial.nodes + " Ethylene from Electric steam cracking",
         bus0=spatial.oil.nodes,
-        bus1=spatial.nodes,
+        bus1=spatial.nodes + " Ethylene",   #Set as bus1 instead of electricity to 
+        bus2=spatial.nodes,
         
-        bus2=spatial.nodes + " Ethylene",
+        
         bus3="co2 atmosphere",
         p_nom_extendable=True,
         carrier="Ethylene",
-        efficiency=2.7/14.4,  #14.4 MWh_naphtha per t_hvc and 2.7 MWh_el/t_hvc
-        efficiency2=1/14.4, #Based on 30% conversion of HVC in steam cracking and 2.7 MWh_el/t_hvc for electric steam cracking. So get 1/2.7 t_ethylene/MWh_el when considering equal importance of products (ethylene and propylene etc), CHANGED TO BE t_ETHYLENE / MWh_naphtha
+        efficiency=1/14.4, #Based on 30% conversion of HVC in steam cracking and 2.7 MWh_el/t_hvc for electric steam cracking. So get 1/2.7 t_ethylene/MWh_el when considering equal importance of products (ethylene and propylene etc), CHANGED TO BE t_ETHYLENE / MWh_naphtha
+        efficiency2=-2.7/14.4,  #14.4 MWh_naphtha per t_hvc and 2.7 MWh_el/t_hvc  (added a negative sign as this is used and not produced)
+        
         efficiency3= 0.55/14.4, #t_CO2/MWh_naphtha
         capital_cost = costs.at["Electric steam cracker", "fixed"]
         
@@ -3738,6 +3746,9 @@ if __name__ == "__main__":
     	
     if options["MEA"]:
     	add_MEA(n)
+    	
+    if options["KOH"]:
+        add_KOH(n)
 
     n.meta = dict(snakemake.config, **dict(wildcards=dict(snakemake.wildcards)))
     n.export_to_netcdf(snakemake.output[0])
