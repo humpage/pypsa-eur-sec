@@ -584,10 +584,49 @@ def add_KOH(n):
 	bus=spatial.nodes + " KOH",
 	e_nom_extendable=True,
 	e_cyclic=True,
-	carrier=" KOH storage"
+	carrier="KOH"            #" KOH storage"    
 	    	
 	    	)
 
+def add_PEI(n):
+
+    n.add("Carrier", "PEI")
+    
+    n.madd("Bus,
+        spatial.nodes,
+        suffix=" PEI",
+        location=spatial.nodes,
+        carrier="PEI",
+        unit="t"
+        )
+        
+    n.madd("Link",
+        spatial.nodes+ " Solid PEI",
+        bus0=spatial.nodes,
+        bus1=spatial.nodes + " PEI",
+        bus2=spatial.nodes + " <120C process steam",     #In LCA study of the material the ragne of 35-80 degrees celsius is stated and used
+        bus3=spatial.nodes + " MEA",      #Assume initially only monoethanolamine is used and not DEA or TEA.
+        bus4=spatial.nodes + " KOH",     #Assume producing KOH and NaOH are roughly the same process and the caustic soda solution can be used for both
+        efficiency= 1/0.42,   # Worst case is 0.27 kWh. Table is in kg PEI produced so converting everything to be based on MWh
+        efficiency2= - 2.35/(0.42*3.6),  #Converting 2.35 MJ to MWh and then per MWh electricity
+        efficiency3= - 1.42/0.42, #Best case 1.42 kg/kg PEI and worst case 2.53 kg ethanolamine per kg PEI
+        efficiency4= - 1.86/0.42, #Best case 1.86 and worst case 3.32 (ALL values from LCA on solid sorbent
+        p_nom_extendable=True,
+        carrier="PEI",
+        captial_cost=1000000,   #DONT KNOW WHAT TO HAVE HERE
+        )
+        
+        
+        
+    n.madd("Store",
+        spatial.nodes + " PEI",
+        bus=spatial.nodes + " PEI",
+        e_nom_extendable=True,
+	e_cyclic=True,
+	carrier="PEI"
+	    	
+	    	)
+        
 
 
 def add_dac(n, costs):
