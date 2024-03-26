@@ -662,17 +662,35 @@ def add_dac(n, costs):
 	bus2=spatial.co2.df.loc[locations, "nodes"].values,
 	bus1=locations.values,
 	bus3=locations.values + heatbus,
-	bus5= spatial.nodes +" KOH",     #Added
+	bus5= spatial.nodes +" PEI",     #Added,  CHANGED FROM KOH TO PEI
 	carrier="DAC",
 	capital_cost=costs.at['direct air capture', 'fixed'],
 	efficiency2=min(1,options["cc_fraction"] / 0.9),#Set to a baseline of 1 for DAC when cc_fraction is >=0.9
 	efficiency=efficiency_el,
 	efficiency3=efficiency_th,
-	efficiency5= - 4e-3,
+	efficiency5= - 7.5e-3,
 	p_nom_extendable=True,
 	lifetime=costs.at['direct air capture', 'lifetime']
 	    )
-	    
+	  
+    n.madd("Link",
+       spatial.nodes + " L-DAC",
+       bus0="co2 atmosphere",
+       bus1=locations.values,
+       bus2=spatial.co2.df.loc[locations, "nodes"].values,
+       bus3=spatial.nodes + " highT industry,
+       bus5=spatial.nodes + " KOH",
+       carrier = "DAC",
+       capital_cost = 4000000,  #Taken as same value as that used for Solid direct air capture (danish energy agency from 2022 found in inputs of markus technology data)
+       efficiency= - (0.36 + costs.at['direct air capture', 'compression-electricity-input']),   #Taken the same compression of co2 as that used earlier but the heat input from 2024 technology data from danish energy agency
+       efficiency2=min(1,options["cc_fraction"] / 0.9),#Set to a baseline of 1 for DAC when cc_fraction is >=0.9,
+       efficiency3= - 1.23,
+       efficiency5= - 4e-3,
+       p_nom_extendable=True
+       )
+       
+       
+        
 
 
 
