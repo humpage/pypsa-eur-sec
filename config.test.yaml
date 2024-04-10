@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: Testing_withtruefalsestatement2 # use this to keep track of runs with different settings
+run: EO_real_run # use this to keep track of runs with different settings
 foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 mga: false #Turn modelling to generate alternatives on/off
@@ -399,10 +399,11 @@ sector:
   electrobiofuels: true
   solid_biomass_powerboost_CC: false
   #Basecase set Ethylene, MEA and KOH to false
-  Ethylene: false
-  MEA: false
-  KOH: false
-  
+  Ethylene: true
+  MEA: true
+  KOH: true
+  PEI: true
+  EO: true
 
 industry:
   St_primary_fraction: # fraction of steel produced via primary route versus secondary route (scrap+EAF); today fraction is 0.6
@@ -811,3 +812,5 @@ plotting:
     Haber-Bosch: '#076987'
     Ethylene: '#993334'
     MEA: '#993335'
+    PEI: '#993330'
+    EO: '983330'

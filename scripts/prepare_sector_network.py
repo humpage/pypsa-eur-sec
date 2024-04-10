@@ -565,15 +565,15 @@ def add_KOH(n):
 	    	   
     n.madd("Link",
 	spatial.nodes + " Solvent KOH",
-	bus1=spatial.nodes + " H2",
 	bus0=spatial.nodes,
+	bus1=spatial.nodes + " H2",
 	bus2= spatial.nodes + " KOH",
 	p_nom_extendable=True,
 	carrier= "KOH",
 	efficiency= 0.2941,
 		#efficiency=costs.at["electrolysis", "efficiency"],
 	efficiency2 = 0.39,
-	capital_cost = 500000,    #Euros / MW   Maybe should change this to MW instead
+	capital_cost = 1000000,    #Euros / MW (New ranges calculated that are between 600000 and 4000000)
 		#capital_cost=costs.at["electrolysis", "fixed"],
 	lifetime = 25
 		#lifetime=costs.at['electrolysis', 'lifetime']
@@ -590,40 +590,41 @@ def add_KOH(n):
 
 def add_PEI(n):
 
-    n.add("Carrier", "PEI")
+    n.add("Carrier", "PEI silica sorbent")
     
-    n.madd("Bus,
+    n.madd("Bus",
         spatial.nodes,
-        suffix=" PEI",
+        suffix=" PEI silica sorbent",
         location=spatial.nodes,
-        carrier="PEI",
+        carrier="PEI silica sorbent",
         unit="t"
         )
         
     n.madd("Link",
-        spatial.nodes+ " Solid PEI",
+        spatial.nodes+ " Solid sorbent",
         bus0=spatial.nodes,
-        bus1=spatial.nodes + " PEI",
-        bus2=spatial.nodes + " <120C process steam",     #In LCA study of the material the ragne of 35-80 degrees celsius is stated and used
+        bus1=spatial.nodes + " PEI silica sorbent",
+        bus2=spatial.nodes + " >120C process steam",     #In LCA study of the material the ragne of 35-80 degrees celsius is stated and used  (Need to assess if this is reasonable or rural/housing heat should be used instead)
         bus3=spatial.nodes + " MEA",      #Assume initially only monoethanolamine is used and not DEA or TEA.
         bus4=spatial.nodes + " KOH",     #Assume producing KOH and NaOH are roughly the same process and the caustic soda solution can be used for both
-        efficiency= 1/0.42,   # Worst case is 0.27 kWh. Table is in kg PEI produced so converting everything to be based on MWh
-        efficiency2= - 2.35/(0.42*3.6),  #Converting 2.35 MJ to MWh and then per MWh electricity
-        efficiency3= - 1.42/0.42, #Best case 1.42 kg/kg PEI and worst case 2.53 kg ethanolamine per kg PEI
-        efficiency4= - 1.86/0.42, #Best case 1.86 and worst case 3.32 (ALL values from LCA on solid sorbent
+        efficiency= 1/0.18,   # Worst case is 0.27 kWh. Table is in kg PEI produced so converting everything to be based on MWh, best case 0.42 kWh. 0.35 is middle value that will be used
+        efficiency2= - 3.8/(0.18*3.6),  #Converting 7.5 MJ to MWh and then per MWh electricity  (Took a middle value of the range)
+        efficiency3= - 1/0.18 #1.42/0.35, #Best case 1.42 kg/kg PEI and worst case 2.53 kg ethanolamine per kg PEI
+        efficiency4= - 2.8/(2*0.18), #Best case 1.86 and worst case 3.32 (ALL values from LCA on solid sorbent
         p_nom_extendable=True,
         carrier="PEI",
-        captial_cost=1000000,   #DONT KNOW WHAT TO HAVE HERE
+        captial_cost= 1000000 #!018.75 from S&P estimation for plant of 320 kt/yr and 326 M$ (CONVERT TO EURO)     #1000000
+        marginal_cost= 0.70/0.18
         )
         
         
         
     n.madd("Store",
-        spatial.nodes + " PEI",
-        bus=spatial.nodes + " PEI",
+        spatial.nodes + " PEI silica sorbent",
+        bus=spatial.nodes + " PEI silica sorbent",
         e_nom_extendable=True,
 	e_cyclic=True,
-	carrier="PEI"
+	carrier="PEI silica sorbent"
 	    	
 	    	)
         
@@ -662,13 +663,13 @@ def add_dac(n, costs):
 	bus2=spatial.co2.df.loc[locations, "nodes"].values,
 	bus1=locations.values,
 	bus3=locations.values + heatbus,
-	bus5= spatial.nodes +" PEI",     #Added,  CHANGED FROM KOH TO PEI
+	bus5= spatial.nodes +" PEI",     #Added,  CHANGED FROM KOH TO PEI as these values are based on solid sorbent DAC
 	carrier="DAC",
 	capital_cost=costs.at['direct air capture', 'fixed'],
 	efficiency2=min(1,options["cc_fraction"] / 0.9),#Set to a baseline of 1 for DAC when cc_fraction is >=0.9
 	efficiency=efficiency_el,
 	efficiency3=efficiency_th,
-	efficiency5= - 7.5e-3,
+	efficiency5= - 7.5e-3,        #Solid sorbent loss 7.5 kg / t_CO2, multiplied by 0.5 to account for the silica needed aswell. Assuming 50/50 split for silica
 	p_nom_extendable=True,
 	lifetime=costs.at['direct air capture', 'lifetime']
 	    )
@@ -678,14 +679,14 @@ def add_dac(n, costs):
        bus0="co2 atmosphere",
        bus1=locations.values,
        bus2=spatial.co2.df.loc[locations, "nodes"].values,
-       bus3=spatial.nodes + " highT industry,
+       bus3=spatial.nodes + " highT industry",
        bus5=spatial.nodes + " KOH",
        carrier = "DAC",
        capital_cost = 4000000,  #Taken as same value as that used for Solid direct air capture (danish energy agency from 2022 found in inputs of markus technology data)
-       efficiency= - (0.36 + costs.at['direct air capture', 'compression-electricity-input']),   #Taken the same compression of co2 as that used earlier but the heat input from 2024 technology data from danish energy agency
+       efficiency= - (0.36 + costs.at['direct air capture', 'compression-electricity-input']),   #Taken the same compression of co2 as that used earlier but the electricity input from 2024 technology data from danish energy agency
        efficiency2=min(1,options["cc_fraction"] / 0.9),#Set to a baseline of 1 for DAC when cc_fraction is >=0.9,
-       efficiency3= - 1.23,
-       efficiency5= - 4e-3,
+       efficiency3= - 1.23,    #Heat input is based on the 2024 value for heat that was based on 2020 heat demand.
+       efficiency5= - 4e-3,    # KOH consumption based on report from 
        p_nom_extendable=True
        )
        
@@ -1037,17 +1038,15 @@ def add_ethylene(n,costs):
         bus0=spatial.oil.nodes,
         bus1=spatial.nodes + " Ethylene",   #Set as bus1 instead of electricity to 
         bus2=spatial.nodes,
-        
-        
         bus3="co2 atmosphere",
         p_nom_extendable=True,
         carrier="Ethylene",
-        efficiency=1/14.4, #Based on 30% conversion of HVC in steam cracking and 2.7 MWh_el/t_hvc for electric steam cracking. So get 1/2.7 t_ethylene/MWh_el when considering equal importance of products (ethylene and propylene etc), CHANGED TO BE t_ETHYLENE / MWh_naphtha
-        efficiency2=-2.7/14.4,  #14.4 MWh_naphtha per t_hvc and 2.7 MWh_el/t_hvc  (added a negative sign as this is used and not produced)
+        efficiency=1/(80.6/3.6), # 80.6 is based on the fuel and also reactant part of producing ethylene unit t_hvc/MWh_naphtha using mass allocation
+        efficiency2=-(0.55/3.6)/(80.6/3.6),     #Electricity scaled down to account for allocation
         
-        efficiency3= 0.55/14.4, #t_CO2/MWh_naphtha
-        capital_cost = costs.at["Electric steam cracker", "fixed"]
-        
+        efficiency3= 1.7/(80.6/3.6), #t_CO2/MWh_naphtha 
+        capital_cost = 1200/(80.6/3.6)*8760,      #Assume that DECHEMA value is based on 1200 Euro/t_HVC/year
+        marginal_cost = 180/(80.6/3.6) #244    #Taken from levelized cost of prodution steam cracking based on average around the world. (Add source here later)
         )
          
     n.madd("Store",
@@ -1057,8 +1056,44 @@ def add_ethylene(n,costs):
     	e_nom_extendable=True,
 	e_cyclic=True,
     	carrier="Ethylene"
-    	
     	)
+
+def add_EO(n):   	
+    n.add("Carrier", "EO")
+   
+    n.madd("Bus",
+        spatial.nodes,
+        suffix = " EO",
+        location=spatial.nodes,
+        carrier="EO",
+        unit="t"
+        )
+       
+    n.madd("Link",
+        spatial.nodes + " EO prodution",
+        bus0=spatial.nodes,
+        bus1=spatial.nodes + " EO",
+        bus2= spatial.nodes + " Ethylene",
+        p_nom_extendable = True,
+        efficiency=1/0.33,             #Based on Ecoinvent database paper
+        efficiency2= - 0.825/0.33,
+       
+        capital_cost=38237400*0.779   #Based on investment cost in report of  "Is the Liquid-Phase H2O2-Based Ethylene Oxide Process More Economical and Greener Than the Gas-Phase O2-Based Silver-Catalyzed Process?"
+       
+        ) 
+       
+       
+    n.madd("Store",
+        spatial.nodes,
+        suffix="EO store",
+        bus=spatial.nodes + " EO",
+        e_nom_extendable=True,
+        e_cyclic=True,
+        carrier= "EO"
+        )
+       
+       
+       
     	
 def add_MEA(n):
     
@@ -1072,21 +1107,39 @@ def add_MEA(n):
         unit="t"
         )
        
+#    n.madd("Link",
+#        spatial.nodes + " MEA production",
+#        bus0=spatial.nodes + " MEA",
+#        bus1=spatial.nodes + " Ethylene",
+#        bus2=spatial.ammonia.nodes,                  #This might be in concentration of 20-30% instead of pure ammonia so need to check this maybe
+#        bus3=spatial.nodes,
+#        bus4=spatial.nodes + " >120C process steam",  #Replaces the heat required by natural gas
+#        carrier="MEA",
+#        p_nom_extendable=True,
+#        efficiency= - 0.816,  #Allocation done by mass as suggested by ecoinvent
+#        efficiency2= - 0.788,
+#        efficiency3= - 0.333e-3,
+#        efficiency4= - 0.5556e-3,
+#        captial_cost=1000000
+#        )
     n.madd("Link",
         spatial.nodes + " MEA production",
-        bus0=spatial.nodes + " MEA",
-        bus1=spatial.nodes + " Ethylene",
-        bus2=spatial.ammonia.nodes,                  #This might be in concentration of 20-30% instead of pure ammonia so need to check this maybe
-        bus3=spatial.nodes,
-        bus4=spatial.nodes + " >120C process steam",  #Replaces the heat required by natural gas
+        bus0=spatial.nodes,
+        bus1=spatial.nodes + " MEA",
+        bus2=spatial.ammonia.nodes,
+        bus3=spatial.nodes + " EO",
+        bus4=spatial.nodes+ " >120C preocess steam",
         carrier="MEA",
         p_nom_extendable=True,
-        efficiency= - 0.816,  #Allocation done by mass as suggested by ecoinvent
-        efficiency2= - 0.788,
-        efficiency3= - 0.333e-3,
-        efficiency4= - 0.5556e-3,
-        captial_cost=1000000
+        efficiency= 1/0.333,         #Based on ecoinvent paper
+        efficiency2= -0.788/0.333,
+        efficiency3= - 0.816/0.333,
+        efficiency4= - 2/3.6/0.333,
+        #capital_cost=1000000
+        marginal_cost = 382.76    #Dollar per MWh based on TAC found in destillation paper "Simulation and energy consumption evalutaion of reactive distillation process for ethanolamine production" including allocation by mass
         )
+        
+        
     	
 
     n.madd("Store",
@@ -3800,12 +3853,18 @@ if __name__ == "__main__":
         
     if options["Ethylene"]:
     	add_ethylene(n,costs)
+    
+    if options["EO"]:
+        add_EO(n)
     	
     if options["MEA"]:
     	add_MEA(n)
     	
     if options["KOH"]:
         add_KOH(n)
+        
+    if options["PEI"]:
+        add_PEI(n)
 
     n.meta = dict(snakemake.config, **dict(wildcards=dict(snakemake.wildcards)))
     n.export_to_netcdf(snakemake.output[0])
