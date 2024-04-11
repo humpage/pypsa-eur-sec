@@ -609,11 +609,11 @@ def add_PEI(n):
         bus4=spatial.nodes + " KOH",     #Assume producing KOH and NaOH are roughly the same process and the caustic soda solution can be used for both
         efficiency= 1/0.18,   # Worst case is 0.27 kWh. Table is in kg PEI produced so converting everything to be based on MWh, best case 0.42 kWh. 0.35 is middle value that will be used
         efficiency2= - 3.8/(0.18*3.6),  #Converting 7.5 MJ to MWh and then per MWh electricity  (Took a middle value of the range)
-        efficiency3= - 1/0.18 #1.42/0.35, #Best case 1.42 kg/kg PEI and worst case 2.53 kg ethanolamine per kg PEI
-        efficiency4= - 2.8/(2*0.18), #Best case 1.86 and worst case 3.32 (ALL values from LCA on solid sorbent
+        efficiency3= - 1/0.18, #1.42/0.35, #Best case 1.42 kg/kg PEI and worst case 2.53 kg ethanolamine per kg PEI
+        efficiency4= - 1.4/0.18, #Best case 1.86 and worst case 3.32 (ALL values from LCA on solid sorbent
         p_nom_extendable=True,
-        carrier="PEI",
-        captial_cost= 1000000 #!018.75 from S&P estimation for plant of 320 kt/yr and 326 M$ (CONVERT TO EURO)     #1000000
+        carrier="PEI silica sorbent",
+        captial_cost= 1000000, #1018.75 from S&P estimation for plant of 320 kt/yr and 326 M$ (CONVERT TO EURO) This was for Ethylene oxide and not PEI    #1000000
         marginal_cost= 0.70/0.18
         )
         
@@ -663,13 +663,13 @@ def add_dac(n, costs):
 	bus2=spatial.co2.df.loc[locations, "nodes"].values,
 	bus1=locations.values,
 	bus3=locations.values + heatbus,
-	bus5= spatial.nodes +" PEI",     #Added,  CHANGED FROM KOH TO PEI as these values are based on solid sorbent DAC
-	carrier="DAC",
+	bus5= spatial.nodes +" PEI silica sorbent",     #Added,  CHANGED FROM KOH TO PEI as these values are based on solid sorbent DAC
+	carrier="S-DAC",
 	capital_cost=costs.at['direct air capture', 'fixed'],
 	efficiency2=min(1,options["cc_fraction"] / 0.9),#Set to a baseline of 1 for DAC when cc_fraction is >=0.9
 	efficiency=efficiency_el,
 	efficiency3=efficiency_th,
-	efficiency5= - 7.5e-3,        #Solid sorbent loss 7.5 kg / t_CO2, multiplied by 0.5 to account for the silica needed aswell. Assuming 50/50 split for silica
+	efficiency5= - 14e-3,        #Solid sorbent loss 7.5 kg / t_CO2, multiplied by 0.5 to account for the silica needed aswell. Assuming 50/50 split for silica. (Assume higher value of solvent loss is 14 kg/t_CO2
 	p_nom_extendable=True,
 	lifetime=costs.at['direct air capture', 'lifetime']
 	    )
@@ -681,12 +681,12 @@ def add_dac(n, costs):
        bus2=spatial.co2.df.loc[locations, "nodes"].values,
        bus3=spatial.nodes + " highT industry",
        bus5=spatial.nodes + " KOH",
-       carrier = "DAC",
+       carrier = "L-DAC",
        capital_cost = 4000000,  #Taken as same value as that used for Solid direct air capture (danish energy agency from 2022 found in inputs of markus technology data)
        efficiency= - (0.36 + costs.at['direct air capture', 'compression-electricity-input']),   #Taken the same compression of co2 as that used earlier but the electricity input from 2024 technology data from danish energy agency
        efficiency2=min(1,options["cc_fraction"] / 0.9),#Set to a baseline of 1 for DAC when cc_fraction is >=0.9,
        efficiency3= - 1.23,    #Heat input is based on the 2024 value for heat that was based on 2020 heat demand.
-       efficiency5= - 4e-3,    # KOH consumption based on report from 
+       efficiency5= - 6.4e-3,    # KOH consumption based on report from (6.4 initially chosen as the higher value to be used, lower is 0.9)
        p_nom_extendable=True
        )
        
@@ -1075,6 +1075,7 @@ def add_EO(n):
         bus1=spatial.nodes + " EO",
         bus2= spatial.nodes + " Ethylene",
         p_nom_extendable = True,
+        carrier="EO",
         efficiency=1/0.33,             #Based on Ecoinvent database paper
         efficiency2= - 0.825/0.33,
        
@@ -1648,7 +1649,7 @@ def add_storage_and_grids(n, costs):
             efficiency=costs.at['coal', 'efficiency'],
             efficiency3=costs.at['coal', 'CO2 intensity'] * (1 - options["cc_fraction"]),
             efficiency2=costs.at['coal', 'CO2 intensity'] * options["cc_fraction"],
-            efficiency4= - costs.at['coal', 'CO2 intensity'] * options["cc_fraction"] * 3.1e-3,   #MEA consumption in t per MWh_coal
+            efficiency4= - costs.at['coal', 'CO2 intensity'] * options["cc_fraction"] * 3.98e-3,   #MEA consumption in t per MWh_coal  (MEA higher value set to 3.98 kg /t_CO2
             lifetime=costs.at['coal','lifetime']
         )
 
@@ -2647,7 +2648,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                efficiency=1.3 * costs.at['central solid biomass CHP CC', 'efficiency'],
                efficiency2=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
                efficiency3=-costs.at['solid biomass', 'CO2 intensity'] + costs.at['solid biomass', 'CO2 intensity'] * (1 - options["cc_fraction"]),
-               efficiency4= - costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"] * 3.1e-3,
+               efficiency4= - costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"] * 3.98e-3,
                # p_nom_ratio=costs.at['central solid biomass CHP', 'p_nom_ratio'],
                lifetime=costs.at['central solid biomass CHP CC', 'lifetime'])
 
@@ -2703,7 +2704,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                    efficiency2=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
                    efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (1 - options["cc_fraction"])-costs.at['solid biomass', 'CO2 intensity'],
                    efficiency4=costs.at['central solid biomass CHP CC', 'efficiency-heat'],
-                   efficiency5=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"]* 3.1e-3,
+                   efficiency5=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"]* 3.98e-3,
                    c_b=costs.at['central solid biomass CHP CC', 'c_b'],
                    c_v=costs.at['central solid biomass CHP CC', 'c_v'],
                    lifetime=costs.at['central solid biomass CHP CC', 'lifetime'])
@@ -2747,7 +2748,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                            1 - options["cc_fraction"]) - costs.at[
                                    'solid biomass', 'CO2 intensity'],
                    efficiency2=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
-                   efficiency4= costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"] * 3.1e-3,
+                   efficiency4= costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"] * 3.98e-3,
                    lifetime=costs.at['solid biomass boiler steam CC', 'lifetime'])
 
         if options['waste_chp']:
@@ -2788,7 +2789,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                        #Assuming same CO2 intensity as solid biomass
                        efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (1 - options["cc_fraction"])-costs.at['solid biomass', 'CO2 intensity'],
                        efficiency2=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
-                       efficiency5= costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"] * 3.1e-3,
+                       efficiency5= costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"] * 3.98e-3,
                        c_b=costs.at['waste CHP CC', 'c_b'],
                        c_v=costs.at['waste CHP CC', 'c_v'],
                        lifetime=costs.at['waste CHP CC', 'lifetime'])
@@ -2917,7 +2918,7 @@ def add_industry(n, costs):
                            efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (
                                    1 - options["cc_fraction"])-costs.at['solid biomass', 'CO2 intensity'],
                            efficiency2=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
-                           efficiency4= costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"] * 3.1e-3,
+                           efficiency4= costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"] * 3.98e-3,
                            lifetime=costs.at['solid biomass boiler steam CC', 'lifetime'])
 
                 if snakemake.config['biomass']['mediumT industry biomass']:
@@ -2939,7 +2940,7 @@ def add_industry(n, costs):
                            efficiency3=costs.at['solid biomass', 'CO2 intensity'] * (
                                    1 - options["cc_fraction"])-costs.at['solid biomass', 'CO2 intensity'],
                            efficiency2=costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"],
-                           efficiency4= costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"] * 3.1e-3,
+                           efficiency4= costs.at['solid biomass', 'CO2 intensity'] * options["cc_fraction"] * 3.98e-3,
                            lifetime=costs.at['direct firing solid fuels CC', 'lifetime'])
 
     if options["industrial_steam_methane"]:
@@ -2975,7 +2976,7 @@ def add_industry(n, costs):
                marginal_cost=costs.at['gas boiler steam', 'VOM'],
                efficiency3=costs.at['gas', 'CO2 intensity'] * (1 - options["cc_fraction"]),
                efficiency2=costs.at['gas', 'CO2 intensity'] * options["cc_fraction"],
-               efficiency4=costs.at['gas', 'CO2 intensity'] * options["cc_fraction"] * 3.1e-3,
+               efficiency4=costs.at['gas', 'CO2 intensity'] * options["cc_fraction"] * 3.98e-3,
                lifetime=costs.at['gas boiler steam', 'lifetime'])
 
     if options["industrial_steam_heat_pumps"]:
@@ -3048,7 +3049,7 @@ def add_industry(n, costs):
                efficiency=eta,
                efficiency3=costs.at['gas', 'CO2 intensity'] * (1 - options["cc_fraction"]),
                efficiency2=costs.at['gas', 'CO2 intensity'] * options["cc_fraction"],
-               efficiency4=costs.at['gas', 'CO2 intensity'] * options["cc_fraction"] * 3.1e-3,
+               efficiency4=costs.at['gas', 'CO2 intensity'] * options["cc_fraction"] * 3.98e-3,
                capital_cost=costs.at['direct firing gas CC', 'fixed'] * costs.at['direct firing gas CC', 'efficiency'] + costs.at["biomass CHP capture", "fixed"] * costs.at['gas', 'CO2 intensity'],
                marginal_cost=costs.at['direct firing gas CC', 'VOM'],
                lifetime=costs.at['direct firing gas', 'lifetime'])
@@ -3084,7 +3085,7 @@ def add_industry(n, costs):
            efficiency=eta,
            efficiency3=costs.at['gas', 'CO2 intensity'] * (1 - options["cc_fraction"]),
            efficiency2=costs.at['gas', 'CO2 intensity'] * options["cc_fraction"],
-           efficiency4= costs.at['gas', 'CO2 intensity'] * options["cc_fraction"] * 3.1e-3,
+           efficiency4= costs.at['gas', 'CO2 intensity'] * options["cc_fraction"] * 3.98e-3,
            capital_cost=costs.at['direct firing gas CC', 'fixed'] * costs.at['direct firing gas CC', 'efficiency'] + costs.at["biomass CHP capture", "fixed"] * costs.at['gas', 'CO2 intensity'],
            
            marginal_cost=costs.at['direct firing gas CC', 'VOM'],

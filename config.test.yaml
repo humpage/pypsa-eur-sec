@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: EO_real_run # use this to keep track of runs with different settings
+run: Run_all_solvents_with_all_config_v3 # use this to keep track of runs with different settings
 foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 mga: false #Turn modelling to generate alternatives on/off
@@ -29,6 +29,12 @@ scenario:
 #    - Co2L0p0-500H-H-I-B0p0Im-Med-seq200
     - Co2Lm0p1-500H-H-I-T-A-B0p0-Med-seq600-solar+p3
     - Co2Lm0p1-500H-H-I-T-A-B0p0-Med-seq2000-solar+p3 #-solar+p3 Add this
+    - Co2Lm0p1-500H-H-I-T-A-B0p0Im-Med-seq600-solar+p3
+    - Co2Lm0p1-500H-H-I-T-A-B0p0Im-Med-seq2000-solar+p3
+    - Co2Lm0p0-500H-H-I-T-A-B0p0-Med-seq600-solar+p3
+    - Co2Lm0p0-500H-H-I-T-A-B0p0-Med-seq2000-solar+p3 #-solar+p3 Add this
+    - Co2Lm0p0-500H-H-I-T-A-B0p0Im-Med-seq600-solar+p3
+    - Co2Lm0p0-500H-H-I-T-A-B0p0Im-Med-seq2000-solar+p3
 #    - Co2Lm0p1-500H-H-I-T-A-B0p0Im-Med-seq590
 #    - Co2Lm0p1-500H-H-I-T-A-B0p0Im-Med-seq600
 #    - Co2Lm0p1-500H-H-I-T-A-B0p0Im-Med-seq570
@@ -812,5 +818,7 @@ plotting:
     Haber-Bosch: '#076987'
     Ethylene: '#993334'
     MEA: '#993335'
-    PEI: '#993330'
-    EO: '983330'
+    PEI silica sorbent: '#993330'
+    EO: '#983330'
+    L-DAC: '#983331'
+    S-DAC: '#973331'
