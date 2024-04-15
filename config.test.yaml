@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: Run_all_solvents_with_all_config_v3 # use this to keep track of runs with different settings
+run: Run_all_solvents_with_all_config_v6 # use this to keep track of runs with different settings
 foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 mga: false #Turn modelling to generate alternatives on/off

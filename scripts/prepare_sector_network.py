@@ -580,7 +580,7 @@ def add_KOH(n):
 	)
 	
     n.madd("Store",
-	spatial.nodes + " KOH",
+	spatial.nodes + " KOH store",
 	bus=spatial.nodes + " KOH",
 	e_nom_extendable=True,
 	e_cyclic=True,
@@ -613,14 +613,14 @@ def add_PEI(n):
         efficiency4= - 1.4/0.18, #Best case 1.86 and worst case 3.32 (ALL values from LCA on solid sorbent
         p_nom_extendable=True,
         carrier="PEI silica sorbent",
-        captial_cost= 1000000, #1018.75 from S&P estimation for plant of 320 kt/yr and 326 M$ (CONVERT TO EURO) This was for Ethylene oxide and not PEI    #1000000
+        capital_cost= 1000000, #1018.75 from S&P estimation for plant of 320 kt/yr and 326 M$ (CONVERT TO EURO) This was for Ethylene oxide and not PEI    #1000000
         marginal_cost= 0.70/0.18
         )
         
         
         
     n.madd("Store",
-        spatial.nodes + " PEI silica sorbent",
+        spatial.nodes + " PEI silica sorbent store",
         bus=spatial.nodes + " PEI silica sorbent",
         e_nom_extendable=True,
 	e_cyclic=True,
@@ -986,8 +986,8 @@ def add_ammonia(n, costs):
         bus4=nodes + " H2",
         p_nom_extendable=True,
         carrier="Haber-Bosch",
-        efficiency=1 /  0.2473,   #costs.at["Haber-Bosch", "electricity-input"],
-        efficiency4=-1.1484 / 0.2473,
+        efficiency=1 /  0.2473,   #costs.at["Haber-Bosch", "electricity-input"],   #Check Technology data to see if I need to add values manually or just refer to technology data directly
+        efficiency4=-1.1484 / 0.2473,   
         #costs.at["Haber-Bosch", "hydrogen-input"]
         #/ costs.at["Haber-Bosch", "electricity-input"],
         capital_cost=costs.at["Haber-Bosch", "fixed"]
@@ -1034,9 +1034,9 @@ def add_ethylene(n,costs):
          )
     
     n.madd("Link",
-        spatial.nodes + " Ethylene from Electric steam cracking",
+        spatial.nodes + " Ethylene from steam cracking",  
         bus0=spatial.oil.nodes,
-        bus1=spatial.nodes + " Ethylene",   #Set as bus1 instead of electricity to 
+        bus1=spatial.nodes + " Ethylene",    
         bus2=spatial.nodes,
         bus3="co2 atmosphere",
         p_nom_extendable=True,
@@ -1129,7 +1129,7 @@ def add_MEA(n):
         bus1=spatial.nodes + " MEA",
         bus2=spatial.ammonia.nodes,
         bus3=spatial.nodes + " EO",
-        bus4=spatial.nodes+ " >120C preocess steam",
+        bus4=spatial.nodes+ " >120C process steam",
         carrier="MEA",
         p_nom_extendable=True,
         efficiency= 1/0.333,         #Based on ecoinvent paper
