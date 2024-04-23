@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: Run_all_solvents_with_all_config_v6 # use this to keep track of runs with different settings
+run: Final_results_no_solvent # use this to keep track of runs with different settings
 foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 mga: false #Turn modelling to generate alternatives on/off
@@ -27,6 +27,7 @@ scenario:
 #    - Co2L0p0-500H-B0p0Im-Med-seq200
 #    - Co2L0p0-500H-H-B0p0Im-Med-seq200
 #    - Co2L0p0-500H-H-I-B0p0Im-Med-seq200
+
     - Co2Lm0p1-500H-H-I-T-A-B0p0-Med-seq600-solar+p3
     - Co2Lm0p1-500H-H-I-T-A-B0p0-Med-seq2000-solar+p3 #-solar+p3 Add this
     - Co2Lm0p1-500H-H-I-T-A-B0p0Im-Med-seq600-solar+p3
@@ -35,6 +36,7 @@ scenario:
     - Co2Lm0p0-500H-H-I-T-A-B0p0-Med-seq2000-solar+p3 #-solar+p3 Add this
     - Co2Lm0p0-500H-H-I-T-A-B0p0Im-Med-seq600-solar+p3
     - Co2Lm0p0-500H-H-I-T-A-B0p0Im-Med-seq2000-solar+p3
+
 #    - Co2Lm0p1-500H-H-I-T-A-B0p0Im-Med-seq590
 #    - Co2Lm0p1-500H-H-I-T-A-B0p0Im-Med-seq600
 #    - Co2Lm0p1-500H-H-I-T-A-B0p0Im-Med-seq570
@@ -405,12 +407,24 @@ sector:
   electrobiofuels: true
   solid_biomass_powerboost_CC: false
   #Basecase set Ethylene, MEA and KOH to false
-  Ethylene: true
-  MEA: true
-  KOH: true
-  PEI: true
-  EO: true
-
+  Ethylene: false
+  MEA: false
+  KOH: false
+  PEI: false
+  EO: false
+  PEI silica sorbent: false
+  
+  #KOH_consumption: -0.4e-3 #No bulk included #-0.9e-3 with bulk #lower
+  #KOH_consumption: -2.8e-3 #No bulk included #-6.4e-3 with bulk #higher
+  KOH_consumption: 0 #if no solvent
+  
+  #PEI_consumption: -2.3e-3 #lower
+  #PEI_consumption: -14e-3 #higher
+  PEI_consumption: 0 #if no solvent
+  
+  #MEA_consumption: 3.98e-3 #Higher  #Set to 0 if MEA is set to false (will turn efficiency of MEA consumption to 0)
+  #MEA_consumption: 0.27e-3 #Lower
+  MEA_consumption: 0
 industry:
   St_primary_fraction: # fraction of steel produced via primary route versus secondary route (scrap+EAF); today fraction is 0.6
     2020: 0.6
