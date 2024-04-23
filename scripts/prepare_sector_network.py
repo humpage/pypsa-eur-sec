@@ -2135,7 +2135,7 @@ def add_heat(n, costs):
                 efficiency4=costs.at['central gas CHP', 'efficiency'] / costs.at['central gas CHP', 'c_b'] + costs.at['gas', 'CO2 intensity'] * (costs.at['biomass CHP capture', 'heat-output'] + costs.at['biomass CHP capture', 'compression-heat-output'] - costs.at['biomass CHP capture', 'heat-input']),
                 efficiency3=costs.at['gas', 'CO2 intensity'] * (1-options["cc_fraction"]),
                 efficiency2=costs.at['gas', 'CO2 intensity'] * options["cc_fraction"],
-                efficiency5=costs.at['gas', 'CO2 intensity' ] * options["cc_fraction"] * options['MEA_consumption'],
+                efficiency5= -costs.at['gas', 'CO2 intensity' ] * options["cc_fraction"] * options['MEA_consumption'],
                 lifetime=costs.at['central gas CHP', 'lifetime']
             )
 

@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: Final_results_no_solvent # use this to keep track of runs with different settings
+run: Results_higher_V1 # use this to keep track of runs with different settings
 foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 mga: false #Turn modelling to generate alternatives on/off
@@ -407,24 +407,24 @@ sector:
   electrobiofuels: true
   solid_biomass_powerboost_CC: false
   #Basecase set Ethylene, MEA and KOH to false
-  Ethylene: false
-  MEA: false
-  KOH: false
-  PEI: false
-  EO: false
-  PEI silica sorbent: false
+  Ethylene: true
+  MEA: true
+  KOH: true
+  PEI: true
+  EO: true
+  PEI silica sorbent: true
   
+  KOH_consumption: -2.8e-3 #No bulk included #-6.4e-3 with bulk #higher
   #KOH_consumption: -0.4e-3 #No bulk included #-0.9e-3 with bulk #lower
-  #KOH_consumption: -2.8e-3 #No bulk included #-6.4e-3 with bulk #higher
-  KOH_consumption: 0 #if no solvent
+  #KOH_consumption: 0 #if no solvent
   
+  PEI_consumption: -14e-3 #higher
   #PEI_consumption: -2.3e-3 #lower
-  #PEI_consumption: -14e-3 #higher
-  PEI_consumption: 0 #if no solvent
+  #PEI_consumption: 0 #if no solvent
   
-  #MEA_consumption: 3.98e-3 #Higher  #Set to 0 if MEA is set to false (will turn efficiency of MEA consumption to 0)
+  MEA_consumption: 3.98e-3 #Higher  #Set to 0 if MEA is set to false (will turn efficiency of MEA consumption to 0)
   #MEA_consumption: 0.27e-3 #Lower
-  MEA_consumption: 0
+  #MEA_consumption: 0
 industry:
   St_primary_fraction: # fraction of steel produced via primary route versus secondary route (scrap+EAF); today fraction is 0.6
     2020: 0.6
