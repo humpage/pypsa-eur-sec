@@ -5,7 +5,7 @@ logging_level: INFO
 results_dir: results/
 summary_dir: results
 costs_dir: ../technology-data/outputs/
-run: Results_higher_V1 # use this to keep track of runs with different settings
+run: Coal_cc # use this to keep track of runs with different settings
 foresight: overnight # options are overnight, myopic, perfect (perfect is not yet implemented)
 # if you use myopic or perfect foresight, set the investment years in "planning_horizons" below
 mga: false #Turn modelling to generate alternatives on/off
@@ -406,6 +406,7 @@ sector:
   biomass_boiler: true
   electrobiofuels: true
   solid_biomass_powerboost_CC: false
+  
   #Basecase set Ethylene, MEA and KOH to false
   Ethylene: true
   MEA: true
@@ -413,6 +414,8 @@ sector:
   PEI: true
   EO: true
   PEI silica sorbent: true
+  coal_cc: true  #Just for model flexibility
+  
   
   KOH_consumption: -2.8e-3 #No bulk included #-6.4e-3 with bulk #higher
   #KOH_consumption: -0.4e-3 #No bulk included #-0.9e-3 with bulk #lower
@@ -823,16 +826,21 @@ plotting:
     solid biomass CHP CC: 'red'
     solid biomass CHP powerboost CC: 'purple'
     biogas CC: 'orange'
-    KOH: 'pink'
+    Chlor-alkali process: 'pink'
         # ammonia ADDED NOW
     NH3: '#46caf0'
     ammonia: '#46caf0'
     ammonia store: '#00ace0'
     ammonia cracker: '#87d0e6'
     Haber-Bosch: '#076987'
-    Ethylene: '#993334'
-    MEA: '#993335'
-    PEI silica sorbent: '#993330'
-    EO: '#983330'
-    L-DAC: '#983331'
+    Ethylene steam cracking: '#993334'
+    MEA production: '#993335'
+    PEI silica sorbent production: '#993330'
+    EO production: '#983330'
+    L-DAC: '#CF7605'
     S-DAC: '#973331'
+    MEA: '#D9FF0F'
+    KOH: '#983331'
+    EO: '#E40046'
+    PEI: '#0095E4'
+    Ethylene: '#FFE658'

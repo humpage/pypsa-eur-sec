@@ -554,10 +554,9 @@ def add_KOH(n):
 	"KOH"
 	)
 	    	   
-    n.madd("Bus",
-    	spatial.nodes,
-	suffix=" KOH",
-	location=spatial.nodes,
+    n.add("Bus",
+    	"EU KOH",
+	location="EU",
 	carrier="KOH",
 	unit="t"
 	)
@@ -565,13 +564,13 @@ def add_KOH(n):
 	    
 	    	   
     n.madd("Link",
-	spatial.nodes + " Solvent KOH",
+	spatial.nodes + " Chlor-alkali process",
 	bus0=spatial.nodes,
 	bus1=spatial.nodes + " H2",
-	bus2= spatial.nodes + " KOH",
+	bus2= "EU KOH",
 	bus3= spatial.nodes + " >120C process steam",
 	p_nom_extendable=True,
-	carrier= "KOH",
+	carrier= "Chlor-alkali process",
 	efficiency= 0.001, #0.2941,
 		#efficiency=costs.at["electrolysis", "efficiency"],
 	efficiency2 = 0.39,
@@ -583,9 +582,9 @@ def add_KOH(n):
 	marginal_cost = 260/2.88 #Marginal cost, used values from DECHEMA
 	)
 	
-    n.madd("Store",
-	spatial.nodes + " KOH store",
-	bus=spatial.nodes + " KOH",
+    n.add("Store",
+	"EU KOH store",
+	bus="EU KOH",
 	e_nom_extendable=True,
 	e_cyclic=True,
 	carrier="KOH"            #" KOH storage"    
@@ -597,27 +596,26 @@ def add_PEI(n):
 
     n.add("Carrier", "PEI silica sorbent")
     
-    n.madd("Bus",
-        spatial.nodes,
-        suffix=" PEI silica sorbent",
-        location=spatial.nodes,
+    n.add("Bus",
+        "EU PEI silica sorbent",
+        location="EU",
         carrier="PEI silica sorbent",
         unit="t"
         )
         
     n.madd("Link",
-        spatial.nodes+ " Solid sorbent",
+        spatial.nodes+ " Solid sorbent production",
         bus0=spatial.nodes,
-        bus1=spatial.nodes + " PEI silica sorbent",
+        bus1="EU PEI silica sorbent",
         bus2=spatial.nodes + " >120C process steam",     #In LCA study of the material the ragne of 35-80 degrees celsius is stated and used  (Need to assess if this is reasonable or rural/housing heat should be used instead)
-        bus3=spatial.nodes + " MEA",      #Assume initially only monoethanolamine is used and not DEA or TEA.
-        bus4=spatial.nodes + " KOH",     #Assume producing KOH and NaOH are roughly the same process and the caustic soda solution can be used for both
+        bus3="EU MEA",      #Assume initially only monoethanolamine is used and not DEA or TEA.
+        bus4="EU KOH",     #Assume producing KOH and NaOH are roughly the same process and the caustic soda solution can be used for both
         efficiency= 1/0.18,   # Worst case is 0.27 kWh. Table is in kg PEI produced so converting everything to be based on MWh, best case 0.42 kWh. 0.35 is middle value that will be used
         efficiency2= - 3.8/(0.18*3.6),  #Converting 7.5 MJ to MWh and then per MWh electricity  (Took a middle value of the range)
         efficiency3= - 1/0.18, #1.42/0.35, #Best case 1.42 kg/kg PEI and worst case 2.53 kg ethanolamine per kg PEI
         efficiency4= - 1.4/0.18, #Best case 1.86 and worst case 3.32 (ALL values from LCA on solid sorbent
         p_nom_extendable=True,
-        carrier="PEI silica sorbent",
+        carrier="PEI silica sorbent production",
         capital_cost= costs.at['PEI production', 'fixed'], #1000000, #1018.75 from S&P estimation for plant of 320 kt/yr and 326 M$ (CONVERT TO EURO) This was for Ethylene oxide and not PEI    #1000000
         marginal_cost= 0.70/0.18,
         lifetime=costs.at['PEI production', 'lifetime']
@@ -625,9 +623,9 @@ def add_PEI(n):
         
         
         
-    n.madd("Store",
-        spatial.nodes + " PEI silica sorbent store",
-        bus=spatial.nodes + " PEI silica sorbent",
+    n.add("Store",
+        "EU PEI silica sorbent store",
+        bus="EU PEI silica sorbent",
         e_nom_extendable=True,
 	e_cyclic=True,
 	carrier="PEI silica sorbent"
@@ -708,7 +706,7 @@ def add_dac(n, costs):
             bus1=locations.values,
             bus2=spatial.co2.df.loc[locations, "nodes"].values,
             bus3=spatial.nodes + " highT industry",
-            bus5=spatial.nodes + " KOH",
+            bus5="EU KOH",
             carrier = "L-DAC",
             capital_cost = costs.at['direct air capture', 'fixed'], #Should probably be 5 MEuro but discuss this. #Taken as same value as that used for Solid direct air capture (danish energy agency from 2022 found in inputs of markus technology data)
             efficiency= - (0.36 + costs.at['direct air capture', 'compression-electricity-input']),   #Taken the same compression of co2 as that used earlier but the electricity input from 2024 technology data from danish energy agency
@@ -1074,10 +1072,9 @@ def add_ethylene(n,costs):
     #solvent
     n.add("Carrier", "Ethylene")
     
-    n.madd("Bus", 
-         spatial.nodes,
-         suffix=" Ethylene",
-         location=spatial.nodes,
+    n.add("Bus", 
+         "EU Ethylene",
+         location="EU",
          carrier="Ethylene",
          unit="t"
          )
@@ -1085,11 +1082,11 @@ def add_ethylene(n,costs):
     n.madd("Link",
         spatial.nodes + " Ethylene from steam cracking",  
         bus0=spatial.oil.nodes,
-        bus1=spatial.nodes + " Ethylene",    
+        bus1="EU Ethylene",    
         bus2=spatial.nodes,
         bus3="co2 atmosphere",
         p_nom_extendable=True,
-        carrier="Ethylene",
+        carrier="Ethylene steam cracking",
         efficiency=1/(80.6/3.6), # 80.6 is based on the fuel and also reactant part of producing ethylene unit t_hvc/MWh_naphtha using mass allocation
         efficiency2=-(0.55/3.6)/(80.6/3.6),     #Electricity scaled down to account for allocation
         
@@ -1099,10 +1096,9 @@ def add_ethylene(n,costs):
         lifetime=costs.at['Ethylene', 'lifetime']
         )
          
-    n.madd("Store",
-    	spatial.nodes,
-    	suffix=" Ethylene store",
-    	bus=spatial.nodes+ " Ethylene",
+    n.add("Store",
+    	"EU Ethylene store",
+    	bus="EU Ethylene",
     	e_nom_extendable=True,
 	e_cyclic=True,
     	carrier="Ethylene"
@@ -1112,10 +1108,9 @@ def add_EO(n):
     #Solvent   	
     n.add("Carrier", "EO")
    
-    n.madd("Bus",
-        spatial.nodes,
-        suffix = " EO",
-        location=spatial.nodes,
+    n.add("Bus",
+        "EU EO",
+        location="EU",
         carrier="EO",
         unit="t"
         )
@@ -1123,10 +1118,10 @@ def add_EO(n):
     n.madd("Link",
         spatial.nodes + " EO prodution",
         bus0=spatial.nodes,
-        bus1=spatial.nodes + " EO",
-        bus2= spatial.nodes + " Ethylene",
+        bus1="EU EO",
+        bus2="EU Ethylene",
         p_nom_extendable = True,
-        carrier="EO",
+        carrier="EO production",
         efficiency=1/0.33,             #Based on Ecoinvent database paper
         efficiency2= - 0.825/0.33,
        
@@ -1135,10 +1130,10 @@ def add_EO(n):
         ) 
        
        
-    n.madd("Store",
+    n.add("Store",
         spatial.nodes,
         suffix="EO store",
-        bus=spatial.nodes + " EO",
+        bus="EU EO",
         e_nom_extendable=True,
         e_cyclic=True,
         carrier= "EO"
@@ -1152,10 +1147,9 @@ def add_MEA(n):
     
     n.add("Carrier", "MEA")
     
-    n.madd("Bus",
-        spatial.nodes,
-        suffix=" MEA",
-        location=spatial.nodes,
+    n.add("Bus",
+        "EU MEA",
+        location="EU",
         carrier= "MEA",
         unit="t"
         )
@@ -1178,11 +1172,11 @@ def add_MEA(n):
     n.madd("Link",
         spatial.nodes + " MEA production",
         bus0=spatial.nodes,
-        bus1=spatial.nodes + " MEA",
+        bus1="EU MEA",
         bus2=spatial.ammonia.nodes,
-        bus3=spatial.nodes + " EO",
+        bus3="EU EO",
         bus4=spatial.nodes+ " >120C process steam",
-        carrier="MEA",
+        carrier="MEA production",
         p_nom_extendable=True,
         efficiency= 1/0.333,         #Based on ecoinvent paper
         efficiency2= -0.788/0.333,
@@ -1195,10 +1189,9 @@ def add_MEA(n):
         
     	
 
-    n.madd("Store",
-    	spatial.nodes,
-    	suffix=" MEA store",
-    	bus=spatial.nodes+ " MEA",
+    n.add("Store",
+    	"EU MEA",
+    	bus="EU MEA",
     	e_nom_extendable=True,
 	e_cyclic=True,
     	carrier="MEA"
@@ -1695,7 +1688,7 @@ def add_storage_and_grids(n, costs):
             bus1=spatial.nodes,
             bus3="co2 atmosphere",
             bus2="co2 stored",
-            bus4= spatial.nodes + " MEA" ,   #Adding MEA consumption
+            bus4="EU MEA" ,   #Adding MEA consumption
             marginal_cost=costs.at['coal', 'efficiency'] * costs.at['coal', 'VOM'], #NB: VOM is per MWel
             capital_cost=costs.at['coal', 'efficiency'] * costs.at['coal', 'fixed'] + costs.at['biomass CHP capture', 'fixed'] * costs.at['coal', 'CO2 intensity'], #NB: fixed cost is per MWel
             p_nom_extendable=True,
@@ -1715,7 +1708,7 @@ def add_storage_and_grids(n, costs):
             bus1=nodes + " H2",
             bus3="co2 atmosphere",
             bus2=spatial.co2.nodes,
-            bus5= spatial.nodes + " MEA",     #Adding MEA consumption
+            bus5="EU MEA",     #Adding MEA consumption
             p_nom_extendable=True,
             carrier="SMR CC",
             efficiency=costs.at["SMR CC", "efficiency"],
@@ -2126,7 +2119,7 @@ def add_heat(n, costs):
                 bus4=nodes[name] + " urban central heat",
                 bus3="co2 atmosphere",
                 bus2=spatial.co2.df.loc[nodes[name], "nodes"].values,
-                bus5 = spatial.nodes + " MEA",
+                bus5 ="EU MEA",
                 carrier="urban central gas CHP CC",
                 p_nom_extendable=True,
                 capital_cost=costs.at['central gas CHP', 'fixed']*costs.at['central gas CHP', 'efficiency'] + costs.at['biomass CHP capture', 'fixed']*costs.at['gas', 'CO2 intensity'],
@@ -2757,7 +2750,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                    bus2="co2 stored",
                    bus3="co2 atmosphere",
                    bus4=urban_central + " urban central heat",
-                   bus5= spatial.nodes + " MEA",
+                   bus5="EU MEA",
                    carrier="urban central solid biomass CHP CC",
                    p_nom_extendable=True,
                    capital_cost=costs.at['central solid biomass CHP CC', 'fixed'] * costs.at['central solid biomass CHP CC', 'efficiency']
@@ -2799,7 +2792,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                    bus1=urban_central + " urban central heat",
                    bus3="co2 atmosphere",
                    bus2="co2 stored",
-                   bus4= spatial.nodes + " MEA",
+                   bus4="EU MEA",
                    carrier="solid biomass district heat CC",
                    p_nom_extendable=True,
                    efficiency=costs.at['solid biomass boiler steam CC', 'efficiency'],
@@ -2840,7 +2833,7 @@ def add_biomass(n, costs, beccs, biomass_import_price):
                        bus4=urban_central + " urban central heat",
                        bus3="co2 atmosphere",
                        bus2="co2 stored",
-                       bus5= spatial.nodes + " MEA",
+                       bus5="EU MEA",
                        carrier="urban central waste incineration CC",
                        p_nom_extendable=True,
                        # p_nom=costs.at['waste CHP CC', 'efficiency'] * biomass_potential['municipal solid waste'] / 8760,
@@ -2971,7 +2964,7 @@ def add_industry(n, costs):
                            bus1=nodes + " >120C process steam",
                            bus3="co2 atmosphere",
                            bus2="co2 stored",
-                           bus4=spatial.nodes + " MEA",
+                           bus4="EU MEA",
                            carrier=">120C process steam solid biomass CC",
                            p_nom_extendable=True,
                            p_min_pu=0.8,
@@ -2993,7 +2986,7 @@ def add_industry(n, costs):
                            bus1=nodes + " mediumT industry",
                            bus3="co2 atmosphere",
                            bus2="co2 stored",
-                           bus4=spatial.nodes + " MEA",
+                           bus4="EU MEA",
                            carrier="solid biomass for mediumT industry CC",
                            p_nom_extendable=True,
                            p_min_pu=0.8,
@@ -3033,7 +3026,7 @@ def add_industry(n, costs):
                bus1=nodes + " >120C process steam",
                bus3="co2 atmosphere",
                bus2="co2 stored",
-               bus4= spatial.nodes + " MEA",
+               bus4="EU MEA",
                carrier=">120C process steam methane CC",
                p_nom_extendable=True,
                p_min_pu=0.8,
@@ -3112,7 +3105,7 @@ def add_industry(n, costs):
                bus1=nodes + " mediumT industry",
                bus3="co2 atmosphere",
                bus2="co2 stored",
-               bus4= spatial.nodes + " MEA",
+               bus4="EU MEA",
                carrier="gas for mediumT industry CC",
                p_nom_extendable=True,
                p_min_pu=0.8,
@@ -3149,7 +3142,7 @@ def add_industry(n, costs):
            bus1=nodes + " highT industry",
            bus3="co2 atmosphere",
            bus2="co2 stored",
-           bus4 = spatial.nodes + " MEA",
+           bus4 ="EU MEA",
            carrier="gas for highT industry CC",
            p_nom_extendable=True,
            p_min_pu=0.8,
@@ -3415,11 +3408,13 @@ def add_industry(n, costs):
         bus0="process emissions",
         bus1="co2 atmosphere",
         bus2=spatial.co2.nodes,
+        bus3="EU MEA",
         carrier="process emissions CC",
         p_nom_extendable=True,
         capital_cost=costs.at["cement capture", "fixed"],
         efficiency=1 - options["cc_fraction"],
         efficiency2=options["cc_fraction"],
+        efficiency3=-options["MEA_consumption"],
         lifetime=costs.at['cement capture', 'lifetime']
     )
 
