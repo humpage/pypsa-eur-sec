@@ -656,8 +656,8 @@ def add_dac(n, costs):
     else:
         heatbus = n.buses.location[heat_buses]
 
-    efficiency_el = -(costs.at['direct air capture', 'electricity-input'] + costs.at['direct air capture', 'compression-electricity-input'])
-    efficiency_th = -costs.at['direct air capture', 'heat-input']
+    efficiency_el = -(costs.at['solid direct air capture', 'electricity-input'] + costs.at['solid direct air capture', 'compression-electricity-input'])
+    efficiency_th = -costs.at['solid direct air capture', 'heat-input']
     
     if options["PEI silica sorbent"]:
 
@@ -670,13 +670,13 @@ def add_dac(n, costs):
 	    bus3=locations.values + heatbus,
 	    bus5= spatial.nodes +" PEI silica sorbent",     #Added,  CHANGED FROM KOH TO PEI as these values are based on solid sorbent DAC
 	    carrier="S-DAC",
-	    capital_cost=costs.at['direct air capture', 'fixed'],
+	    capital_cost=costs.at['solid direct air capture', 'custom investment'],
 	    efficiency2=min(1,options["cc_fraction"] / 0.9),#Set to a baseline of 1 for DAC when cc_fraction is >=0.9
 	    efficiency=efficiency_el,
 	    efficiency3=efficiency_th,
 	    efficiency5= options["PEI_consumption"], #- 14e-3, #2.3e-3, #14e-3,        #Solid sorbent loss 7.5 kg / t_CO2, multiplied by 0.5 to account for the silica needed aswell. Assuming 50/50 split for silica. (Assume higher value of solvent loss is 14 kg/t_CO2
 	    p_nom_extendable=True,
-	    lifetime=costs.at['direct air capture', 'lifetime']
+	    lifetime=costs.at['solid direct air capture', 'lifetime']
 	       )
 	  
     else: 
@@ -690,13 +690,13 @@ def add_dac(n, costs):
 	    bus3=locations.values + heatbus,
 	    #bus5= spatial.nodes +" PEI silica sorbent",     #Added,  CHANGED FROM KOH TO PEI as these values are based on solid sorbent DAC
 	    carrier="S-DAC",
-	    capital_cost=costs.at['direct air capture', 'fixed'],
+	    capital_cost=costs.at['solid direct air capture', 'custom investment'],
 	    efficiency2=min(1,options["cc_fraction"] / 0.9),#Set to a baseline of 1 for DAC when cc_fraction is >=0.9
 	    efficiency=efficiency_el,
 	    efficiency3=efficiency_th,
 	    #efficiency5= - 14e-3,        #Solid sorbent loss 7.5 kg / t_CO2, multiplied by 0.5 to account for the silica needed aswell. Assuming 50/50 split for silica. (Assume higher value of solvent loss is 14 kg/t_CO2
 	    p_nom_extendable=True,
-	    lifetime=costs.at['direct air capture', 'lifetime']
+	    lifetime=costs.at['solid direct air capture', 'lifetime']
 	       )
     
     if options["KOH"]:
@@ -708,13 +708,13 @@ def add_dac(n, costs):
             bus3=spatial.nodes + " highT industry",
             bus5="EU KOH",
             carrier = "L-DAC",
-            capital_cost = costs.at['direct air capture', 'fixed'], #Should probably be 5 MEuro but discuss this. #Taken as same value as that used for Solid direct air capture (danish energy agency from 2022 found in inputs of markus technology data)
-            efficiency= - (0.36 + costs.at['direct air capture', 'compression-electricity-input']),   #Taken the same compression of co2 as that used earlier but the electricity input from 2024 technology data from danish energy agency
+            capital_cost = costs.at['liquid direct air capture', 'custom investment'], #Should probably be 5 MEuro but discuss this. #Taken as same value as that used for Solid direct air capture (danish energy agency from 2022 found in inputs of markus technology data)
+            efficiency= - (costs.at['liquid direct air capture', 'electricity-input'] + costs.at['liquid direct air capture', 'compression-electricity-input']),   #Taken the same compression of co2 as that used earlier but the electricity input from 2024 technology data from danish energy agency
             efficiency2=min(1,options["cc_fraction"] / 0.9),#Set to a baseline of 1 for DAC when cc_fraction is >=0.9,
-            efficiency3=  - 1.23,    #Heat input is based on the 2024 value for heat that was based on 2020 heat demand.
+            efficiency3=  - costs.at['liquid direct air capture', 'heat-input'],    #Heat input is based on the 2024 value for heat that was based on 2020 heat demand.
             efficiency5=  options["KOH_consumption"], #6.4e-3, #0.9e-3,    # KOH consumption based on report from (6.4 initially chosen as the higher value to be used, lower is 0.9)
             p_nom_extendable=True,
-            lifetime=costs.at['direct air capture', 'lifetime']
+            lifetime=costs.at['liquid direct air capture', 'lifetime']
             )
             
     else:
@@ -726,13 +726,13 @@ def add_dac(n, costs):
             bus3=spatial.nodes + " highT industry",
             #bus5=spatial.nodes + " KOH",
             carrier = "L-DAC",
-            capital_cost = costs.at['direct air capture', 'fixed'],  #Taken as same value as that used for Solid direct air capture (danish energy agency from 2022 found in inputs of markus technology data)
-            efficiency= - (0.36 + costs.at['direct air capture', 'compression-electricity-input']),   #Taken the same compression of co2 as that used earlier but the electricity input from 2024 technology data from danish energy agency
+            capital_cost = costs.at['liquid direct air capture', 'custom investment'],  #Taken as same value as that used for Solid direct air capture (danish energy agency from 2022 found in inputs of markus technology data)
+            efficiency= - (costs.at['liquid direct air capture', 'electricity-input'] + costs.at['liquid direct air capture', 'compression-electricity-input']),   #Taken the same compression of co2 as that used earlier but the electricity input from 2024 technology data from danish energy agency
             efficiency2=min(1,options["cc_fraction"] / 0.9),#Set to a baseline of 1 for DAC when cc_fraction is >=0.9,
-            efficiency3= - 1.23,    #Heat input is based on the 2024 value for heat that was based on 2020 heat demand.
+            efficiency3= - costs.at['liquid direct air capture', 'heat-input'],    #Heat input is based on the 2024 value for heat that was based on 2020 heat demand.
             #efficiency5= - 6.4e-3,    # KOH consumption based on report from (6.4 initially chosen as the higher value to be used, lower is 0.9)
             p_nom_extendable=True,
-            lifetime=costs.at['direct air capture', 'lifetime']
+            lifetime=costs.at['liquid direct air capture', 'lifetime']
             )
             
         
@@ -1176,7 +1176,7 @@ def add_MEA(n):
         bus2=spatial.ammonia.nodes,
         bus3="EU EO",
         bus4=spatial.nodes+ " >120C process steam",
-        carrier="MEA production",
+        carrier="MEA productionf",
         p_nom_extendable=True,
         efficiency= 1/0.333,         #Based on ecoinvent paper
         efficiency2= -0.788/0.333,
@@ -3483,7 +3483,7 @@ def add_waste_heat(n,beccs):
         # locations = n.buses.location[heat_buses]
         if options['use_dac_waste_heat']:
             n.links.loc[urban_central + " urban central DAC", "bus4"] = urban_central + " urban central heat"
-            n.links.loc[urban_central + " urban central DAC", "efficiency4"] = costs.at['direct air capture', 'compression-heat-output'] * options['waste_heat_usage_share']
+            n.links.loc[urban_central + " urban central DAC", "efficiency4"] = costs.at['solid direct air capture', 'compression-heat-output'] * options['waste_heat_usage_share']
             # n.links.loc[urban_central + " services urban decentral DAC", "bus4"] = urban_central + " services urban decentral heat"
             # n.links.loc[urban_central + " services urban decentral DAC", "efficiency4"] = costs.at['direct air capture', 'compression-heat-output'] * options['waste_heat_usage_share']
 
