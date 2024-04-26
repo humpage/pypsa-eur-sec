@@ -668,7 +668,7 @@ def add_dac(n, costs):
 	    bus2=spatial.co2.df.loc[locations, "nodes"].values,
 	    bus1=locations.values,
 	    bus3=locations.values + heatbus,
-	    bus5= spatial.nodes +" PEI silica sorbent",     #Added,  CHANGED FROM KOH TO PEI as these values are based on solid sorbent DAC
+	    bus5="EU PEI silica sorbent",     #Added,  CHANGED FROM KOH TO PEI as these values are based on solid sorbent DAC
 	    carrier="S-DAC",
 	    capital_cost=costs.at['solid direct air capture', 'custom investment'],
 	    efficiency2=min(1,options["cc_fraction"] / 0.9),#Set to a baseline of 1 for DAC when cc_fraction is >=0.9
