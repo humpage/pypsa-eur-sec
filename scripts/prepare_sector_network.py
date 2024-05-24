@@ -571,7 +571,7 @@ def add_KOH(n):
 	bus3= spatial.nodes + " >120C process steam",
 	p_nom_extendable=True,
 	carrier= "Chlor-alkali process",
-	efficiency= 0.001, #0.2941,
+	efficiency= 0.325, #0.2941,
 		#efficiency=costs.at["electrolysis", "efficiency"],
 	efficiency2 = 0.39,
 	efficiency3 = - 0.86/2.88,
